@@ -1,7 +1,6 @@
 import random
 import numpy as np
 from sklearn.cluster import KMeans
-from keras.layers import Input, Dense, LSTM, RepeatVector, TimeDistributed
 
 def sklearnkmeans(data, n_clusters):
     kmeans = KMeans(n_clusters).fit(data)
