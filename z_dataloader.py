@@ -143,20 +143,24 @@ class ECGDataset(Dataset):
     def __len__(self):
         return len(self.df)
 
+def generate_train_test(data):
+    train_df, val_df = train_test_split(
+        data, test_size=0.15, random_state=42, stratify=data['class']
+    )
+    train_df, val_df = train_df.reset_index(drop=True), val_df.reset_index(drop=True)
+    return train_df, val_df
+
 def get_dataloader(train_data, phase: str, batch_size: int = 96) -> DataLoader:
     '''
     Dataset and DataLoader.
     Parameters:
-        pahse: training or validation phase.
+        phase: training or validation phase.
         batch_size: data per iteration.
     Returns:
         data generator
     '''
-    train_df, val_df = train_test_split(
-        train_data, test_size=0.15, random_state=42, stratify=train_data['class']
-    )
-    train_df, val_df = train_df.reset_index(drop=True), val_df.reset_index(drop=True)
+    train_df, val_df = generate_train_test(train_data)
     df = train_df if phase == 'train' else val_df
-    dataset = ECGDataset(train_data)
+    dataset = ECGDataset(df)
     dataloader = DataLoader(dataset=dataset, batch_size=batch_size, num_workers=4)
     return dataloader

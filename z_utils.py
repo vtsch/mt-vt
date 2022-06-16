@@ -17,8 +17,8 @@ def plot_umap(embedding, c, title):
     plt.show()
 
 def plot_loss(history, title):
-    plt.plot(history.history['loss'])
-    plt.plot(history.history['val_loss'])
+    plt.plot(history['train_loss'])
+    plt.plot(history['val_loss'])
     plt.title(title)
     plt.ylabel('loss')
     plt.xlabel('epoch')
@@ -38,8 +38,7 @@ class Meter:
         self.metrics['f1'] += f1_score(x,y,average='macro')
         self.metrics['precision'] += precision_score(x, y, average='macro', zero_division=1)
         self.metrics['recall'] += recall_score(x,y, average='macro', zero_division=1)
-        
-        self._compute_cm(x, y)
+        #self._compute_cm(x, y)
         
     def _compute_cm(self, x, y):
         for prob, target in zip(x, y):

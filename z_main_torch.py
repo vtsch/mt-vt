@@ -1,14 +1,14 @@
 import numpy as np
 import torch
 import pandas as pd
-from sklearn.metrics.cluster import adjusted_rand_score
-from z_dataloader import create_irregular_ts, reshape_lstm
+from z_dataloader import loadfiveclusters, loadtwoclusters, create_pandas_df, generate_train_test
 from z_clustering_algorithms import sklearnkmeans, k_means_dtw
 from z_utils import plot_centroids, plot_umap, plot_loss
 from z_embeddings import umap_embedding
-from z_modules import CNN, RNN, RNNAttentionModel, RNN, RNNAttentionModel
+from z_modules import CNN, RNN, RNNAttentionModel, RNN, RNNAttentionModel, RecurrentAutoencoder
 from z_train import Trainer
 
+# https://www.kaggle.com/code/polomarco/ecg-classification-cnn-lstm-attention-mechanism
 
 class Config:
     csv_path = ''
@@ -41,19 +41,23 @@ if __name__ == '__main__':
     #select sample_size samples from each class
     df = pd.DataFrame()
     for i in range(n_clusters):
-        df = df.append(df_mitbih.loc[df_mitbih['class'] == i].sample(n=sample_size))
-    #shuffle rows of df qand remove index column
+        df = pd.concat([df, df_mitbih.loc[df_mitbih['class'] == i].sample(n=sample_size)])
+    #shuffle rows of df and remove index column
     df = df.sample(frac=1)
-    df = df.reset_index(drop=True)
+    df = df.reset_index(drop=True)  
     #print(df.head(5))
     
-    print("original data")
-    print(df_mitbih.info())
-    print("subsampled data")
+    #print("original data")
+    #print(df_mitbih.info())
+    #print("subsampled data")
     print(df.info())
+
 
     #model = RNNAttentionModel(1, 64, 'lstm', False)
     #model = RNNModel(1, 64, 'lstm', True)
-    model = CNN(num_classes=n_clusters, hid_size=128)
-    trainer = Trainer(train_data = df, net=model, lr=1e-3, batch_size=96, num_epochs=3)#100)
-    trainer.run()
+    #model = CNN(num_classes=n_clusters, hid_size=128)
+    model = RecurrentAutoencoder(seq_len=186, n_features=1, embedding_dim=64)
+    trainer = Trainer(train_data = df, net=model, lr=1e-3, batch_size=32, num_epochs=3)#100)
+    history = trainer.run()
+    plot_loss(history, 'LSTM AC Loss')
+
