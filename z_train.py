@@ -7,43 +7,9 @@ from torch.optim.lr_scheduler import (CosineAnnealingLR,
                                       StepLR,
                                       ExponentialLR)
 import pandas as pd
-import matplotlib.pyplot as plt
 from z_utils import Meter
 from z_dataloader import get_dataloader
 
-"""
-def train(network, data, target, optimizer, criterion):
-    network.train()
-    for batch_idx, data in enumerate(data):
-        data = data.unsqueeze(1)
-        optimizer.zero_grad()
-        output = network(data)
-        loss = criterion(output, target)
-        loss.backward()
-        optimizer.step()
-        if batch_idx % 10 == 0:
-            print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
-                epoch, batch_idx * len(data), len(data.dataset),
-                100. * batch_idx / len(data), loss.item()))
-            train_losses.append(loss.item())
-            train_counter.append(
-                (batch_idx*64) + ((epoch-1)*len(data.dataset)))
-                
-  
-
-def train_lstm(n_epochs, data, target):
-    network = LSTM()
-    optimizer = optim.Adam(network.parameters())
-    criterion = nn.MSELoss()
-
-    print(network)
-
-    n_epochs = 3
-
-    for epoch in range(n_epochs):
-        train(network, data, target, optimizer, criterion)
-
-"""
 
 class Trainer:
     def __init__(self, train_data, net, lr, batch_size, num_epochs):
@@ -87,7 +53,7 @@ class Trainer:
         metrics = meter.get_metrics()
         metrics = {k:v / i for k, v in metrics.items()}
         df_logs = pd.DataFrame([metrics])
-        confusion_matrix = meter.get_confusion_matrix()
+        #confusion_matrix = meter.get_confusion_matrix()
         
         if phase == 'train':
             self.train_df_logs = pd.concat([self.train_df_logs, df_logs], axis=0)

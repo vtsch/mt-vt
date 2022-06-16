@@ -21,9 +21,6 @@ class Config:
     attn_logs = '../input/mitbih-with-synthetic/attn.csv'
     lstm_logs = '../input/mitbih-with-synthetic/lstm.csv'
     cnn_logs = '../input/mitbih-with-synthetic/cnn.csv'
-    
-    train_csv_path = '../input/mitbih-with-synthetic/mitbih_with_syntetic_train.csv'
-    test_csv_path = '../input/mitbih-with-synthetic/mitbih_with_syntetic_test.csv'
 
 
 if __name__ == '__main__':
