@@ -13,9 +13,10 @@ import copy
 import numpy as np
 
 class Trainer:
-    def __init__(self, train_data, net, lr, batch_size, num_epochs):
+    def __init__(self, config, train_data, net, lr, batch_size, num_epochs):
         #self.net = net.to(config.device)
         self.net = net.to('cpu')
+        self.config = config
         self.num_epochs = num_epochs
         self.criterion = nn.CrossEntropyLoss()
         self.optimizer = Adam(self.net.parameters(), lr=lr)
@@ -41,7 +42,8 @@ class Trainer:
             #target = target.to(config.device)
      
             #expand dimension of target for autoencoder
-            target = torch.unsqueeze(target, dim=-1)
+            if self.config.LSTM_AC == True:
+                target = torch.unsqueeze(target, dim=-1)
             
             output = self.net(data)
             loss = self.criterion(output, target)
@@ -52,13 +54,15 @@ class Trainer:
                 self.optimizer.step()
             
             #reduce again
-            target = torch.squeeze(target)
+            if self.config.LSTM_AC == True:
+                target = torch.squeeze(target)
 
             meter.update(output, target, loss.item())
         
         metrics = meter.get_metrics()
         metrics = {k:v / i for k, v in metrics.items()}
         df_logs = pd.DataFrame([metrics])
+        output_epoch = output
         #confusion_matrix = meter.get_confusion_matrix()
         
         if phase == 'train':
@@ -67,19 +71,20 @@ class Trainer:
             self.val_df_logs = pd.concat([self.val_df_logs, df_logs], axis=0)
         
         # show logs
-        print('{}: {}, {}: {}, {}: {}, {}: {}, {}: {}'
+        print('{}: {}, {}: {}, {}: {}'
               .format(*(x for kv in metrics.items() for x in kv))
-             )        
-        return loss
+             )       
+        return loss, output_epoch
     
     def run(self):
         history = dict(train_loss=[], val_loss=[])
+        embeddings = []
 
         for epoch in range(self.num_epochs):
-            train_loss = self._train_epoch(phase='train')
+            train_loss, train_output = self._train_epoch(phase='train')
             history['train_loss'].append(train_loss.detach().numpy())
             with torch.no_grad():
-                val_loss = self._train_epoch(phase='val')
+                val_loss, val_output = self._train_epoch(phase='val')
                 history['val_loss'].append(val_loss.detach().numpy())
                 self.scheduler.step()
             
@@ -88,7 +93,13 @@ class Trainer:
                 print('New checkpoint')
                 self.best_loss = val_loss
                 #torch.save(self.net.state_dict(), f"best_model_epoc{epoch}.pth")
+            
+            embeddings.append(train_output.detach().numpy())
             #clear_output()
             print('Epoch: %d, train loss: %f, val loss: %f' %(epoch, train_loss, val_loss))
-        return history
+        
+        #remove outer dimension of embeddings
+        embeddings = np.reshape(embeddings, (-1, embeddings[0].shape[1]))
+
+        return history, embeddings
 

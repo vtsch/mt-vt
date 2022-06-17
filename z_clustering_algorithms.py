@@ -58,5 +58,3 @@ def k_means_dtw(data,num_clust,num_iter,w=5):
             centroids[key]=[m/len(assignments[key]) for m in clust_sum]
     
     return centroids, labels
-
-
