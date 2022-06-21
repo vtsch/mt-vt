@@ -6,11 +6,9 @@ from torchsummary import summary
 import pandas as pd
 from z_dataloader import load_raw_data_to_pd, upsample_data
 from z_clustering_algorithms import sklearnkmeans, k_means_dtw, run_kmeans
-from z_utils import plot_centroids, plot_umap, plot_loss
+from z_utils import plot_centroids, plot_umap, plot_loss, calculate_clustering_scores, run_umap
 from z_modules import CNN, RNNModel, RNNAttentionModel, RecurrentAutoencoder, SimpleAutoencoder, DeepAutoencoder
 from z_train import Trainer
-from z_embeddings import umap_embedding
-from sklearn.metrics.cluster import adjusted_rand_score
 
 
 
@@ -32,8 +30,8 @@ class Config:
     RNN_ATTMOD = False
     LSTM_MOD = False
     CNN_MOD = False
-    SIMPLE_AC = False
-    DEEP_AC = True
+    SIMPLE_AC = True
+    DEEP_AC = False
 
 
 if __name__ == '__main__':
@@ -44,7 +42,7 @@ if __name__ == '__main__':
     emb_size = 10
     lr=1e-3
     batch_size = 32
-    n_epochs = 3
+    n_epochs = 2
 
     config = Config()
 
@@ -79,7 +77,8 @@ if __name__ == '__main__':
         output, target = trainer.eval(n_clusters)
 
         kmeans_labels = run_kmeans(output, n_clusters, name)
-        print("ARI kmeans: %f" % adjusted_rand_score(target, kmeans_labels))
+        run_umap(output, target, n_clusters, name)
+        calculate_clustering_scores(target, kmeans_labels)
 
     if config.CNN_MOD == True:
         name = "CNN"
@@ -92,7 +91,8 @@ if __name__ == '__main__':
         output, target = trainer.eval(n_clusters)
 
         kmeans_labels = run_kmeans(output, n_clusters, name)
-        print("ARI kmeans: %f" % adjusted_rand_score(target, kmeans_labels))
+        run_umap(output, target, n_clusters, name)
+        calculate_clustering_scores(target, kmeans_labels)
     
     if config.SIMPLE_AC == True:
         name = "Simple AC"
@@ -104,7 +104,8 @@ if __name__ == '__main__':
         output, target = trainer.eval(n_clusters)
     
         kmeans_labels = run_kmeans(output, n_clusters, name)
-        print("ARI kmeans: %f" % adjusted_rand_score(target, kmeans_labels))
+        run_umap(output, target, n_clusters, name)
+        calculate_clustering_scores(target, kmeans_labels)
 
     if config.DEEP_AC == True:
         name = "Deep AC"
@@ -116,7 +117,8 @@ if __name__ == '__main__':
         output, target = trainer.eval(n_clusters)
     
         kmeans_labels = run_kmeans(output, n_clusters, name)
-        print("ARI kmeans: %f" % adjusted_rand_score(target, kmeans_labels))
+        run_umap(output, target, n_clusters, name)
+        calculate_clustering_scores(target, kmeans_labels)
         
 
 

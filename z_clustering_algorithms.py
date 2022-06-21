@@ -64,8 +64,4 @@ def k_means_dtw(data,num_clust,num_iter,w=5):
 def run_kmeans(output, n_clusters, name):
     centroids, kmeans_labels = sklearnkmeans(output, n_clusters)
     plot_centroids(centroids, n_clusters, "kmeans centroids %s" %name)
-
-    umap_emb = umap_embedding(output)
-    plot_umap(umap_emb, kmeans_labels, "umap embedding %s encoder" %name)
-
     return kmeans_labels

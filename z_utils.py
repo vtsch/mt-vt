@@ -3,7 +3,8 @@ import matplotlib.pyplot as plt
 import torch
 import numpy as np
 from sklearn.metrics import accuracy_score, auc, f1_score
-
+from sklearn.metrics.cluster import adjusted_rand_score
+import umap.umap_ as umap
 
 def plot_centroids(centroids, n_clusters, title):
     for i in range(n_clusters):
@@ -11,8 +12,9 @@ def plot_centroids(centroids, n_clusters, title):
     plt.title(title)
     plt.show()
 
-def plot_umap(embedding, c, title):
+def plot_umap(embedding, targets, c, title):
     plt.scatter(embedding[:,0], embedding[:,1], s=1, c=c, cmap='Spectral')
+    plt.scatter(embedding[:,0], embedding[:,1], s=1, c=targets, cmap='Spectral')
     plt.title(title)
     plt.show()
 
@@ -24,6 +26,18 @@ def plot_loss(history, title):
     plt.xlabel('epoch')
     plt.legend(['train', 'test'], loc='upper left')
     plt.show()
+
+def run_umap(output, target, kmeans_labels, name):
+    reducer = umap.UMAP(n_components=2)
+    umap_emb = reducer.fit_transform(output)
+    plot_umap(umap_emb, target, kmeans_labels, "umap embedding %s encoder" %name)
+
+def calculate_clustering_scores(y_true, y_pred):
+    accuracy = accuracy_score(y_true, y_pred)
+    ari = adjusted_rand_score(y_true, y_pred)
+    print('Clustering Accuracy: {:.2f}'.format(accuracy))
+    print('Clustering ARI: {:.2f}'.format(ari))
+
 
 class Meter:
     def __init__(self, n_classes=5):
