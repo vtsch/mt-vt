@@ -12,6 +12,8 @@ from z_dataloader import get_dataloader
 import copy
 import numpy as np
 
+#https://www.kaggle.com/code/polomarco/ecg-classification-cnn-lstm-attention-mechanism 
+
 class Trainer:
     def __init__(self, config, train_data, net, lr, batch_size, num_epochs):
         #self.net = net.to(config.device)
@@ -62,7 +64,6 @@ class Trainer:
         metrics = meter.get_metrics()
         metrics = {k:v / i for k, v in metrics.items()}
         df_logs = pd.DataFrame([metrics])
-        output_epoch = output
         #confusion_matrix = meter.get_confusion_matrix()
         
         if phase == 'train':
@@ -74,17 +75,16 @@ class Trainer:
         print('{}: {}, {}: {}, {}: {}'
               .format(*(x for kv in metrics.items() for x in kv))
              )       
-        return loss, output_epoch
+        return loss
     
     def run(self):
         history = dict(train_loss=[], val_loss=[])
-        embeddings = []
 
         for epoch in range(self.num_epochs):
-            train_loss, train_output = self._train_epoch(phase='train')
+            train_loss = self._train_epoch(phase='train')
             history['train_loss'].append(train_loss.detach().numpy())
             with torch.no_grad():
-                val_loss, val_output = self._train_epoch(phase='val')
+                val_loss = self._train_epoch(phase='val')
                 history['val_loss'].append(val_loss.detach().numpy())
                 self.scheduler.step()
             
@@ -94,12 +94,23 @@ class Trainer:
                 self.best_loss = val_loss
                 #torch.save(self.net.state_dict(), f"best_model_epoc{epoch}.pth")
             
-            embeddings.append(train_output.detach().numpy())
             #clear_output()
             print('Epoch: %d, train loss: %f, val loss: %f' %(epoch, train_loss, val_loss))
-        
-        #remove outer dimension of embeddings
-        embeddings = np.reshape(embeddings, (-1, embeddings[0].shape[1]))
 
-        return history, embeddings
+        return history
+    
+    def eval(self):
+        #self.net.eval()
+        embeddings = np.array([])
+        targets = np.array([])
+        with torch.no_grad():
+            for i, (data, target) in enumerate(self.dataloaders['train']):
+                #data = data.to(config.device)
+                output = self.net(data)
+                embeddings = np.append(embeddings, output.detach().numpy() )
+                targets = np.append(targets, target.detach().numpy())
+
+        embeddings = embeddings.reshape(-1, 5)
+        return embeddings, targets
+
 

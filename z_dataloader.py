@@ -150,7 +150,7 @@ def generate_train_test(data):
     train_df, val_df = train_df.reset_index(drop=True), val_df.reset_index(drop=True)
     return train_df, val_df
 
-def get_dataloader(train_data, phase: str, batch_size: int = 96) -> DataLoader:
+def get_dataloader(train_data, phase: str, batch_size: int) -> DataLoader:
     '''
     Dataset and DataLoader.
     Parameters:

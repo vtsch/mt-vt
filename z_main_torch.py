@@ -6,7 +6,7 @@ from z_dataloader import loadfiveclusters, loadtwoclusters, create_pandas_df, ge
 from z_clustering_algorithms import sklearnkmeans, k_means_dtw
 from z_utils import plot_centroids, plot_umap, plot_loss
 from z_embeddings import umap_embedding
-from z_modules import CNN, RNN, Encoder, RNNAttentionModel, RNN, RNNAttentionModel, RecurrentAutoencoder, Encoder
+from z_modules import CNN, RNNModel, RNNAttentionModel, RecurrentAutoencoder
 from z_train import Trainer
 from sklearn.metrics.cluster import adjusted_rand_score
 
@@ -27,10 +27,9 @@ class Config:
 
     RAW_MOD = False
     RNN_ATTMOD = False
-    RNN_MOD = False
+    RNN_MOD = True
     CNN_MOD = False
-    LSTM_AC = True
-    LSTM_ENC = False
+    LSTM_AC = False
 
 
 if __name__ == '__main__':
@@ -61,7 +60,7 @@ if __name__ == '__main__':
     #print(df_mitbih.info())
     #print("subsampled data")
     print(df.info())
- 
+
 
     if config.RAW_MOD == True:
         umap_emb = umap_embedding(df)
@@ -76,42 +75,50 @@ if __name__ == '__main__':
 
 
     #model = RNNAttentionModel(1, 64, 'lstm', False)
-    #model = RNNModel(1, 64, 'lstm', True)
+    if config.RNN_MOD == True: 
+        model = RNNModel(1, 64, 'lstm', True)
+        trainer = Trainer(config=config, train_data = df, net=model, lr=1e-3, batch_size=32, num_epochs=5)#100)
+        history = trainer.run()
+        plot_loss(history, 'CNN Loss')
+        output, target = trainer.eval()
+        print("output after eval:", output.shape)
+
+        centroids, kmeans_labels = sklearnkmeans(output, n_clusters)
+        plot_centroids(centroids, n_clusters, "kmeans centroids CNN")
+
+        umap_emb = umap_embedding(output)
+        plot_umap(umap_emb, kmeans_labels, "umap embedding CNN encoder")
+
+        print("ARI kmeans: %f" % adjusted_rand_score(target, kmeans_labels))
 
     if config.CNN_MOD == True:
         model = CNN(num_classes=n_clusters, hid_size=128)
         trainer = Trainer(config=config, train_data = df, net=model, lr=1e-3, batch_size=32, num_epochs=3)#100)
-        history, embeddings = trainer.run()
+        history = trainer.run()
         plot_loss(history, 'CNN Loss')
-        centroids, kmeans_labels = sklearnkmeans(embeddings, n_clusters)
+        output, target = trainer.eval()
+        print("output after eval:", output.shape)
+
+        centroids, kmeans_labels = sklearnkmeans(output, n_clusters)
         plot_centroids(centroids, n_clusters, "kmeans centroids CNN")
-        umap_emb = umap_embedding(embeddings)
+        umap_emb = umap_embedding(output)
         plot_umap(umap_emb, kmeans_labels, "umap embedding CNN encoder")
-        print("ARI kmeans: %f" % adjusted_rand_score(df_mitbih['class'], kmeans_labels))
+        print("ARI kmeans: %f" % adjusted_rand_score(target, kmeans_labels))
 
 
     if config.LSTM_AC == True:
         model = RecurrentAutoencoder(seq_len=186, n_features=1, embedding_dim=64)
         trainer = Trainer(config=config, train_data = df, net=model, lr=1e-3, batch_size=32, num_epochs=3)#100)
-        history, embeddings = trainer.run()
+        history = trainer.run()
         plot_loss(history, 'LSTM AC Loss')
-        centroids, kmeans_labels = sklearnkmeans(embeddings, n_clusters)
+        output, target = trainer.eval()
+        print("output after eval:", output.shape)
+
+        centroids, kmeans_labels = sklearnkmeans(output, n_clusters)
         plot_centroids(centroids, n_clusters, "kmeans centroids lstm AC")
-        umap_emb = umap_embedding(embeddings)
+        umap_emb = umap_embedding(output)
         plot_umap(umap_emb, kmeans_labels, "umap embedding lstm AC")
         
-
-    if config.LSTM_ENC == True:
-        model = Encoder(seq_len=186, n_features=1, embedding_dim=32)
-        trainer = Trainer(config = config, train_data = df, net=model, lr=1e-3, batch_size=32, num_epochs=100)#100)
-        history, embeddings = trainer.run()
-        plot_loss(history, 'LSTM AC Loss')
-        centroids, kmeans_labels = sklearnkmeans(embeddings, n_clusters)
-        plot_centroids(centroids, n_clusters, "kmeans centroids lstm encoder")
-        umap_emb = umap_embedding(embeddings)
-        print(kmeans_labels.shape)
-        print(embeddings.shape)
-        plot_umap(umap_emb, kmeans_labels, "umap embedding lstm encoder")
 
 
 
