@@ -1,6 +1,8 @@
 import random
 import numpy as np
 from sklearn.cluster import KMeans
+from z_embeddings import umap_embedding
+from z_utils import plot_centroids, plot_umap
 
 def sklearnkmeans(data, n_clusters):
     kmeans = KMeans(n_clusters).fit(data)
@@ -58,3 +60,12 @@ def k_means_dtw(data,num_clust,num_iter,w=5):
             centroids[key]=[m/len(assignments[key]) for m in clust_sum]
     
     return centroids, labels
+
+def run_kmeans(output, n_clusters, name):
+    centroids, kmeans_labels = sklearnkmeans(output, n_clusters)
+    plot_centroids(centroids, n_clusters, "kmeans centroids %s" %name)
+
+    umap_emb = umap_embedding(output)
+    plot_umap(umap_emb, kmeans_labels, "umap embedding %s encoder" %name)
+
+    return kmeans_labels

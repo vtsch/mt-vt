@@ -111,22 +111,29 @@ def reshape_lstm(X_train, X_test, timesteps, n_features):
     test_lstm = X_test.reshape(-1, timesteps, n_features)
     return train_lstm, test_lstm
 
-"""
-def create_torch_df(train, test):
-    # creating tensor from pd df
-    train_tensor = torch.tensor(train)
-    test_tensor = torch.tensor(test)
 
-    train_dataset = TensorDataset(train_tensor) 
-    test_dataset = TensorDataset(test_tensor) 
+def load_raw_data_to_pd(file_name_train, file_name_test, n_clusters):
+    df_mitbih_train = pd.read_csv(file_name_train, header=None)
+    df_mitbih_test = pd.read_csv(file_name_test, header=None)
+    #df_mitbih = pd.concat([df_mitbih_train, df_mitbih_test], axis=0)
+    df_mitbih_train.rename(columns={187: 'class'}, inplace=True)
+    df_mitbih_test.rename(columns={187: 'class'}, inplace=True)
+    #print(df_mitbih.head(5))
 
-    train_loader = DataLoader(train_dataset, batch_size=16)
-    test_loader = DataLoader(test_dataset, batch_size=16)
+    return df_mitbih_train, df_mitbih_test
 
-    # printing out result
-    print(train_tensor.shape)
-    return train_dataset, test_dataset, train_loader, test_loader
-"""
+def upsample_data(df_mitbih, n_clusters, sample_size):
+    #select sample_size samples from each class
+    df = pd.DataFrame()
+    for i in range(n_clusters):
+        df = pd.concat([df, df_mitbih.loc[df_mitbih['class'] == i].sample(n=sample_size)])
+    #shuffle rows of df and remove index column
+    df = df.sample(frac=1)
+    df = df.reset_index(drop=True)  
+    #print(df.head(5))
+
+    return df
+
 
 class ECGDataset(Dataset):
 
@@ -162,5 +169,17 @@ def get_dataloader(train_data, phase: str, batch_size: int) -> DataLoader:
     train_df, val_df = generate_train_test(train_data)
     df = train_df if phase == 'train' else val_df
     dataset = ECGDataset(df)
+    dataloader = DataLoader(dataset=dataset, batch_size=batch_size, num_workers=4)
+    return dataloader
+
+def get_test_dataloader(test_data, batch_size: int) -> DataLoader:
+    '''
+    Dataset and DataLoader.
+    Parameters:
+        batch_size: data per iteration.
+    Returns:
+        data generator
+    '''
+    dataset = ECGDataset(test_data)
     dataloader = DataLoader(dataset=dataset, batch_size=batch_size, num_workers=4)
     return dataloader

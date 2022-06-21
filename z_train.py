@@ -8,14 +8,13 @@ from torch.optim.lr_scheduler import (CosineAnnealingLR,
                                       ExponentialLR)
 import pandas as pd
 from z_utils import Meter
-from z_dataloader import get_dataloader
-import copy
+from z_dataloader import get_dataloader, get_test_dataloader
 import numpy as np
 
 #https://www.kaggle.com/code/polomarco/ecg-classification-cnn-lstm-attention-mechanism 
 
 class Trainer:
-    def __init__(self, config, train_data, net, lr, batch_size, num_epochs):
+    def __init__(self, config, train_data, test_data, net, lr, batch_size, num_epochs):
         #self.net = net.to(config.device)
         self.net = net.to('cpu')
         self.config = config
@@ -28,6 +27,7 @@ class Trainer:
         self.dataloaders = {
             phase: get_dataloader(train_data, phase, batch_size) for phase in self.phases
         }
+        self.test_dataloader = get_test_dataloader(test_data, batch_size)
         self.train_df_logs = pd.DataFrame()
         self.val_df_logs = pd.DataFrame()
 
@@ -104,7 +104,7 @@ class Trainer:
         embeddings = np.array([])
         targets = np.array([])
         with torch.no_grad():
-            for i, (data, target) in enumerate(self.dataloaders['train']):
+            for i, (data, target) in enumerate(self.test_dataloader):
                 #data = data.to(config.device)
                 output = self.net(data)
                 embeddings = np.append(embeddings, output.detach().numpy() )
