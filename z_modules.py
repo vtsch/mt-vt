@@ -162,13 +162,13 @@ class RNNModel(nn.Module):
         hid_size,
         rnn_type,
         bidirectional,
-        n_classes=5,
+        n_classes,
         kernel_size=5,
     ):
         super().__init__()
             
         self.rnn_layer = RNN(
-            input_size=46,#hid_size * 2 if bidirectional else hid_size,
+            input_size=64, #is output size after convolution (0: 186, 1: 93, 2: 46), and hid_size * 2 if bidirectional else hid_size,
             hid_size=hid_size,
             rnn_type=rnn_type,
             bidirectional=bidirectional
@@ -183,11 +183,12 @@ class RNNModel(nn.Module):
             hidden_size=hid_size,
             kernel_size=kernel_size,
         )
+
         self.avgpool = nn.AdaptiveAvgPool1d((1))
         self.fc = nn.Linear(in_features=hid_size, out_features=n_classes)
 
     def forward(self, input):
-        x = self.conv1(input)
+        x = self.conv1(input) # input shape: batch_size * num_features (1) * num_channels (186)
         x = self.conv2(x)
         x, _ = self.rnn_layer(x)
         x = self.avgpool(x)
@@ -209,7 +210,7 @@ class RNNAttentionModel(nn.Module):
         super().__init__()
  
         self.rnn_layer = RNN(
-            input_size=46,
+            input_size=input_size,
             hid_size=hid_size,
             rnn_type=rnn_type,
             bidirectional=bidirectional
@@ -272,7 +273,6 @@ class Encoder(nn.Module):
         # print(f'ENCODER hidden_n wants to be reshaped to : {(batch_size, self.embedding_dim)}')
         return hidden_n.reshape((batch_size, self.embedding_dim))
 
-
 class Decoder(nn.Module):
     def __init__(self, seq_len, input_dim=64, n_features=1):
         super(Decoder, self).__init__()
@@ -305,7 +305,6 @@ class Decoder(nn.Module):
         x = x.reshape((batch_size, self.seq_len, self.hidden_dim))
         return self.output_layer(x)
 
-
 # https://github.com/fabiozappo/LSTM-Autoencoder-Time-Series/blob/main/code/models/RecurrentAutoencoder.py 
 class RecurrentAutoencoder(nn.Module):
     def __init__(self, seq_len, n_features, embedding_dim=64, device='cpu'):
@@ -316,4 +315,32 @@ class RecurrentAutoencoder(nn.Module):
     def forward(self, x):
         x = self.encoder(x)
         x = self.decoder(x)
+        return x
+
+class DeepAutoencoder(nn.Module):
+    def __init__(self):
+        super(DeepAutoencoder, self).__init__()
+        self.fc1 = nn.Linear(in_features=186, out_features=128)
+        self.fc2 = nn.Linear(in_features=128, out_features=64)
+        self.fc3 = nn.Linear(in_features=64, out_features=32)
+        self.fc4 = nn.Linear(in_features=32, out_features=16)
+        self.fc5 = nn.Linear(in_features=16, out_features=5)
+
+    def forward(self, x):
+        x = x.view(x.shape[0], -1)
+        x = F.relu(self.fc1(x))
+        x = F.relu(self.fc2(x))
+        x = F.relu(self.fc3(x))
+        x = F.relu(self.fc4(x))
+        x = F.relu(self.fc5(x))
+        return x
+
+class SimpleAutoencoder(nn.Module):
+    def __init__(self):
+        super(SimpleAutoencoder, self).__init__()
+        self.fc = nn.Linear(in_features=186, out_features=5)
+
+    def forward(self, x):
+        x = x.view(x.shape[0], -1)
+        x = self.fc(x)
         return x

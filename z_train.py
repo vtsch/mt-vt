@@ -99,7 +99,7 @@ class Trainer:
 
         return history
     
-    def eval(self):
+    def eval(self, emb_size):
         #self.net.eval()
         embeddings = np.array([])
         targets = np.array([])
@@ -110,7 +110,7 @@ class Trainer:
                 embeddings = np.append(embeddings, output.detach().numpy() )
                 targets = np.append(targets, target.detach().numpy())
 
-        embeddings = embeddings.reshape(-1, 5)
+        embeddings = embeddings.reshape(-1, emb_size)
         return embeddings, targets
 
 
