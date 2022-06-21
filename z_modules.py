@@ -328,11 +328,11 @@ class DeepAutoencoder(nn.Module):
 
     def forward(self, x):
         x = x.view(x.shape[0], -1)
-        x = F.relu(self.fc1(x))
-        x = F.relu(self.fc2(x))
-        x = F.relu(self.fc3(x))
-        x = F.relu(self.fc4(x))
-        x = F.relu(self.fc5(x))
+        x = self.fc1(x)
+        x = self.fc2(x)
+        x = self.fc3(x)
+        x = self.fc4(x)
+        x = self.fc5(x)
         return x
 
 class SimpleAutoencoder(nn.Module):

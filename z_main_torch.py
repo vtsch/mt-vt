@@ -32,7 +32,6 @@ class Config:
     RNN_ATTMOD = False
     LSTM_MOD = False
     CNN_MOD = False
-    LSTM_AC = False
     SIMPLE_AC = False
     DEEP_AC = True
 
@@ -45,7 +44,7 @@ if __name__ == '__main__':
     emb_size = 10
     lr=1e-3
     batch_size = 32
-    n_epochs = 2
+    n_epochs = 3
 
     config = Config()
 
@@ -94,20 +93,6 @@ if __name__ == '__main__':
 
         kmeans_labels = run_kmeans(output, n_clusters, name)
         print("ARI kmeans: %f" % adjusted_rand_score(target, kmeans_labels))
-
-
-    if config.LSTM_AC == True:
-        model = RecurrentAutoencoder(seq_len=186, n_features=1, embedding_dim=64)
-        trainer = Trainer(config=config, train_data = df_train, net=model, lr=1e-3, batch_size=32, num_epochs=3)#100)
-        history = trainer.run()
-        plot_loss(history, 'LSTM AC Loss')
-        output, target = trainer.eval()
-        print("output after eval:", output.shape)
-
-        centroids, kmeans_labels = sklearnkmeans(output, n_clusters)
-        plot_centroids(centroids, n_clusters, "kmeans centroids lstm AC")
-        umap_emb = umap_embedding(output)
-        plot_umap(umap_emb, kmeans_labels, "umap embedding lstm AC")
     
     if config.SIMPLE_AC == True:
         name = "Simple AC"

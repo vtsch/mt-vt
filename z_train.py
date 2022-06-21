@@ -42,10 +42,6 @@ class Trainer:
         for i, (data, target) in enumerate(self.dataloaders[phase]):
             #data = data.to(config.device)
             #target = target.to(config.device)
-     
-            #expand dimension of target for autoencoder
-            if self.config.LSTM_AC == True:
-                target = torch.unsqueeze(target, dim=-1)
             
             output = self.net(data)
             loss = self.criterion(output, target)
@@ -54,10 +50,6 @@ class Trainer:
                 self.optimizer.zero_grad()
                 loss.backward()
                 self.optimizer.step()
-            
-            #reduce again
-            if self.config.LSTM_AC == True:
-                target = torch.squeeze(target)
 
             meter.update(output, target, loss.item())
         
