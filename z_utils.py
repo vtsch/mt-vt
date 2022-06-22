@@ -1,9 +1,9 @@
 
 import matplotlib.pyplot as plt
+import matplotlib.colors as pltcolors
 import torch
 import numpy as np
-from sklearn.metrics import accuracy_score, auc, f1_score
-from sklearn.metrics.cluster import adjusted_rand_score
+from sklearn.metrics import accuracy_score, auc, f1_score, adjusted_mutual_info_score, mutual_info_score, rand_score, adjusted_rand_score
 import umap.umap_ as umap
 
 def plot_centroids(centroids, n_clusters, title):
@@ -13,12 +13,19 @@ def plot_centroids(centroids, n_clusters, title):
     plt.show()
 
 def plot_umap(embedding, y_pred, y_real, name):     
+    colors  = [f"C{i}" for i in np.arange(0, 5)]
+    cmap, norm = pltcolors.from_levels_and_colors(np.arange(0, 6), colors)
+
     fig, (ax1, ax2) = plt.subplots(1, 2)
     fig.suptitle('Clusters of Umap Embeddings of %s' %name)
-    ax1.scatter(embedding[:,0], embedding[:,1], s=2, c=y_pred, cmap='Spectral', marker='D')
+
+    scatter1 = ax1.scatter(embedding[:,0], embedding[:,1], s=2, c=y_pred, cmap=cmap, norm=norm)
     ax1.set_title('Real')
-    ax2.scatter(embedding[:,0], embedding[:,1], s=2, c=y_real, cmap='Spectral', marker='D')
-    ax2.set_title('Pred')
+    ax1.legend(*scatter1.legend_elements(), loc="upper left", title="Clusters")
+
+    scatter2 = ax2.scatter(embedding[:,0], embedding[:,1], s=2, c=y_real, cmap=cmap, norm=norm)
+    ax2.set_title('Predicted')
+    ax2.legend(*scatter2.legend_elements(), loc="upper left", title="Clusters")
     plt.show()
 
 def plot_loss(history, title):
@@ -38,9 +45,15 @@ def run_umap(output, target, kmeans_labels, name):
 
 def calculate_clustering_scores(y_true, y_pred):
     accuracy = accuracy_score(y_true, y_pred)
+    ri = rand_score(y_true, y_pred)
     ari = adjusted_rand_score(y_true, y_pred)
+    mi = mutual_info_score(y_true, y_pred)
+    ami = adjusted_mutual_info_score(y_true, y_pred)
     print('Clustering Accuracy: {:.2f}'.format(accuracy))
+    print('Clustering RI: {:.2f}'.format(ri))
     print('Clustering ARI: {:.2f}'.format(ari))
+    print('Clustering MI: {:.2f}'.format(mi))
+    print('Clustering AMI: {:.2f}'.format(ami))
 
 
 class Meter:

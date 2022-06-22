@@ -27,9 +27,9 @@ class Config:
     lstm_logs = '../input/mitbih-with-synthetic/lstm.csv'
     cnn_logs = '../input/mitbih-with-synthetic/cnn.csv'
 
-    RAW_MOD = True
+    RAW_MOD = False
     RNN_ATTMOD = False
-    LSTM_MOD = False
+    LSTM_MOD = True
     CNN_MOD = False
     SIMPLE_AC = False
     DEEP_AC = False
@@ -43,7 +43,7 @@ if __name__ == '__main__':
     emb_size = 10
     lr=1e-3
     batch_size = 32
-    n_epochs = 10
+    n_epochs = 20
 
     config = Config()
 
