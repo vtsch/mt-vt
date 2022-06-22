@@ -30,7 +30,7 @@ class Config:
     RAW_MOD = False
     RNN_ATTMOD = False
     LSTM_MOD = False
-    CNN_MOD = False
+    CNN_MOD = True
     SIMPLE_AC = False
     DEEP_AC = False
 
@@ -43,12 +43,12 @@ if __name__ == '__main__':
     emb_size = 10
     lr=1e-3
     batch_size = 32
-    n_epochs = 3
+    n_epochs = 10
 
     config = Config()
 
     #load data
-    df_mitbih_train, df_mitbih_test = load_raw_data_to_pd(file_name_train, file_name_test, n_clusters=n_clusters)
+    df_mitbih_train, df_mitbih_test = load_raw_data_to_pd(file_name_train, file_name_test)
     df_train = upsample_data(df_mitbih_train, n_clusters=n_clusters, sample_size=400)
     df_test = upsample_data(df_mitbih_test, n_clusters=n_clusters, sample_size=150)
 
@@ -56,15 +56,12 @@ if __name__ == '__main__':
 
 
     if config.RAW_MOD == True:
-        umap_emb = umap_embedding(df_train)
+        name = "Raw Data"
 
-        centroids, kmeans_labels = sklearnkmeans(df_train, n_clusters)
-        plot_centroids(centroids, n_clusters, "kmeans centroids original data")
-
-        #centroids, dtwkmeans_labels = k_means_dtw(df, n_clusters, num_iter=5,w=5)
-        #plot_centroids(centroids, n_clusters, "dtw kmeans centroids original data")
-
-        plot_umap(umap_emb, df_train['class'], "umap embedding original data")
+        kmeans_labels = run_kmeans(df_train, n_clusters, name)
+        y_real = df_train['class']
+        run_umap(df_train, y_real, kmeans_labels, name)
+        calculate_clustering_scores(y_real, kmeans_labels)
 
 
     #model = RNNAttentionModel(1, 64, 'lstm', False)
