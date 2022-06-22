@@ -12,10 +12,13 @@ def plot_centroids(centroids, n_clusters, title):
     plt.title(title)
     plt.show()
 
-def plot_umap(embedding, targets, c, title):
-    plt.scatter(embedding[:,0], embedding[:,1], s=1, c=c, cmap='Spectral')
-    plt.scatter(embedding[:,0], embedding[:,1], s=1, c=targets, cmap='Spectral')
-    plt.title(title)
+def plot_umap(embedding, y_pred, y_real, name):     
+    fig, (ax1, ax2) = plt.subplots(1, 2)
+    fig.suptitle('Clusters of Umap Embeddings of %s' %name)
+    ax1.scatter(embedding[:,0], embedding[:,1], s=2, c=y_pred, cmap='Spectral', marker='D')
+    ax1.set_title('Real')
+    ax2.scatter(embedding[:,0], embedding[:,1], s=2, c=y_real, cmap='Spectral', marker='D')
+    ax2.set_title('Pred')
     plt.show()
 
 def plot_loss(history, title):
@@ -30,7 +33,8 @@ def plot_loss(history, title):
 def run_umap(output, target, kmeans_labels, name):
     reducer = umap.UMAP(n_components=2)
     umap_emb = reducer.fit_transform(output)
-    plot_umap(umap_emb, target, kmeans_labels, "umap embedding %s encoder" %name)
+    plot_umap(umap_emb, target, kmeans_labels, name)
+    
 
 def calculate_clustering_scores(y_true, y_pred):
     accuracy = accuracy_score(y_true, y_pred)

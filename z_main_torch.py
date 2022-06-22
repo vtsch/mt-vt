@@ -1,3 +1,4 @@
+from pickletools import TAKEN_FROM_ARGUMENT1, TAKEN_FROM_ARGUMENT4U
 import numpy as np
 from sklearn.model_selection import train_test_split
 import torch
@@ -30,7 +31,7 @@ class Config:
     RNN_ATTMOD = False
     LSTM_MOD = False
     CNN_MOD = False
-    SIMPLE_AC = True
+    SIMPLE_AC = False
     DEEP_AC = False
 
 
@@ -42,7 +43,7 @@ if __name__ == '__main__':
     emb_size = 10
     lr=1e-3
     batch_size = 32
-    n_epochs = 2
+    n_epochs = 3
 
     config = Config()
 
@@ -77,7 +78,7 @@ if __name__ == '__main__':
         output, target = trainer.eval(n_clusters)
 
         kmeans_labels = run_kmeans(output, n_clusters, name)
-        run_umap(output, target, n_clusters, name)
+        run_umap(output, target, kmeans_labels, name)
         calculate_clustering_scores(target, kmeans_labels)
 
     if config.CNN_MOD == True:
@@ -91,7 +92,7 @@ if __name__ == '__main__':
         output, target = trainer.eval(n_clusters)
 
         kmeans_labels = run_kmeans(output, n_clusters, name)
-        run_umap(output, target, n_clusters, name)
+        run_umap(output, target, kmeans_labels, name)
         calculate_clustering_scores(target, kmeans_labels)
     
     if config.SIMPLE_AC == True:
@@ -104,7 +105,7 @@ if __name__ == '__main__':
         output, target = trainer.eval(n_clusters)
     
         kmeans_labels = run_kmeans(output, n_clusters, name)
-        run_umap(output, target, n_clusters, name)
+        run_umap(output, target, kmeans_labels, name)
         calculate_clustering_scores(target, kmeans_labels)
 
     if config.DEEP_AC == True:
@@ -115,10 +116,12 @@ if __name__ == '__main__':
         history = trainer.run()
         plot_loss(history, '%s Loss' %name)
         output, target = trainer.eval(n_clusters)
-    
+
         kmeans_labels = run_kmeans(output, n_clusters, name)
-        run_umap(output, target, n_clusters, name)
+        run_umap(output, target, kmeans_labels, name)
         calculate_clustering_scores(target, kmeans_labels)
+    
+
         
 
 
