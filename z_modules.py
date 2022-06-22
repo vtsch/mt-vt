@@ -6,12 +6,36 @@ import pandas as pd
 
 import matplotlib.pyplot as plt
 
+class SimpleAutoencoder(nn.Module):
+    def __init__(self):
+        super(SimpleAutoencoder, self).__init__()
+        self.fc = nn.Linear(in_features=186, out_features=5)
 
-class Swish(nn.Module):
     def forward(self, x):
-        return x * torch.sigmoid(x)
-    
+        x = x.view(x.shape[0], -1)
+        x = self.fc(x)
+        return x
 
+class DeepAutoencoder(nn.Module):
+    def __init__(self):
+        super(DeepAutoencoder, self).__init__()
+        self.fc1 = nn.Linear(in_features=186, out_features=128)
+        self.fc2 = nn.Linear(in_features=128, out_features=64)
+        self.fc3 = nn.Linear(in_features=64, out_features=32)
+        self.fc4 = nn.Linear(in_features=32, out_features=16)
+        self.fc5 = nn.Linear(in_features=16, out_features=5)
+
+    def forward(self, x):
+        x = x.view(x.shape[0], -1)
+        x = self.fc1(x)
+        x = self.fc2(x)
+        x = self.fc3(x)
+        x = self.fc4(x)
+        x = self.fc5(x)
+        return x
+
+
+# https://www.kaggle.com/code/polomarco/ecg-classification-cnn-lstm-attention-mechanism 
 
 class ConvNormPool(nn.Module):
     """Conv Skip-connection module"""
@@ -19,8 +43,7 @@ class ConvNormPool(nn.Module):
         self,
         input_size,
         hidden_size,
-        kernel_size,
-        norm_type='bachnorm'
+        kernel_size
     ):
         super().__init__()
         
@@ -40,43 +63,23 @@ class ConvNormPool(nn.Module):
             out_channels=hidden_size,
             kernel_size=kernel_size
         )
-        self.swish_1 = Swish()
-        self.swish_2 = Swish()
-        self.swish_3 = Swish()
-        if norm_type == 'group':
-            self.normalization_1 = nn.GroupNorm(
-                num_groups=8,
-                num_channels=hidden_size
-            )
-            self.normalization_2 = nn.GroupNorm(
-                num_groups=8,
-                num_channels=hidden_size
-            )
-            self.normalization_3 = nn.GroupNorm(
-                num_groups=8,
-                num_channels=hidden_size
-            )
-        else:
-            self.normalization_1 = nn.BatchNorm1d(num_features=hidden_size)
-            self.normalization_2 = nn.BatchNorm1d(num_features=hidden_size)
-            self.normalization_3 = nn.BatchNorm1d(num_features=hidden_size)
+        self.normalization_1 = nn.BatchNorm1d(num_features=hidden_size)
+        self.normalization_2 = nn.BatchNorm1d(num_features=hidden_size)
+        self.normalization_3 = nn.BatchNorm1d(num_features=hidden_size)
             
         self.pool = nn.MaxPool1d(kernel_size=2)
         
     def forward(self, input):
         conv1 = self.conv_1(input)
         x = self.normalization_1(conv1)
-        x = self.swish_1(x)
         x = F.pad(x, pad=(self.kernel_size - 1, 0))
         
         x = self.conv_2(x)
         x = self.normalization_2(x)
-        x = self.swish_2(x)
         x = F.pad(x, pad=(self.kernel_size - 1, 0))
         
         conv3 = self.conv_3(x)
         x = self.normalization_3(conv1+conv3)
-        x = self.swish_3(x)
         x = F.pad(x, pad=(self.kernel_size - 1, 0))   
         
         x = self.pool(x)
@@ -85,9 +88,7 @@ class ConvNormPool(nn.Module):
 
 class CNN(nn.Module):
     def __init__( self, input_size = 1, hid_size = 256, kernel_size = 5, num_classes = 5):
-        
         super().__init__()
-        
         self.conv1 = ConvNormPool(
             input_size=input_size,
             hidden_size=hid_size,
@@ -168,29 +169,17 @@ class RNNModel(nn.Module):
         super().__init__()
             
         self.rnn_layer = RNN(
-            input_size=64, #is output size after convolution (0: 186, 1: 93, 2: 46), and hid_size * 2 if bidirectional else hid_size,
-            hid_size=hid_size,
+            input_size=186, 
+            hid_size=hid_size, #hid_size * 2 if bidirectional else hid_size,
             rnn_type=rnn_type,
             bidirectional=bidirectional
         )
-        self.conv1 = ConvNormPool(
-            input_size=input_size,
-            hidden_size=hid_size,
-            kernel_size=kernel_size,
-        )
-        self.conv2 = ConvNormPool(
-            input_size=hid_size,
-            hidden_size=hid_size,
-            kernel_size=kernel_size,
-        )
-
-        self.avgpool = nn.AdaptiveAvgPool1d((1))
+        self.avgpool = nn.AdaptiveAvgPool1d((32)) #batch size
         self.fc = nn.Linear(in_features=hid_size, out_features=n_classes)
 
     def forward(self, input):
-        x = self.conv1(input) # input shape: batch_size * num_features (1) * num_channels (186)
-        x = self.conv2(x)
-        x, _ = self.rnn_layer(x)
+        #x = self.conv1(input) # input shape: batch_size * num_features (1) * num_channels (186)
+        x, _ = self.rnn_layer(input)
         x = self.avgpool(x)
         x = x.view(-1, x.size(1) * x.size(2))
         x = F.softmax(self.fc(x), dim=1)#.squeeze(1)
@@ -241,106 +230,6 @@ class RNNAttentionModel(nn.Module):
         x = x.view(-1, x.size(1) * x.size(2))
         x = F.softmax(self.fc(x), dim=-1)
         return x
-        
-class Encoder(nn.Module):
-    def __init__(self, seq_len, n_features, embedding_dim=64):
-        super(Encoder, self).__init__()
-        self.seq_len, self.n_features = seq_len, n_features
-        self.embedding_dim, self.hidden_dim = embedding_dim, 2 * embedding_dim
-        self.rnn1 = nn.LSTM(
-            input_size=n_features,
-            hidden_size=self.hidden_dim,
-            num_layers=1,
-            batch_first=True
-        )
-        self.rnn2 = nn.LSTM(
-            input_size=self.hidden_dim,
-            hidden_size=embedding_dim,
-            num_layers=1,
-            batch_first=True
-        )
 
-    def forward(self, x):
-        batch_size = x.shape[0]
-        # print(f'ENCODER input dim: {x.shape}')
-        x = x.reshape((batch_size, self.seq_len, self.n_features))
-        # print(f'ENCODER reshaped dim: {x.shape}')
-        x, (_, _) = self.rnn1(x)
-        # print(f'ENCODER output rnn1 dim: {x.shape}')
-        x, (hidden_n, _) = self.rnn2(x)
-        # print(f'ENCODER output rnn2 dim: {x.shape}')
-        # print(f'ENCODER hidden_n rnn2 dim: {hidden_n.shape}')
-        # print(f'ENCODER hidden_n wants to be reshaped to : {(batch_size, self.embedding_dim)}')
-        return hidden_n.reshape((batch_size, self.embedding_dim))
 
-class Decoder(nn.Module):
-    def __init__(self, seq_len, input_dim=64, n_features=1):
-        super(Decoder, self).__init__()
-        self.seq_len, self.input_dim = seq_len, input_dim
-        self.hidden_dim, self.n_features = 2 * input_dim, n_features
-        self.rnn1 = nn.LSTM(
-            input_size=input_dim,
-            hidden_size=input_dim,
-            num_layers=1,
-            batch_first=True
-        )
-        self.rnn2 = nn.LSTM(
-            input_size=input_dim,
-            hidden_size=self.hidden_dim,
-            num_layers=1,
-            batch_first=True
-        )
-        self.output_layer = nn.Linear(self.hidden_dim, n_features)
-
-    def forward(self, x):
-        batch_size = x.shape[0]
-        # print(f'DECODER input dim: {x.shape}')
-        x = x.repeat(self.seq_len, self.n_features) # todo testare se funziona con più feature
-        # print(f'DECODER repeat dim: {x.shape}')
-        x = x.reshape((batch_size, self.seq_len, self.input_dim))
-        # print(f'DECODER reshaped dim: {x.shape}')
-        x, (hidden_n, cell_n) = self.rnn1(x)
-        # print(f'DECODER output rnn1 dim:/ {x.shape}')
-        x, (hidden_n, cell_n) = self.rnn2(x)
-        x = x.reshape((batch_size, self.seq_len, self.hidden_dim))
-        return self.output_layer(x)
-
-# https://github.com/fabiozappo/LSTM-Autoencoder-Time-Series/blob/main/code/models/RecurrentAutoencoder.py 
-class RecurrentAutoencoder(nn.Module):
-    def __init__(self, seq_len, n_features, embedding_dim=64, device='cpu'):
-        super(RecurrentAutoencoder, self).__init__()
-        self.encoder = Encoder(seq_len, n_features, embedding_dim).to(device)
-        self.decoder = Decoder(seq_len, embedding_dim, n_features).to(device)
-
-    def forward(self, x):
-        x = self.encoder(x)
-        x = self.decoder(x)
-        return x
-
-class DeepAutoencoder(nn.Module):
-    def __init__(self):
-        super(DeepAutoencoder, self).__init__()
-        self.fc1 = nn.Linear(in_features=186, out_features=128)
-        self.fc2 = nn.Linear(in_features=128, out_features=64)
-        self.fc3 = nn.Linear(in_features=64, out_features=32)
-        self.fc4 = nn.Linear(in_features=32, out_features=16)
-        self.fc5 = nn.Linear(in_features=16, out_features=5)
-
-    def forward(self, x):
-        x = x.view(x.shape[0], -1)
-        x = self.fc1(x)
-        x = self.fc2(x)
-        x = self.fc3(x)
-        x = self.fc4(x)
-        x = self.fc5(x)
-        return x
-
-class SimpleAutoencoder(nn.Module):
-    def __init__(self):
-        super(SimpleAutoencoder, self).__init__()
-        self.fc = nn.Linear(in_features=186, out_features=5)
-
-    def forward(self, x):
-        x = x.view(x.shape[0], -1)
-        x = self.fc(x)
-        return x
+# more inspiration https://github.com/fabiozappo/LSTM-Autoencoder-Time-Series/blob/main/code/models/RecurrentAutoencoder.py        

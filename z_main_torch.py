@@ -8,7 +8,7 @@ import pandas as pd
 from z_dataloader import load_raw_data_to_pd, upsample_data
 from z_clustering_algorithms import sklearnkmeans, k_means_dtw, run_kmeans
 from z_utils import plot_centroids, plot_umap, plot_loss, calculate_clustering_scores, run_umap
-from z_modules import CNN, RNNModel, RNNAttentionModel, RecurrentAutoencoder, SimpleAutoencoder, DeepAutoencoder
+from z_modules import CNN, RNNModel, RNNAttentionModel, SimpleAutoencoder, DeepAutoencoder
 from z_train import Trainer
 
 
@@ -27,10 +27,10 @@ class Config:
     lstm_logs = '../input/mitbih-with-synthetic/lstm.csv'
     cnn_logs = '../input/mitbih-with-synthetic/cnn.csv'
 
-    RAW_MOD = False
+    RAW_MOD = True
     RNN_ATTMOD = False
     LSTM_MOD = False
-    CNN_MOD = True
+    CNN_MOD = False
     SIMPLE_AC = False
     DEEP_AC = False
 
@@ -57,9 +57,10 @@ if __name__ == '__main__':
 
     if config.RAW_MOD == True:
         name = "Raw Data"
-
-        kmeans_labels = run_kmeans(df_train, n_clusters, name)
         y_real = df_train['class']
+        df_train = df_train.iloc[:,:186]
+        kmeans_labels = run_kmeans(df_train, n_clusters, name)
+
         run_umap(df_train, y_real, kmeans_labels, name)
         calculate_clustering_scores(y_real, kmeans_labels)
 
