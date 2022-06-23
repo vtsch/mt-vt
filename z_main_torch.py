@@ -28,22 +28,24 @@ class Config:
     cnn_logs = '../input/mitbih-with-synthetic/cnn.csv'
 
     RAW_MOD = False
-    RNN_ATTMOD = False
-    LSTM_MOD = True
-    CNN_MOD = False
-    SIMPLE_AC = False
+    SIMPLE_AC = True
     DEEP_AC = False
+    LSTM_MOD = False
+    CNN_MOD = False
+    RNN_ATTMOD = False
+    
 
 
 if __name__ == '__main__':
 
     file_name_train = 'data/mitbih_train.csv'
     file_name_test = 'data/mitbih_test.csv'
-    n_clusters = 5
+    n_clusters = 2
     emb_size = 10
     lr=1e-3
     batch_size = 32
     n_epochs = 20
+    emb_size = 5
 
     config = Config()
 
@@ -73,7 +75,7 @@ if __name__ == '__main__':
         trainer = Trainer(config=config, train_data=df_train, test_data=df_test, net=model, lr=lr, batch_size=batch_size, num_epochs=n_epochs)
         history = trainer.run()
         plot_loss(history, '%s Loss' %name)
-        output, target = trainer.eval(n_clusters)
+        output, target = trainer.eval(emb_size)
 
         kmeans_labels = run_kmeans(output, n_clusters, name)
         run_umap(output, target, kmeans_labels, name)
@@ -87,7 +89,7 @@ if __name__ == '__main__':
         trainer = Trainer(config=config, train_data=df_train, test_data = df_test, net=model, lr=lr, batch_size=batch_size, num_epochs=n_epochs)
         history = trainer.run()
         plot_loss(history, '%s Loss' %name)
-        output, target = trainer.eval(n_clusters)
+        output, target = trainer.eval(emb_size)
 
         kmeans_labels = run_kmeans(output, n_clusters, name)
         run_umap(output, target, kmeans_labels, name)
@@ -100,7 +102,7 @@ if __name__ == '__main__':
         trainer = Trainer(config=config, train_data = df_train, test_data=df_test, net=model, lr=lr, batch_size=batch_size, num_epochs=n_epochs)
         history = trainer.run()
         plot_loss(history, '%s Loss' %name)
-        output, target = trainer.eval(n_clusters)
+        output, target = trainer.eval(emb_size)
     
         kmeans_labels = run_kmeans(output, n_clusters, name)
         run_umap(output, target, kmeans_labels, name)
@@ -113,7 +115,7 @@ if __name__ == '__main__':
         trainer = Trainer(config=config, train_data = df_train, test_data=df_test, net=model, lr=lr, batch_size=batch_size, num_epochs=n_epochs)
         history = trainer.run()
         plot_loss(history, '%s Loss' %name)
-        output, target = trainer.eval(n_clusters)
+        output, target = trainer.eval(emb_size)
 
         kmeans_labels = run_kmeans(output, n_clusters, name)
         run_umap(output, target, kmeans_labels, name)
