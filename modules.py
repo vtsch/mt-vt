@@ -87,7 +87,7 @@ class ConvNormPool(nn.Module):
 
 
 class CNN(nn.Module):
-    def __init__( self, emb_size, input_size = 1, hid_size = 256, kernel_size = 5):
+    def __init__(self, emb_size, input_size = 1, hid_size = 256, kernel_size = 5):
         super().__init__()
         #self.emb_size = emb_size
         self.conv1 = ConvNormPool(
@@ -169,7 +169,7 @@ class RNNModel(nn.Module):
         super().__init__()
             
         self.rnn_layer = RNN(
-            input_size=186, 
+            input_size=input_size, 
             hid_size=hid_size, #hid_size * 2 if bidirectional else hid_size,
             rnn_type=rnn_type,
             bidirectional=bidirectional
@@ -192,14 +192,14 @@ class RNNAttentionModel(nn.Module):
         input_size,
         hid_size,
         rnn_type,
+        emb_size,
         bidirectional,
-        n_classes=5,
         kernel_size=5,
     ):
         super().__init__()
  
         self.rnn_layer = RNN(
-            input_size=input_size,
+            input_size=46, #if 2 convolutions (186/4)
             hid_size=hid_size,
             rnn_type=rnn_type,
             bidirectional=bidirectional
@@ -216,7 +216,7 @@ class RNNAttentionModel(nn.Module):
         )
         self.avgpool = nn.AdaptiveMaxPool1d((1))
         self.attn = nn.Linear(hid_size, hid_size, bias=False)
-        self.fc = nn.Linear(in_features=hid_size, out_features=n_classes)
+        self.fc = nn.Linear(in_features=hid_size, out_features=emb_size)
 
     def forward(self, input):
         x = self.conv1(input)
