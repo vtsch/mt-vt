@@ -3,10 +3,19 @@ import numpy as np
 from sklearn.cluster import KMeans
 from z_embeddings import umap_embedding
 from z_utils import plot_centroids, plot_umap
+from tslearn.clustering import TimeSeriesKMeans
 
 def sklearnkmeans(data, n_clusters):
     kmeans = KMeans(n_clusters).fit(data)
     labels = kmeans.predict(data)
+    centroids = kmeans.cluster_centers_
+
+    return centroids, labels
+
+def dtwkmeans(data, n_clusters):
+    kmeans = TimeSeriesKMeans(n_clusters=n_clusters, metric="dtw", max_iter=5)
+    kmeans.fit(data)
+    labels = kmeans.labels_
     centroids = kmeans.cluster_centers_
 
     return centroids, labels
@@ -28,17 +37,21 @@ def DTWDistance(s1, s2,w):
 		
     return np.sqrt(DTW[len(s1)-1, len(s2)-1])
 
-def k_means_dtw(data,num_clust,num_iter,w=5):
+def k_means_dtw(data,num_clust,num_iter=5,w=5):
     centroids=random.sample(list(data),num_clust)
     counter=0
+    print(data)
+    print(data.shape)
     for n in range(num_iter):
         counter+=1
-        print(counter)
+        print('num iter: ', counter)
         assignments={}
         labels = []
 
         #assign data points to clusters
         for ind,i in enumerate(data):
+            print('ind: ', ind)
+            print('i: ', i)
             min_dist=float('inf')
             closest_clust=None
             for c_ind,j in enumerate(centroids):
@@ -65,3 +78,12 @@ def run_kmeans(output, n_clusters, name):
     centroids, kmeans_labels = sklearnkmeans(output, n_clusters)
     plot_centroids(centroids, n_clusters, "kmeans centroids %s" %name)
     return kmeans_labels
+
+def run_dtw_kmeans(output, n_clusters, name):
+    centroids, kmeans_labels = dtwkmeans(output, n_clusters)
+    plot_centroids(centroids, n_clusters, " dtw kmeans centroids %s" %name)
+    return kmeans_labels
+
+
+
+
