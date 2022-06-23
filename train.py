@@ -7,8 +7,8 @@ from torch.optim.lr_scheduler import (CosineAnnealingLR,
                                       StepLR,
                                       ExponentialLR)
 import pandas as pd
-from z_utils import Meter
-from z_dataloader import get_dataloader, get_test_dataloader
+from utils import Meter
+from dataloader import get_dataloader, get_test_dataloader
 import numpy as np
 
 #https://www.kaggle.com/code/polomarco/ecg-classification-cnn-lstm-attention-mechanism 

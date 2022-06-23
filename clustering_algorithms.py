@@ -1,8 +1,7 @@
 import random
 import numpy as np
 from sklearn.cluster import KMeans
-from z_embeddings import umap_embedding
-from z_utils import plot_centroids, plot_umap
+from utils import plot_centroids, plot_umap
 from tslearn.clustering import TimeSeriesKMeans
 
 def sklearnkmeans(data, n_clusters):
@@ -17,7 +16,6 @@ def dtwkmeans(data, n_clusters):
     kmeans.fit(data)
     labels = kmeans.labels_
     centroids = kmeans.cluster_centers_
-
     return centroids, labels
 
 def DTWDistance(s1, s2,w):
