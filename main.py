@@ -2,8 +2,8 @@ from pickletools import TAKEN_FROM_ARGUMENT1, TAKEN_FROM_ARGUMENT4U
 import torch
 from torchsummary import summary
 from dataloader import load_raw_data_to_pd, upsample_data
-from clustering_algorithms import run_kmeans, run_dtw_kmeans
-from utils import plot_centroids, plot_umap, plot_loss, calculate_clustering_scores, run_umap
+from clustering_algorithms import run_kmeans
+from utils import plot_centroids, plot_loss, calculate_clustering_scores, run_umap
 from modules import CNN, RNNModel, RNNAttentionModel, SimpleAutoencoder, DeepAutoencoder
 from train import Trainer
 
@@ -24,10 +24,10 @@ class Config:
     cnn_logs = '../input/mitbih-with-synthetic/cnn.csv'
 
     RAW_MOD = False
-    SIMPLE_AC = True
+    SIMPLE_AC = False
     DEEP_AC = False
     LSTM_MOD = False
-    CNN_MOD = False
+    CNN_MOD = True
     RNN_ATTMOD = False
     
 
@@ -42,6 +42,7 @@ if __name__ == '__main__':
     batch_size = 32
     n_epochs = 2
     emb_size = 5
+    metric = "dtw" #metric : {“euclidean”, “dtw”, “softdtw”} 
 
     config = Config()
 
@@ -57,7 +58,7 @@ if __name__ == '__main__':
         name = "Raw Data"
         y_real = df_train['class']
         df_train = df_train.iloc[:,:186]
-        kmeans_labels = run_dtw_kmeans(df_train, n_clusters, name)
+        kmeans_labels = run_kmeans(df_train, n_clusters, metric, name)
 
         run_umap(df_train, y_real, kmeans_labels, name)
         calculate_clustering_scores(y_real, kmeans_labels)
@@ -73,7 +74,7 @@ if __name__ == '__main__':
         plot_loss(history, '%s Loss' %name)
         output, target = trainer.eval(emb_size)
 
-        kmeans_labels = run_kmeans(output, n_clusters, name)
+        kmeans_labels = run_kmeans(output, n_clusters, metric, name)
         run_umap(output, target, kmeans_labels, name)
         calculate_clustering_scores(target, kmeans_labels)
 
@@ -87,7 +88,7 @@ if __name__ == '__main__':
         plot_loss(history, '%s Loss' %name)
         output, target = trainer.eval(emb_size)
 
-        kmeans_labels = run_kmeans(output, n_clusters, name)
+        kmeans_labels = run_kmeans(output, n_clusters, metric, name)
         run_umap(output, target, kmeans_labels, name)
         calculate_clustering_scores(target, kmeans_labels)
     
@@ -100,7 +101,7 @@ if __name__ == '__main__':
         plot_loss(history, '%s Loss' %name)
         output, target = trainer.eval(emb_size)
     
-        kmeans_labels = run_kmeans(output, n_clusters, name)
+        kmeans_labels = run_kmeans(output, n_clusters, metric, name)
         run_umap(output, target, kmeans_labels, name)
         calculate_clustering_scores(target, kmeans_labels)
 
@@ -113,7 +114,7 @@ if __name__ == '__main__':
         plot_loss(history, '%s Loss' %name)
         output, target = trainer.eval(emb_size)
 
-        kmeans_labels = run_kmeans(output, n_clusters, name)
+        kmeans_labels = run_kmeans(output, n_clusters, metric, name)
         run_umap(output, target, kmeans_labels, name)
         calculate_clustering_scores(target, kmeans_labels)
     
