@@ -87,8 +87,9 @@ class ConvNormPool(nn.Module):
 
 
 class CNN(nn.Module):
-    def __init__( self, input_size = 1, hid_size = 256, kernel_size = 5, num_classes = 5):
+    def __init__( self, emb_size, input_size = 1, hid_size = 256, kernel_size = 5):
         super().__init__()
+        #self.emb_size = emb_size
         self.conv1 = ConvNormPool(
             input_size=input_size,
             hidden_size=hid_size,
@@ -105,7 +106,7 @@ class CNN(nn.Module):
             kernel_size=kernel_size,
         )
         self.avgpool = nn.AdaptiveAvgPool1d((1))
-        self.fc = nn.Linear(in_features=hid_size//4, out_features=num_classes)
+        self.fc = nn.Linear(in_features=hid_size//4, out_features=emb_size)
         
     def forward(self, input):
         x = self.conv1(input)
@@ -163,8 +164,7 @@ class RNNModel(nn.Module):
         hid_size,
         rnn_type,
         bidirectional,
-        n_classes,
-        kernel_size=5,
+        emb_size,
     ):
         super().__init__()
             
@@ -175,7 +175,7 @@ class RNNModel(nn.Module):
             bidirectional=bidirectional
         )
         self.avgpool = nn.AdaptiveAvgPool1d((32)) #batch size
-        self.fc = nn.Linear(in_features=hid_size, out_features=n_classes)
+        self.fc = nn.Linear(in_features=hid_size, out_features=emb_size)
 
     def forward(self, input):
         #x = self.conv1(input) # input shape: batch_size * num_features (1) * num_channels (186)

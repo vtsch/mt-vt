@@ -6,6 +6,7 @@ from clustering_algorithms import run_kmeans
 from utils import plot_centroids, plot_loss, calculate_clustering_scores, run_umap
 from modules import CNN, RNNModel, RNNAttentionModel, SimpleAutoencoder, DeepAutoencoder
 from train import Trainer
+import numpy as np
 
 
 
@@ -26,8 +27,8 @@ class Config:
     RAW_MOD = False
     SIMPLE_AC = False
     DEEP_AC = False
-    LSTM_MOD = False
-    CNN_MOD = True
+    LSTM_MOD = True
+    CNN_MOD = False
     RNN_ATTMOD = False
     
 
@@ -67,7 +68,7 @@ if __name__ == '__main__':
     #model = RNNAttentionModel(1, 64, 'lstm', False)
     if config.LSTM_MOD == True: 
         name = "LSTM"
-        model = RNNModel(input_size=1, hid_size=32, n_classes=n_clusters, rnn_type='lstm', bidirectional=True)
+        model = RNNModel(input_size=1, hid_size=32, emb_size=emb_size, rnn_type='lstm', bidirectional=True)
         print(model)
         trainer = Trainer(config=config, train_data=df_train, test_data=df_test, net=model, lr=lr, batch_size=batch_size, num_epochs=n_epochs)
         history = trainer.run()
@@ -80,8 +81,7 @@ if __name__ == '__main__':
 
     if config.CNN_MOD == True:
         name = "CNN"
-        model = CNN(num_classes=n_clusters, hid_size=128)
-        #print(model)
+        model = CNN(emb_size=emb_size, hid_size=128)
         summary(model, input_size=(1, 186))
         trainer = Trainer(config=config, train_data=df_train, test_data = df_test, net=model, lr=lr, batch_size=batch_size, num_epochs=n_epochs)
         history = trainer.run()
@@ -113,13 +113,8 @@ if __name__ == '__main__':
         history = trainer.run()
         plot_loss(history, '%s Loss' %name)
         output, target = trainer.eval(emb_size)
-
         kmeans_labels = run_kmeans(output, n_clusters, metric, name)
+        np.save('kmeans_labels.npy', kmeans_labels)
         run_umap(output, target, kmeans_labels, name)
         calculate_clustering_scores(target, kmeans_labels)
     
-
-        
-
-
-
