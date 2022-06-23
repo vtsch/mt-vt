@@ -1,7 +1,8 @@
 from pickletools import TAKEN_FROM_ARGUMENT1, TAKEN_FROM_ARGUMENT4U
 import torch
+from torchsummary import summary
 from dataloader import load_raw_data_to_pd, upsample_data
-from clustering_algorithms import sklearnkmeans, k_means_dtw, run_kmeans, run_dtw_kmeans
+from clustering_algorithms import run_kmeans, run_dtw_kmeans
 from utils import plot_centroids, plot_umap, plot_loss, calculate_clustering_scores, run_umap
 from modules import CNN, RNNModel, RNNAttentionModel, SimpleAutoencoder, DeepAutoencoder
 from train import Trainer
@@ -22,8 +23,8 @@ class Config:
     lstm_logs = '../input/mitbih-with-synthetic/lstm.csv'
     cnn_logs = '../input/mitbih-with-synthetic/cnn.csv'
 
-    RAW_MOD = True
-    SIMPLE_AC = False
+    RAW_MOD = False
+    SIMPLE_AC = True
     DEEP_AC = False
     LSTM_MOD = False
     CNN_MOD = False
@@ -39,7 +40,7 @@ if __name__ == '__main__':
     emb_size = 10
     lr=1e-3
     batch_size = 32
-    n_epochs = 20
+    n_epochs = 2
     emb_size = 5
 
     config = Config()
