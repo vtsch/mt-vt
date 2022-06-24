@@ -9,9 +9,6 @@ from train import Trainer
 import numpy as np
 
 
-
-# https://www.kaggle.com/code/polomarco/ecg-classification-cnn-lstm-attention-mechanism
-
 class Config:
     csv_path = ''
     seed = 2021
@@ -27,9 +24,9 @@ class Config:
     RAW_MOD = False
     SIMPLE_AC = False
     DEEP_AC = False
-    LSTM_MOD = True
+    LSTM_MOD = False
     CNN_MOD = False
-    RNN_ATTMOD = False
+    RNN_ATTMOD = True
     
 
 
@@ -41,9 +38,10 @@ if __name__ == '__main__':
     emb_size = 10
     lr=1e-3
     batch_size = 32
-    n_epochs = 2
+    n_epochs = 20
     emb_size = 5
     metric = "dtw" #metric : {“euclidean”, “dtw”, “softdtw”} 
+    device = 'cuda:0' if torch.cuda.is_available() else 'cpu'
 
     config = Config()
 
@@ -64,11 +62,34 @@ if __name__ == '__main__':
         run_umap(df_train, y_real, kmeans_labels, name)
         calculate_clustering_scores(y_real, kmeans_labels)
 
+    if config.SIMPLE_AC == True:
+        name = "Simple AC"
+        model = SimpleAutoencoder()
+        summary(model, input_size=(1, 186))
+        trainer = Trainer(config=config, train_data = df_train, test_data=df_test, net=model, lr=lr, batch_size=batch_size, num_epochs=n_epochs)
+        history = trainer.run()
+        plot_loss(history, '%s Loss' %name)
+        output, target = trainer.eval(emb_size)
+    
+        kmeans_labels = run_kmeans(output, n_clusters, metric, name)
+        run_umap(output, target, kmeans_labels, name)
+        calculate_clustering_scores(target, kmeans_labels)
 
-    #model = RNNAttentionModel(1, 64, 'lstm', False)
+    if config.DEEP_AC == True:
+        name = "Deep AC"
+        model = DeepAutoencoder()
+        summary(model, input_size=(1, 186))
+        trainer = Trainer(config=config, train_data = df_train, test_data=df_test, net=model, lr=lr, batch_size=batch_size, num_epochs=n_epochs)
+        history = trainer.run()
+        plot_loss(history, '%s Loss' %name)
+        output, target = trainer.eval(emb_size)
+        kmeans_labels = run_kmeans(output, n_clusters, metric, name)
+        run_umap(output, target, kmeans_labels, name)
+        calculate_clustering_scores(target, kmeans_labels)
+
     if config.LSTM_MOD == True: 
         name = "LSTM"
-        model = RNNModel(input_size=1, hid_size=32, emb_size=emb_size, rnn_type='lstm', bidirectional=True)
+        model = RNNModel(input_size=186, hid_size=32, emb_size=emb_size, rnn_type='lstm', bidirectional=True)
         print(model)
         trainer = Trainer(config=config, train_data=df_train, test_data=df_test, net=model, lr=lr, batch_size=batch_size, num_epochs=n_epochs)
         history = trainer.run()
@@ -92,29 +113,18 @@ if __name__ == '__main__':
         run_umap(output, target, kmeans_labels, name)
         calculate_clustering_scores(target, kmeans_labels)
     
-    if config.SIMPLE_AC == True:
-        name = "Simple AC"
-        model = SimpleAutoencoder()
+    if config.RNN_ATTMOD == True: 
+        name = "RNN Attention Module"
+        model = RNNAttentionModel(input_size=1, hid_size=32, emb_size=emb_size, rnn_type='lstm', bidirectional=False)
         summary(model, input_size=(1, 186))
-        trainer = Trainer(config=config, train_data = df_train, test_data=df_test, net=model, lr=lr, batch_size=batch_size, num_epochs=n_epochs)
+        trainer = Trainer(config=config, train_data=df_train, test_data=df_test, net=model, lr=lr, batch_size=batch_size, num_epochs=n_epochs)
         history = trainer.run()
         plot_loss(history, '%s Loss' %name)
         output, target = trainer.eval(emb_size)
-    
-        kmeans_labels = run_kmeans(output, n_clusters, metric, name)
-        run_umap(output, target, kmeans_labels, name)
-        calculate_clustering_scores(target, kmeans_labels)
 
-    if config.DEEP_AC == True:
-        name = "Deep AC"
-        model = DeepAutoencoder()
-        summary(model, input_size=(1, 186))
-        trainer = Trainer(config=config, train_data = df_train, test_data=df_test, net=model, lr=lr, batch_size=batch_size, num_epochs=n_epochs)
-        history = trainer.run()
-        plot_loss(history, '%s Loss' %name)
-        output, target = trainer.eval(emb_size)
         kmeans_labels = run_kmeans(output, n_clusters, metric, name)
-        np.save('kmeans_labels.npy', kmeans_labels)
         run_umap(output, target, kmeans_labels, name)
         calculate_clustering_scores(target, kmeans_labels)
+    
+    
     

@@ -187,6 +187,7 @@ class RNNModel(nn.Module):
 
 
 class RNNAttentionModel(nn.Module):
+#Attention mechanism in ecg classification, "to clarify" to give more attention to important features, be it features from recurrent layers or convolutional.
     def __init__(
         self,
         input_size,
@@ -230,6 +231,3 @@ class RNNAttentionModel(nn.Module):
         x = x.view(-1, x.size(1) * x.size(2))
         x = F.softmax(self.fc(x), dim=-1)
         return x
-
-
-# more inspiration https://github.com/fabiozappo/LSTM-Autoencoder-Time-Series/blob/main/code/models/RecurrentAutoencoder.py        
