@@ -42,7 +42,6 @@ class Trainer:
         for i, (data, target) in enumerate(self.dataloaders[phase]):
             #data = data.to(config.device)
             #target = target.to(config.device)
-            
             output = self.net(data)
             loss = self.criterion(output, target)
 
@@ -100,7 +99,7 @@ class Trainer:
                 #data = data.to(config.device)
                 output = self.net(data)
                 embeddings = np.append(embeddings, output.detach().numpy() )
-                targets = np.append(targets, target.detach().numpy())
+                targets = np.append(targets, target.detach().numpy())  #always +bs
 
         embeddings = embeddings.reshape(-1, emb_size)
         return embeddings, targets
