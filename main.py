@@ -7,7 +7,6 @@ from utils import plot_centroids, plot_loss, calculate_clustering_scores, run_um
 from modules import CNN, RNNModel, RNNAttentionModel, SimpleAutoencoder, DeepAutoencoder
 from train import Trainer
 import numpy as np
-from transformer import TSTransformerEncoder
 
 
 class Config:
@@ -28,9 +27,6 @@ class Config:
     LSTM_MOD = False
     CNN_MOD = False
     RNN_ATTMOD = False
-    TRANSFORMER_MOD = True
-
-    
 
 
 if __name__ == '__main__':
@@ -128,23 +124,3 @@ if __name__ == '__main__':
         kmeans_labels = run_kmeans(output, n_clusters, metric, name)
         run_umap(output, target, kmeans_labels, name)
         calculate_clustering_scores(target, kmeans_labels)
-    
-    if config.TRANSFORMER_MOD == True: 
-        name = "Transformer"
-        model = TSTransformerEncoder(feat_dim=1, max_len=186, d_model=64, n_heads=8, num_layers=3, dim_feedforward=256)
-        summary(model, input_size=(1, 186))
-        trainer = Trainer(config=config, train_data=df_train, test_data=df_test, net=model, lr=lr, batch_size=batch_size, num_epochs=n_epochs)
-        history = trainer.run()
-        plot_loss(history, '%s Loss' %name)
-        output, target = trainer.eval(emb_size)
-        np.save('ouput_%s.npy' %name, output)
-        np.save('target_%s.npy' %name, target)
-        print(output.shape)
-        print(target.shape)
-        kmeans_labels = run_kmeans(output, n_clusters, metric, name)
-        np.save('kmeans_labels_%s.npy' %name, kmeans_labels)
-        print(kmeans_labels.shape)
-        run_umap(output, target, kmeans_labels, name)
-        calculate_clustering_scores(target, kmeans_labels)
-    
-
