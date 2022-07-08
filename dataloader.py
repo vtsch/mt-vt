@@ -1,6 +1,5 @@
 import numpy as np
 import pandas as pd
-import random
 
 from sklearn.utils import resample
 from sklearn.model_selection import train_test_split
@@ -10,7 +9,6 @@ from torch.utils.data import Dataset, DataLoader
 
 
 def create_irregular_ts(data):
-    
     # random boolean mask for which values will be changed
     replace_rate = 0.3
     mask = np.random.choice([0, 1], size=data.shape, p=((1-replace_rate),replace_rate)).astype(np.bool)

@@ -7,6 +7,7 @@ from utils import plot_centroids, plot_loss, calculate_clustering_scores, run_um
 from modules import CNN, RNNModel, RNNAttentionModel, SimpleAutoencoder, DeepAutoencoder
 from train import Trainer
 import numpy as np
+from transformer import TSTransformerEncoder
 
 
 class Config:
@@ -26,7 +27,9 @@ class Config:
     DEEP_AC = False
     LSTM_MOD = False
     CNN_MOD = False
-    RNN_ATTMOD = True
+    RNN_ATTMOD = False
+    TRANSFORMER_MOD = True
+
     
 
 
@@ -34,11 +37,11 @@ if __name__ == '__main__':
 
     file_name_train = 'data/mitbih_train.csv'
     file_name_test = 'data/mitbih_test.csv'
-    n_clusters = 2
+    n_clusters = 5
     emb_size = 10
     lr=1e-3
     batch_size = 32
-    n_epochs = 20
+    n_epochs = 2
     emb_size = 5
     metric = "dtw" #metric : {“euclidean”, “dtw”, “softdtw”} 
     device = 'cuda:0' if torch.cuda.is_available() else 'cpu'
@@ -126,5 +129,22 @@ if __name__ == '__main__':
         run_umap(output, target, kmeans_labels, name)
         calculate_clustering_scores(target, kmeans_labels)
     
+    if config.TRANSFORMER_MOD == True: 
+        name = "Transformer"
+        model = TSTransformerEncoder(feat_dim=1, max_len=186, d_model=64, n_heads=8, num_layers=3, dim_feedforward=256)
+        summary(model, input_size=(1, 186))
+        trainer = Trainer(config=config, train_data=df_train, test_data=df_test, net=model, lr=lr, batch_size=batch_size, num_epochs=n_epochs)
+        history = trainer.run()
+        plot_loss(history, '%s Loss' %name)
+        output, target = trainer.eval(emb_size)
+        np.save('ouput_%s.npy' %name, output)
+        np.save('target_%s.npy' %name, target)
+        print(output.shape)
+        print(target.shape)
+        kmeans_labels = run_kmeans(output, n_clusters, metric, name)
+        np.save('kmeans_labels_%s.npy' %name, kmeans_labels)
+        print(kmeans_labels.shape)
+        run_umap(output, target, kmeans_labels, name)
+        calculate_clustering_scores(target, kmeans_labels)
     
-    
+
