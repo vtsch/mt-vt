@@ -1,7 +1,7 @@
 from pickletools import TAKEN_FROM_ARGUMENT1, TAKEN_FROM_ARGUMENT4U
 import torch
 from torchsummary import summary
-from dataloader import load_raw_data_to_pd, upsample_data
+from dataloader import load_ecg_data_to_pd, upsample_data
 from clustering_algorithms import run_kmeans
 from utils import plot_centroids, plot_loss, calculate_clustering_scores, run_umap
 from modules import CNN, RNNModel, RNNAttentionModel, SimpleAutoencoder, DeepAutoencoder
@@ -45,7 +45,7 @@ if __name__ == '__main__':
     config = Config()
 
     #load data
-    df_mitbih_train, df_mitbih_test = load_raw_data_to_pd(file_name_train, file_name_test)
+    df_mitbih_train, df_mitbih_test = load_ecg_data_to_pd(file_name_train, file_name_test)
     df_train = upsample_data(df_mitbih_train, n_clusters=n_clusters, sample_size=400)
     df_test = upsample_data(df_mitbih_test, n_clusters=n_clusters, sample_size=150)
 
