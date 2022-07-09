@@ -136,8 +136,8 @@ def get_dataloader(train_data, phase: str, batch_size: int) -> DataLoader:
     '''
     train_df, val_df = generate_train_test(train_data)
     df = train_df if phase == 'train' else val_df
+    print("train data shape: ", df.shape)
     dataset = MyDataset(df)
-    print(f'{phase} dataset length: {len(dataset)}')
     dataloader = DataLoader(dataset=dataset, batch_size=batch_size, num_workers=4)
     return dataloader
 
@@ -149,10 +149,8 @@ def get_test_dataloader(test_data, batch_size: int) -> DataLoader:
     Returns:
         data generator
     '''
-    print("get test dataloader")
     test_data = test_data.reset_index(drop=True)
-    print("test data shape", test_data.shape)
+    print("test data shape: ", test_data.shape)
     dataset = MyDataset(test_data)
-    print(f'test dataset length: {len(dataset)}')
     dataloader = DataLoader(dataset=dataset, batch_size=batch_size, num_workers=0)
     return dataloader
