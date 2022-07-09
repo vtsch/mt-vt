@@ -38,7 +38,7 @@ class Trainer:
         self.net.train() if phase == 'train' else self.net.eval()
         meter = Meter()
         meter.init_metrics()
-        
+
         for i, (data, target) in enumerate(self.dataloaders[phase]):
             #data = data.to(config.device)
             #target = target.to(config.device)
