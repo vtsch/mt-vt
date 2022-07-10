@@ -7,7 +7,7 @@ from utils import plot_centroids, plot_loss, calculate_clustering_scores, run_um
 from modules import CNN, RNNModel, RNNAttentionModel, SimpleAutoencoder, DeepAutoencoder
 from train import Trainer
 import numpy as np
-from transformer import TSTransformerEncoder
+#from transformer import TSTransformerEncoder
 
 
 class Config:
@@ -143,6 +143,7 @@ if __name__ == '__main__':
         run_umap(output, target, kmeans_labels, name)
         calculate_clustering_scores(target, kmeans_labels)
     
+    """
     if config.TRANSFORMER_MOD == True: 
         name = "Transformer"
         model = TSTransformerEncoder(feat_dim=1, max_len=186, d_model=64, n_heads=8, num_layers=3, dim_feedforward=256)
@@ -159,3 +160,4 @@ if __name__ == '__main__':
         print(kmeans_labels.shape)
         run_umap(output, target, kmeans_labels, name)
         calculate_clustering_scores(target, kmeans_labels)
+    """
