@@ -22,11 +22,11 @@ class Config:
     cnn_logs = '../input/mitbih-with-synthetic/cnn.csv'
 
     PSA_DATA = True
-    RAW_MOD = True
+    RAW_MOD = False
     SIMPLE_AC = False
     DEEP_AC = False
     LSTM_MOD = False
-    CNN_MOD = False
+    CNN_MOD = True
     RNN_ATTMOD = False
     TRANSFORMER_MOD = False
 
@@ -119,7 +119,7 @@ if __name__ == '__main__':
 
     if config.CNN_MOD == True:
         name = "CNN"
-        model = CNN(emb_size=emb_size, hid_size=128)
+        model = CNN(emb_size=4, hid_size=128)
         summary(model, input_size=(1, ts_length))
         trainer = Trainer(config=config, train_data=df_train, test_data = df_test, net=model, lr=lr, batch_size=batch_size, num_epochs=n_epochs)
         history = trainer.run()
@@ -158,4 +158,4 @@ if __name__ == '__main__':
         np.save('kmeans_labels_%s.npy' %name, kmeans_labels)
         print(kmeans_labels.shape)
         run_umap(output, target, kmeans_labels, name)
-        calculate_clustering_scores(target, kmeans_labels)""
+        calculate_clustering_scores(target, kmeans_labels)
