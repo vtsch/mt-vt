@@ -88,7 +88,8 @@ class ConvNormPool(nn.Module):
 
 
 class CNN(nn.Module):
-    def __init__(self, emb_size, input_size = 1, hid_size = 256, kernel_size = 5):
+    #def __init__(self, emb_size, input_size = 1, hid_size = 256, kernel_size = 5):
+    def __init__(self, emb_size, input_size = 1, hid_size = 256, kernel_size = 1):
         super().__init__()
         #self.emb_size = emb_size
         self.conv1 = ConvNormPool(
@@ -107,15 +108,17 @@ class CNN(nn.Module):
             kernel_size=kernel_size,
         )
         self.avgpool = nn.AdaptiveAvgPool1d((1))
-        self.fc = nn.Linear(in_features=hid_size//4, out_features=emb_size)
+        #self.fc = nn.Linear(in_features=hid_size//4, out_features=emb_size)
+        self.fc = nn.Linear(in_features=hid_size//2, out_features=emb_size)
         
     def forward(self, input):
         x = self.conv1(input)
         x = self.conv2(x)
-        x = self.conv3(x)
+        #x = self.conv3(x)
         x = self.avgpool(x)        
-        # print(x.shape) # num_features * num_channels
+        #print("shape avgpool", x.shape) # num_features * num_channels
         x = x.view(-1, x.size(1) * x.size(2))
+        #print("shape view", x.shape)
         x = F.softmax(self.fc(x), dim=1)
         return x
 
