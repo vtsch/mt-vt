@@ -24,8 +24,8 @@ class Config:
     PSA_DATA = True
     RAW_MOD = False
     SIMPLE_AC = False
-    DEEP_AC = True
-    LSTM_MOD = False
+    DEEP_AC = False
+    LSTM_MOD = True
     CNN_MOD = False
     RNN_ATTMOD = False
     TRANSFORMER_MOD = False
@@ -40,7 +40,7 @@ if __name__ == '__main__':
     n_clusters = 2
     lr=1e-3
     batch_size = 32
-    n_epochs = 1
+    n_epochs = 10
     emb_size = 2
 
     # load and preprocess PSA or ECG data 
@@ -51,6 +51,7 @@ if __name__ == '__main__':
         #load data
         df_raw = load_psa_data_to_pd(file_name)
         df_psa = create_psa_df(df_raw)
+        df_psa = upsample_data(df_psa, n_clusters=n_clusters, sample_size=3000)
         #create train test split
         df_train, df_test = df_psa.iloc[:int(len(df_psa)*0.8)], df_psa.iloc[int(len(df_psa)*0.8):]
         y_real = df_train['pros_cancer']

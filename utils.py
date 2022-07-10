@@ -10,6 +10,7 @@ def plot_centroids(centroids, n_clusters, title):
     for i in range(n_clusters):
         plt.plot(centroids[i])
     plt.title(title)
+    plt.legend(['%d' %i for i in range(n_clusters)], loc='upper left', title="Clusters")
     plt.show()
 
 def plot_umap(embedding, y_pred, y_real, name):     
