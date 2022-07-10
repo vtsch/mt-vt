@@ -24,10 +24,10 @@ class Config:
     PSA_DATA = True
     RAW_MOD = False
     SIMPLE_AC = False
-    DEEP_AC = False
+    DEEP_AC = True
     LSTM_MOD = False
     CNN_MOD = False
-    RNN_ATTMOD = True
+    RNN_ATTMOD = False
     TRANSFORMER_MOD = False
 
 

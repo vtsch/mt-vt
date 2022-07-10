@@ -20,11 +20,15 @@ class SimpleAutoencoder(nn.Module):
 class DeepAutoencoder(nn.Module):
     def __init__(self):
         super(DeepAutoencoder, self).__init__()
-        self.fc1 = nn.Linear(in_features=186, out_features=128)
-        self.fc2 = nn.Linear(in_features=128, out_features=64)
-        self.fc3 = nn.Linear(in_features=64, out_features=32)
-        self.fc4 = nn.Linear(in_features=32, out_features=16)
-        self.fc5 = nn.Linear(in_features=16, out_features=5)
+        #self.fc1 = nn.Linear(in_features=186, out_features=128)
+        #self.fc2 = nn.Linear(in_features=128, out_features=64)
+        #self.fc3 = nn.Linear(in_features=64, out_features=32)
+        #self.fc4 = nn.Linear(in_features=32, out_features=16)
+        #self.fc5 = nn.Linear(in_features=16, out_features=5)
+        self.fc1 = nn.Linear(in_features=6, out_features=5)
+        self.fc2 = nn.Linear(in_features=5, out_features=4)
+        self.fc3 = nn.Linear(in_features=4, out_features=3)
+        self.fc4 = nn.Linear(in_features=3, out_features=2)
 
     def forward(self, x):
         x = x.view(x.shape[0], -1)
@@ -32,7 +36,7 @@ class DeepAutoencoder(nn.Module):
         x = self.fc2(x)
         x = self.fc3(x)
         x = self.fc4(x)
-        x = self.fc5(x)
+        #x = self.fc5(x)
         return x
 
 
