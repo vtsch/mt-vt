@@ -40,7 +40,7 @@ if __name__ == '__main__':
     n_clusters = 2
     lr=1e-3
     batch_size = 32
-    n_epochs = 4
+    n_epochs = 1
     emb_size = 2
 
     # load and preprocess PSA or ECG data 
@@ -119,7 +119,7 @@ if __name__ == '__main__':
 
     if config.CNN_MOD == True:
         name = "CNN"
-        model = CNN(emb_size=4, hid_size=128)
+        model = CNN(emb_size=emb_size, hid_size=128)
         summary(model, input_size=(1, ts_length))
         trainer = Trainer(config=config, train_data=df_train, test_data = df_test, net=model, lr=lr, batch_size=batch_size, num_epochs=n_epochs)
         history = trainer.run()
