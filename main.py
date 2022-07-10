@@ -26,8 +26,8 @@ class Config:
     SIMPLE_AC = False
     DEEP_AC = False
     LSTM_MOD = False
-    CNN_MOD = True
-    RNN_ATTMOD = False
+    CNN_MOD = False
+    RNN_ATTMOD = True
     TRANSFORMER_MOD = False
 
 
@@ -106,7 +106,7 @@ if __name__ == '__main__':
 
     if config.LSTM_MOD == True: 
         name = "LSTM"
-        model = RNNModel(input_size=ts_length, hid_size=32, emb_size=10, rnn_type='lstm', bidirectional=True)
+        model = RNNModel(input_size=ts_length, hid_size=32, emb_size=emb_size, rnn_type='lstm', bidirectional=True)
         print(model)
         trainer = Trainer(config=config, train_data=df_train, test_data=df_test, net=model, lr=lr, batch_size=batch_size, num_epochs=n_epochs)
         history = trainer.run()

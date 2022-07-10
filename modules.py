@@ -199,12 +199,14 @@ class RNNAttentionModel(nn.Module):
         rnn_type,
         emb_size,
         bidirectional,
-        kernel_size=5,
+        #kernel_size=5,
+        kernel_size=1,
     ):
         super().__init__()
  
         self.rnn_layer = RNN(
-            input_size=46, #if 2 convolutions (186/4)
+            #input_size=46, #if 2 convolutions (186/4) 
+            input_size=1, #if 2 convolutions (186/4) 
             hid_size=hid_size,
             rnn_type=rnn_type,
             bidirectional=bidirectional
