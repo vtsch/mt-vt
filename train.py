@@ -57,7 +57,6 @@ class Trainer:
         metrics = meter.get_metrics()
         metrics = {k:v / i for k, v in metrics.items()}
         df_logs = pd.DataFrame([metrics])
-        #confusion_matrix = meter.get_confusion_matrix()
         
         if phase == 'train':
             self.train_df_logs = pd.concat([self.train_df_logs, df_logs], axis=0)
@@ -87,9 +86,7 @@ class Trainer:
                 self.best_loss = val_loss
                 print('New checkpoint')
                 self.best_loss = val_loss
-                #torch.save(self.net.state_dict(), f"best_model_epoc{epoch}.pth")
             
-            #clear_output()
             print('Epoch: %d, train loss: %f, val loss: %f' %(epoch, train_loss, val_loss))
 
         return history
