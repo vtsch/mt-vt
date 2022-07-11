@@ -19,21 +19,21 @@ class Config:
     n_clusters = 2
     lr=1e-3
     batch_size = 32
-    n_epochs = 3
+    n_epochs = 10
     emb_size = 2
     model_save_directory = "./models"
     use_comet_experiments = True
 
     PSA_DATA = True
-    RAW_MOD = False
-    SIMPLE_AC = False
-    DEEP_AC = True
-    LSTM_MOD = False
-    CNN_MOD = False
-    RNN_ATTMOD = False
-    TRANSFORMER_MOD = False
+    MOD_RAW = False
+    MOD_SIMPLE_AC = False
+    MOD_DEEP_AC = False
+    MOD_LSTM = False
+    MOD_CNN = True
+    MOD_RNN_ATT = False
+    MOD_TRANSF = False
 
-    experiment_name = "raw_model" if RAW_MOD else "simple_ac" if SIMPLE_AC else "deep_ac" if DEEP_AC else "lstm_model" if LSTM_MOD else "cnn_model" if CNN_MOD else "rnn_attmodel" if RNN_ATTMOD else "transformer_model" if TRANSFORMER_MOD else "randomname"
+    experiment_name = "raw_model" if MOD_RAW else "simple_ac" if MOD_SIMPLE_AC else "deep_ac" if MOD_DEEP_AC else "lstm_model" if MOD_LSTM else "cnn_model" if MOD_CNN else "rnn_attmodel" if MOD_RNN_ATT else "transformer_model" if MOD_TRANSF else "notimplemented"
 
 
 if __name__ == '__main__':
@@ -72,7 +72,7 @@ if __name__ == '__main__':
 
     # run kmeans on raw data
 
-    if config.RAW_MOD == True:
+    if config.MOD_RAW == True:
         df_train = df_train.iloc[:,:-2]
         df_train_values = df_train.values
         kmeans_labels = run_kmeans(df_train_values, config.n_clusters, config.metric, config.experiment_name)
@@ -82,7 +82,7 @@ if __name__ == '__main__':
 
     # run embedding models and kmeans
 
-    if config.SIMPLE_AC == True:
+    if config.MOD_SIMPLE_AC == True:
         model = SimpleAutoencoder()
         summary(model, input_size=(1, ts_length))
         trainer = Trainer(config=config, experiment=experiment, train_data = df_train, test_data=df_test, net=model, lr=config.lr, batch_size=config.batch_size, num_epochs=config.n_epochs)
@@ -93,7 +93,7 @@ if __name__ == '__main__':
         run_umap(output, target, kmeans_labels, config.experiment_name, experiment)
         calculate_clustering_scores(target, kmeans_labels, experiment)
 
-    if config.DEEP_AC == True:
+    if config.MOD_DEEP_AC == True:
         model = DeepAutoencoder()
         summary(model, input_size=(1, ts_length))
         trainer = Trainer(config=config, experiment=experiment, train_data = df_train, test_data=df_test, net=model, lr=config.lr, batch_size=config.batch_size, num_epochs=config.n_epochs)
@@ -103,7 +103,7 @@ if __name__ == '__main__':
         run_umap(output, target, kmeans_labels, config.experiment_name, experiment)
         calculate_clustering_scores(target, kmeans_labels, experiment)
 
-    if config.LSTM_MOD == True: 
+    if config.MOD_LSTM == True: 
         model = RNNModel(input_size=ts_length, hid_size=32, emb_size=config.emb_size, rnn_type='lstm', bidirectional=True)
         print(model)
         trainer = Trainer(config=config, experiment=experiment, train_data=df_train, test_data=df_test, net=model, lr=config.lr, batch_size=config.batch_size, num_epochs=config.n_epochs)
@@ -114,7 +114,7 @@ if __name__ == '__main__':
         run_umap(output, target, kmeans_labels, config.experiment_name, experiment)
         calculate_clustering_scores(target, kmeans_labels, experiment)
 
-    if config.CNN_MOD == True:
+    if config.MOD_CNN == True:
         model = CNN(emb_size=config.emb_size, hid_size=128)
         summary(model, input_size=(1, ts_length))
         trainer = Trainer(config=config, experiment=experiment, train_data=df_train, test_data = df_test, net=model, lr=config.lr, batch_size=config.batch_size, num_epochs=config.n_epochs)
@@ -125,7 +125,7 @@ if __name__ == '__main__':
         run_umap(output, target, kmeans_labels, config.experiment_name, experiment)
         calculate_clustering_scores(target, kmeans_labels, experiment)
     
-    if config.RNN_ATTMOD == True: 
+    if config.MOD_RNN_ATT == True: 
         model = RNNAttentionModel(input_size=1, hid_size=32, emb_size=config.emb_size, rnn_type='lstm', bidirectional=False)
         summary(model, input_size=(1, ts_length))
         trainer = Trainer(config=config, experiment=experiment, train_data=df_train, test_data=df_test, net=model, lr=config.lr, batch_size=config.batch_size, num_epochs=config.n_epochs)
