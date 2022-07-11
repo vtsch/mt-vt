@@ -1,5 +1,5 @@
 from tslearn.clustering import TimeSeriesKMeans
-from utils import plot_centroids
+from plots import plot_centroids
 
 def kmeans(data, n_clusters, metric):
     # tskmeans takes data of shape (n_ts, sz, d)
