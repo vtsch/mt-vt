@@ -35,7 +35,7 @@ class Trainer:
 
     
     def _train_epoch(self, phase):
-        
+
         self.net.train() if phase == 'train' else self.net.eval()
         meter = Meter()
         meter.init_metrics()
@@ -63,18 +63,20 @@ class Trainer:
             self.val_df_logs = pd.concat([self.val_df_logs, df_logs], axis=0)
         
         # show logs
-        print('phase: {}, {}: {}, {}: {}, {}: {}'
+        print('{} phase | {}: {}, {}: {}, {}: {}'
               .format(phase, *(x for kv in metrics.items() for x in kv))
-             )      
-        return df_logs, loss
+             )
+
+        return loss     
     
     def run(self):
         for epoch in range(self.num_epochs):
-            logs, train_loss = self._train_epoch(phase='train')
-            self.experiment.log_metrics(logs, epoch=epoch)
+            print('Epoch: %d | time: %s' %(epoch, time.strftime('%H:%M:%S')))
+            train_loss = self._train_epoch(phase='train')
+            self.experiment.log_metrics(self.train_df_logs, epoch=epoch)
             with torch.no_grad():
-                logs, val_loss = self._train_epoch(phase='val')
-                self.experiment.log_metrics(logs, epoch=epoch)
+                val_loss = self._train_epoch(phase='val')
+                self.experiment.log_metrics(self.val_df_logs, epoch=epoch)
                 self.scheduler.step()
             
             if val_loss < self.best_loss:
@@ -82,8 +84,6 @@ class Trainer:
                 print('New checkpoint')
                 self.best_loss = val_loss
                 #save best model here
-            
-            print('Epoch: %d, train loss: %f, val loss: %f | time: %s' %(epoch, train_loss, val_loss, time.strftime('%H:%M:%S')))
 
     
     def eval(self, emb_size):
