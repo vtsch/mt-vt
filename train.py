@@ -63,9 +63,9 @@ class Trainer:
             self.val_df_logs = pd.concat([self.val_df_logs, df_logs], axis=0)
         
         # show logs
-        print('{}: {}, {}: {}, {}: {}'
-              .format(*(x for kv in metrics.items() for x in kv))
-             )       
+        print('phase: {}, {}: {}, {}: {}, {}: {}'
+              .format(phase, *(x for kv in metrics.items() for x in kv))
+             )      
         return df_logs, loss
     
     def run(self):

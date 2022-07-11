@@ -124,8 +124,6 @@ def generate_train_test(data):
         data, test_size=0.15, random_state=42, stratify=data['pros_cancer']
     )
     train_df, val_df = train_df.reset_index(drop=True), val_df.reset_index(drop=True)
-    #train_df = train_df.iloc[:,:-2]
-    #val_df = val_df.iloc[:,:-2]
     return train_df, val_df
 
 def get_dataloader(train_data, phase: str, batch_size: int) -> DataLoader:
@@ -153,7 +151,6 @@ def get_test_dataloader(test_data, batch_size: int) -> DataLoader:
         data generator
     '''
     test_data = test_data.reset_index(drop=True)
-    #test_data = test_data.iloc[:,:-2]
     dataset = MyDataset(test_data)
     print(f'test data shape: {dataset.df.shape}')
     dataloader = DataLoader(dataset=dataset, batch_size=batch_size, num_workers=0)

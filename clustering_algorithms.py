@@ -6,7 +6,7 @@ def plot_centroids(centroids, n_clusters, title, experiment):
         plt.plot(centroids[i])
     plt.title(title)
     plt.legend(['%d' %i for i in range(n_clusters)], loc='upper left', title="Clusters")
-    experiment.log_figure(figure=plt)
+    experiment.log_figure(figure=plt, figure_name="centroids_%s" %title)
 
 def kmeans(data, n_clusters, metric):
     # tskmeans takes data of shape (n_ts, sz, d)

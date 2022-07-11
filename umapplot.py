@@ -17,7 +17,7 @@ def plot_umap(embedding, y_pred, y_real, name, experiment):
     scatter2 = ax2.scatter(embedding[:,0], embedding[:,1], s=2, c=y_real, cmap=cmap, norm=norm)
     ax2.set_title('Predicted')
     ax2.legend(*scatter2.legend_elements(), loc="upper left", title="Clusters")
-    experiment.log_figure(figure=plt)
+    experiment.log_figure(figure=plt, figure_name="umap_%s" %name)
 
 def run_umap(output, target, kmeans_labels, name, experiment):
     reducer = umap.UMAP(n_components=2)
