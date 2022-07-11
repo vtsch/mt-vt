@@ -59,9 +59,7 @@ class Trainer:
         df_logs = pd.DataFrame([metrics])
         
         if phase == 'train':
-            print(self.train_df_logs)
             self.train_df_logs = pd.concat([self.train_df_logs, df_logs], axis=0)
-            print(self.train_df_logs)
         else:
             self.val_df_logs = pd.concat([self.val_df_logs, df_logs], axis=0)
         
