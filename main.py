@@ -5,7 +5,7 @@ from torchsummary import summary
 from dataloader import load_ecg_data_to_pd, upsample_data, load_psa_data_to_pd, create_psa_df
 from clustering_algorithms import run_kmeans
 from metrics import calculate_clustering_scores
-from plots import plot_umap, plot_centroids, plot_loss, run_umap
+from umapplot import run_umap
 from modules import CNN, RNNModel, RNNAttentionModel, SimpleAutoencoder, DeepAutoencoder
 from train import Trainer
 from utils import get_bunch_config_from_json, build_save_path, build_comet_logger
@@ -19,18 +19,18 @@ class Config:
     n_clusters = 2
     lr=1e-3
     batch_size = 32
-    n_epochs = 5
+    n_epochs = 3
     emb_size = 2
     model_save_directory = "./models"
     use_comet_experiments = True
 
     PSA_DATA = True
     RAW_MOD = False
-    SIMPLE_AC = False
+    SIMPLE_AC = True
     DEEP_AC = False
     LSTM_MOD = False
     CNN_MOD = False
-    RNN_ATTMOD = True
+    RNN_ATTMOD = False
     TRANSFORMER_MOD = False
 
     experiment_name = "raw_model" if RAW_MOD else "simple_ac" if SIMPLE_AC else "deep_ac" if DEEP_AC else "lstm_model" if LSTM_MOD else "cnn_model" if CNN_MOD else "rnn_attmodel" if RNN_ATTMOD else "transformer_model" if TRANSFORMER_MOD else "randomname"
@@ -89,8 +89,8 @@ if __name__ == '__main__':
         trainer.run()
         output, target = trainer.eval(config.emb_size)
     
-        kmeans_labels = run_kmeans(output,config.n_clusters, config.metric, config.experiment_name)
-        run_umap(output, target, kmeans_labels, config.experiment_name)
+        kmeans_labels = run_kmeans(output, config.n_clusters, config.metric, config.experiment_name, experiment)
+        run_umap(output, target, kmeans_labels, config.experiment_name, experiment)
         calculate_clustering_scores(target, kmeans_labels)
 
     if config.DEEP_AC == True:

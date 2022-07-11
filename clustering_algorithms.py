@@ -1,5 +1,12 @@
 from tslearn.clustering import TimeSeriesKMeans
-from plots import plot_centroids
+import matplotlib.pyplot as plt
+
+def plot_centroids(centroids, n_clusters, title, experiment):
+    for i in range(n_clusters):
+        plt.plot(centroids[i])
+    plt.title(title)
+    plt.legend(['%d' %i for i in range(n_clusters)], loc='upper left', title="Clusters")
+    experiment.log_figure(figure=plt)
 
 def kmeans(data, n_clusters, metric):
     # tskmeans takes data of shape (n_ts, sz, d)
@@ -9,9 +16,9 @@ def kmeans(data, n_clusters, metric):
     centroids = kmeans.cluster_centers_
     return centroids, labels
 
-def run_kmeans(output, n_clusters, metric, name):
+def run_kmeans(output, n_clusters, metric, name, experiment):
     centroids, kmeans_labels = kmeans(output, n_clusters, metric)
-    plot_centroids(centroids, n_clusters, "%s kmeans centroids %s" %(metric, name))
+    plot_centroids(centroids, n_clusters, "%s kmeans centroids %s" %(metric, name), experiment)
     return kmeans_labels
 
 
