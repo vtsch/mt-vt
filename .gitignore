@@ -1,2 +1,4 @@
-
+#ignore pycache
 *.pyc
+#ignore data folder
+find . -name "data" -prune -o -name "*.pyc" -exec rm -rf {} \;
