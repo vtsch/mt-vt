@@ -70,15 +70,15 @@ class Trainer:
         return df_logs, loss
     
     def run(self):
-        history = dict(train_loss=[], val_loss=[])
+        #history = dict(train_loss=[], val_loss=[])
 
         for epoch in range(self.num_epochs):
             logs, train_loss = self._train_epoch(phase='train')
-            history['train_loss'].append(train_loss.detach().numpy())
+            #history['train_loss'].append(train_loss.detach().numpy())
             self.experiment.log_metrics(logs, epoch=epoch)
             with torch.no_grad():
                 logs, val_loss = self._train_epoch(phase='val')
-                history['val_loss'].append(val_loss.detach().numpy())
+                #history['val_loss'].append(val_loss.detach().numpy())
                 self.experiment.log_metrics(logs, epoch=epoch)
                 self.scheduler.step()
             
@@ -89,7 +89,6 @@ class Trainer:
             
             print('Epoch: %d, train loss: %f, val loss: %f' %(epoch, train_loss, val_loss))
 
-        return history
     
     def eval(self, emb_size):
         #self.net.eval()
