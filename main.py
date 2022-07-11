@@ -1,5 +1,6 @@
 import torch
 import os
+from comet_ml import Experiment
 from torchsummary import summary
 from dataloader import load_ecg_data_to_pd, upsample_data, load_psa_data_to_pd, create_psa_df
 from clustering_algorithms import run_kmeans
@@ -43,8 +44,7 @@ if __name__ == '__main__':
     os.makedirs(save_path)
     config.model_save_path = save_path
 
-    logger = build_comet_logger(save_path, config)
-    logger.log_hyperparams(config)
+    experiment = build_comet_logger(config)
 
     # load and preprocess PSA or ECG data 
     if config.PSA_DATA == True:
@@ -87,7 +87,7 @@ if __name__ == '__main__':
         name = "Simple AC"
         model = SimpleAutoencoder()
         summary(model, input_size=(1, ts_length))
-        trainer = Trainer(config=config, train_data = df_train, test_data=df_test, net=model, lr=config.lr, batch_size=config.batch_size, num_epochs=config.n_epochs)
+        trainer = Trainer(config=config, experiment=experiment, train_data = df_train, test_data=df_test, net=model, lr=config.lr, batch_size=config.batch_size, num_epochs=config.n_epochs)
         history = trainer.run()
         plot_loss(history, '%s Loss' %name)
         output, target = trainer.eval(config.emb_size)
@@ -100,7 +100,7 @@ if __name__ == '__main__':
         name = "Deep AC"
         model = DeepAutoencoder()
         summary(model, input_size=(1, ts_length))
-        trainer = Trainer(config=config, train_data = df_train, test_data=df_test, net=model, lr=config.lr, batch_size=config.batch_size, num_epochs=config.n_epochs)
+        trainer = Trainer(config=config, experiment=experiment, train_data = df_train, test_data=df_test, net=model, lr=config.lr, batch_size=config.batch_size, num_epochs=config.n_epochs)
         history = trainer.run()
         plot_loss(history, '%s Loss' %name)
         output, target = trainer.eval(config.emb_size)
@@ -112,7 +112,7 @@ if __name__ == '__main__':
         name = "LSTM"
         model = RNNModel(input_size=ts_length, hid_size=32, emb_size=config.emb_size, rnn_type='lstm', bidirectional=True)
         print(model)
-        trainer = Trainer(config=config, train_data=df_train, test_data=df_test, net=model, lr=config.lr, batch_size=config.batch_size, num_epochs=config.n_epochs)
+        trainer = Trainer(config=config, experiment=experiment, train_data=df_train, test_data=df_test, net=model, lr=config.lr, batch_size=config.batch_size, num_epochs=config.n_epochs)
         history = trainer.run()
         plot_loss(history, '%s Loss' %name)
         output, target = trainer.eval(config.emb_size)
@@ -125,7 +125,7 @@ if __name__ == '__main__':
         name = "CNN"
         model = CNN(emb_size=config.emb_size, hid_size=128)
         summary(model, input_size=(1, ts_length))
-        trainer = Trainer(config=config, train_data=df_train, test_data = df_test, net=model, lr=config.lr, batch_size=config.batch_size, num_epochs=config.n_epochs)
+        trainer = Trainer(config=config, experiment=experiment, train_data=df_train, test_data = df_test, net=model, lr=config.lr, batch_size=config.batch_size, num_epochs=config.n_epochs)
         history = trainer.run()
         plot_loss(history, '%s Loss' %name)
         output, target = trainer.eval(config.emb_size)
@@ -138,7 +138,7 @@ if __name__ == '__main__':
         name = "RNN Attention Module"
         model = RNNAttentionModel(input_size=1, hid_size=32, emb_size=config.emb_size, rnn_type='lstm', bidirectional=False)
         summary(model, input_size=(1, ts_length))
-        trainer = Trainer(config=config, train_data=df_train, test_data=df_test, net=model, lr=config.lr, batch_size=config.batch_size, num_epochs=config.n_epochs)
+        trainer = Trainer(config=config, experiment=experiment, train_data=df_train, test_data=df_test, net=model, lr=config.lr, batch_size=config.batch_size, num_epochs=config.n_epochs)
         history = trainer.run()
         plot_loss(history, '%s Loss' %name)
         output, target = trainer.eval(config.emb_size)

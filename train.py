@@ -1,4 +1,5 @@
 import time
+from comet_ml import Experiment
 import torch
 import torch.nn as nn
 from torch.optim import AdamW, Adam
@@ -14,10 +15,11 @@ import numpy as np
 #https://www.kaggle.com/code/polomarco/ecg-classification-cnn-lstm-attention-mechanism 
 
 class Trainer:
-    def __init__(self, config, train_data, test_data, net, lr, batch_size, num_epochs):
+    def __init__(self, config, experiment, train_data, test_data, net, lr, batch_size, num_epochs):
         #self.net = net.to(config.device)
         self.net = net.to('cpu')
         self.config = config
+        self.experiment = experiment
         self.num_epochs = num_epochs
         self.criterion = nn.CrossEntropyLoss()
         self.optimizer = Adam(self.net.parameters(), lr=lr)
@@ -66,17 +68,19 @@ class Trainer:
         print('{}: {}, {}: {}, {}: {}'
               .format(*(x for kv in metrics.items() for x in kv))
              )       
-        return loss
+        return df_logs, loss
     
     def run(self):
         history = dict(train_loss=[], val_loss=[])
 
         for epoch in range(self.num_epochs):
-            train_loss = self._train_epoch(phase='train')
+            logs, train_loss = self._train_epoch(phase='train')
             history['train_loss'].append(train_loss.detach().numpy())
+            self.experiment.log_metrics(logs, epoch=epoch)
             with torch.no_grad():
-                val_loss = self._train_epoch(phase='val')
+                logs, val_loss = self._train_epoch(phase='val')
                 history['val_loss'].append(val_loss.detach().numpy())
+                self.experiment.log_metrics(logs, epoch=epoch)
                 self.scheduler.step()
             
             if val_loss < self.best_loss:

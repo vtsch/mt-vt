@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 import matplotlib.colors as pltcolors
 import umap.umap_ as umap
+import numpy as np
 
 def plot_centroids(centroids, n_clusters, title):
     for i in range(n_clusters):

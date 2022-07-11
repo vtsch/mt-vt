@@ -1,4 +1,5 @@
 
+from comet_ml import Experiment
 import argparse
 import json
 import os
@@ -39,13 +40,12 @@ def build_save_path(config: Bunch) -> str:
         config.model_save_directory, config.experiment_name, current_timestamp
     )
 
-def build_comet_logger(save_dir: str, config: Bunch) -> CometLogger:
-    return CometLogger(
-        save_dir=save_dir,
-        workspace="vtsch",
-        project_name="mt-vt",
+def build_comet_logger(config: Bunch) -> Experiment:
+    experiment = Experiment(
         api_key="HzUytPeFFfa9aiGmafVP6CMkP"if config.use_comet_experiments else None,
-        experiment_name=config.experiment_name,
+        project_name="mt-vt",
+        workspace="vtsch",
     )
-
-    
+    experiment.set_name(config.experiment_name)
+    experiment.log_parameters(config)
+    return experiment
