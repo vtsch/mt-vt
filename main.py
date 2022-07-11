@@ -1,47 +1,50 @@
-from pickletools import TAKEN_FROM_ARGUMENT1, TAKEN_FROM_ARGUMENT4U
 import torch
+import os
 from torchsummary import summary
 from dataloader import load_ecg_data_to_pd, upsample_data, load_psa_data_to_pd, create_psa_df
 from clustering_algorithms import run_kmeans
-from utils import plot_centroids, plot_loss, calculate_clustering_scores, run_umap
+from metrics import calculate_clustering_scores
+from plots import plot_umap, plot_centroids, plot_loss, run_umap
 from modules import CNN, RNNModel, RNNAttentionModel, SimpleAutoencoder, DeepAutoencoder
 from train import Trainer
-import numpy as np
+from utils import get_bunch_config_from_json, build_save_path, build_comet_logger
 #from transformer import TSTransformerEncoder
 
 
 class Config:
     seed = 2021
     device = 'cuda:0' if torch.cuda.is_available() else 'cpu'
-    attn_state_path = '../input/mitbih-with-synthetic/attn.pth'
-    lstm_state_path = '../input/mitbih-with-synthetic/lstm.pth'
-    cnn_state_path = '../input/mitbih-with-synthetic/cnn.pth'
-    
-    attn_logs = '../input/mitbih-with-synthetic/attn.csv'
-    lstm_logs = '../input/mitbih-with-synthetic/lstm.csv'
-    cnn_logs = '../input/mitbih-with-synthetic/cnn.csv'
+    metric = "dtw" #metric : {“euclidean”, “dtw”, “softdtw”} 
+    n_clusters = 2
+    lr=1e-3
+    batch_size = 32
+    n_epochs = 60
+    emb_size = 2
+    model_save_directory = "./models"
+    use_comet_experiments = True
 
     PSA_DATA = True
     RAW_MOD = False
     SIMPLE_AC = False
     DEEP_AC = False
-    LSTM_MOD = True
+    LSTM_MOD = False
     CNN_MOD = False
-    RNN_ATTMOD = False
+    RNN_ATTMOD = True
     TRANSFORMER_MOD = False
 
+    experiment_name = "raw_model" if RAW_MOD else "simple_ac" if SIMPLE_AC else "deep_ac" if DEEP_AC else "lstm_model" if LSTM_MOD else "cnn_model" if CNN_MOD else "rnn_attmodel" if RNN_ATTMOD else "transformer_model" if TRANSFORMER_MOD else "randomname"
 
 
 if __name__ == '__main__':
 
     config = Config()
-    metric = "dtw" #metric : {“euclidean”, “dtw”, “softdtw”} 
-    device = 'cuda:0' if torch.cuda.is_available() else 'cpu'
-    n_clusters = 2
-    lr=1e-3
-    batch_size = 32
-    n_epochs = 10
-    emb_size = 2
+
+    save_path = build_save_path(config)
+    os.makedirs(save_path)
+    config.model_save_path = save_path
+
+    logger = build_comet_logger(save_path, config)
+    logger.log_hyperparams(config)
 
     # load and preprocess PSA or ECG data 
     if config.PSA_DATA == True:
@@ -51,7 +54,7 @@ if __name__ == '__main__':
         #load data
         df_raw = load_psa_data_to_pd(file_name)
         df_psa = create_psa_df(df_raw)
-        df_psa = upsample_data(df_psa, n_clusters=n_clusters, sample_size=3000)
+        df_psa = upsample_data(df_psa, n_clusters=config.n_clusters, sample_size=3000)
         #create train test split
         df_train, df_test = df_psa.iloc[:int(len(df_psa)*0.8)], df_psa.iloc[int(len(df_psa)*0.8):]
         y_real = df_train['pros_cancer']
@@ -63,8 +66,8 @@ if __name__ == '__main__':
 
         #load data
         df_mitbih_train, df_mitbih_test = load_ecg_data_to_pd(file_name_train, file_name_test)
-        df_train = upsample_data(df_mitbih_train, n_clusters=n_clusters, sample_size=400)
-        df_test = upsample_data(df_mitbih_test, n_clusters=n_clusters, sample_size=150)
+        df_train = upsample_data(df_mitbih_train, n_clusters=config.n_clusters, sample_size=400)
+        df_test = upsample_data(df_mitbih_test, n_clusters=config.n_clusters, sample_size=150)
         y_real = df_train['class']
 
     # run kmeans on raw data
@@ -73,7 +76,7 @@ if __name__ == '__main__':
         name = "Raw Data"
         df_train = df_train.iloc[:,:-2]
         df_train_values = df_train.values
-        kmeans_labels = run_kmeans(df_train_values, n_clusters, metric, name)
+        kmeans_labels = run_kmeans(df_train_values, config.n_clusters, config.metric, name)
         run_umap(df_train, y_real, kmeans_labels, name)
         calculate_clustering_scores(y_real, kmeans_labels)
 
@@ -84,12 +87,12 @@ if __name__ == '__main__':
         name = "Simple AC"
         model = SimpleAutoencoder()
         summary(model, input_size=(1, ts_length))
-        trainer = Trainer(config=config, train_data = df_train, test_data=df_test, net=model, lr=lr, batch_size=batch_size, num_epochs=n_epochs)
+        trainer = Trainer(config=config, train_data = df_train, test_data=df_test, net=model, lr=config.lr, batch_size=config.batch_size, num_epochs=config.n_epochs)
         history = trainer.run()
         plot_loss(history, '%s Loss' %name)
-        output, target = trainer.eval(emb_size)
+        output, target = trainer.eval(config.emb_size)
     
-        kmeans_labels = run_kmeans(output, n_clusters, metric, name)
+        kmeans_labels = run_kmeans(output,config.n_clusters, config.metric, name)
         run_umap(output, target, kmeans_labels, name)
         calculate_clustering_scores(target, kmeans_labels)
 
@@ -97,50 +100,50 @@ if __name__ == '__main__':
         name = "Deep AC"
         model = DeepAutoencoder()
         summary(model, input_size=(1, ts_length))
-        trainer = Trainer(config=config, train_data = df_train, test_data=df_test, net=model, lr=lr, batch_size=batch_size, num_epochs=n_epochs)
+        trainer = Trainer(config=config, train_data = df_train, test_data=df_test, net=model, lr=config.lr, batch_size=config.batch_size, num_epochs=config.n_epochs)
         history = trainer.run()
         plot_loss(history, '%s Loss' %name)
-        output, target = trainer.eval(emb_size)
-        kmeans_labels = run_kmeans(output, n_clusters, metric, name)
+        output, target = trainer.eval(config.emb_size)
+        kmeans_labels = run_kmeans(output, config.n_clusters, config.metric, name)
         run_umap(output, target, kmeans_labels, name)
         calculate_clustering_scores(target, kmeans_labels)
 
     if config.LSTM_MOD == True: 
         name = "LSTM"
-        model = RNNModel(input_size=ts_length, hid_size=32, emb_size=emb_size, rnn_type='lstm', bidirectional=True)
+        model = RNNModel(input_size=ts_length, hid_size=32, emb_size=config.emb_size, rnn_type='lstm', bidirectional=True)
         print(model)
-        trainer = Trainer(config=config, train_data=df_train, test_data=df_test, net=model, lr=lr, batch_size=batch_size, num_epochs=n_epochs)
+        trainer = Trainer(config=config, train_data=df_train, test_data=df_test, net=model, lr=config.lr, batch_size=config.batch_size, num_epochs=config.n_epochs)
         history = trainer.run()
         plot_loss(history, '%s Loss' %name)
-        output, target = trainer.eval(emb_size)
+        output, target = trainer.eval(config.emb_size)
 
-        kmeans_labels = run_kmeans(output, n_clusters, metric, name)
+        kmeans_labels = run_kmeans(output, config.n_clusters, config.metric, name)
         run_umap(output, target, kmeans_labels, name)
         calculate_clustering_scores(target, kmeans_labels)
 
     if config.CNN_MOD == True:
         name = "CNN"
-        model = CNN(emb_size=emb_size, hid_size=128)
+        model = CNN(emb_size=config.emb_size, hid_size=128)
         summary(model, input_size=(1, ts_length))
-        trainer = Trainer(config=config, train_data=df_train, test_data = df_test, net=model, lr=lr, batch_size=batch_size, num_epochs=n_epochs)
+        trainer = Trainer(config=config, train_data=df_train, test_data = df_test, net=model, lr=config.lr, batch_size=config.batch_size, num_epochs=config.n_epochs)
         history = trainer.run()
         plot_loss(history, '%s Loss' %name)
-        output, target = trainer.eval(emb_size)
+        output, target = trainer.eval(config.emb_size)
 
-        kmeans_labels = run_kmeans(output, n_clusters, metric, name)
+        kmeans_labels = run_kmeans(output, config.n_clusters, config.metric, name)
         run_umap(output, target, kmeans_labels, name)
         calculate_clustering_scores(target, kmeans_labels)
     
     if config.RNN_ATTMOD == True: 
         name = "RNN Attention Module"
-        model = RNNAttentionModel(input_size=1, hid_size=32, emb_size=emb_size, rnn_type='lstm', bidirectional=False)
+        model = RNNAttentionModel(input_size=1, hid_size=32, emb_size=config.emb_size, rnn_type='lstm', bidirectional=False)
         summary(model, input_size=(1, ts_length))
-        trainer = Trainer(config=config, train_data=df_train, test_data=df_test, net=model, lr=lr, batch_size=batch_size, num_epochs=n_epochs)
+        trainer = Trainer(config=config, train_data=df_train, test_data=df_test, net=model, lr=config.lr, batch_size=config.batch_size, num_epochs=config.n_epochs)
         history = trainer.run()
         plot_loss(history, '%s Loss' %name)
-        output, target = trainer.eval(emb_size)
+        output, target = trainer.eval(config.emb_size)
 
-        kmeans_labels = run_kmeans(output, n_clusters, metric, name)
+        kmeans_labels = run_kmeans(output, config.n_clusters, config.metric, name)
         run_umap(output, target, kmeans_labels, name)
         calculate_clustering_scores(target, kmeans_labels)
     
