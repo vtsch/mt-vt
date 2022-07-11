@@ -9,14 +9,13 @@ def calculate_clustering_scores(y_true, y_pred, experiment):
     mi = mutual_info_score(y_true, y_pred)
     ami = adjusted_mutual_info_score(y_true, y_pred)
     nmi = normalized_mutual_info_score(y_true, y_pred)
-    vmi = v_measure_score(y_true, y_pred)
     print('Clustering Accuracy: {:.3f}'.format(accuracy))
     print('Clustering RI: {:.3f}'.format(ri))
     print('Clustering ARI: {:.3f}'.format(ari))
     print('Clustering MI: {:.3f}'.format(mi))
     print('Clustering AMI: {:.3f}'.format(ami))
     print('Clustering NMI: {:.3f}'.format(nmi))
-    experiment.log_metrics({"Clustering Accuracy": accuracy, "Clustering RI": ri, "Clustering ARI": ari, "Clustering MI": mi, "Clustering AMI": ami, "Clustering NMI": nmi, "Clustering VMI": vmi})
+    experiment.log_metrics({"Clustering Accuracy": accuracy, "Clustering RI": ri, "Clustering ARI": ari, "Clustering MI": mi, "Clustering AMI": ami, "Clustering NMI": nmi})
 
 
 class Meter:
