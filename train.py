@@ -59,6 +59,7 @@ class Trainer:
         df_logs = pd.DataFrame([metrics])
         
         if phase == 'train':
+
             self.train_df_logs = pd.concat([self.train_df_logs, df_logs], axis=0)
         else:
             self.val_df_logs = pd.concat([self.val_df_logs, df_logs], axis=0)
@@ -68,16 +69,16 @@ class Trainer:
               .format(phase, *(x for kv in metrics.items() for x in kv))
              )
 
-        return loss     
+        return loss, df_logs    
     
     def run(self):
         for epoch in range(self.num_epochs):
             print('Epoch: %d | time: %s' %(epoch, time.strftime('%H:%M:%S')))
-            train_loss = self._train_epoch(phase='train')
-            self.experiment.log_metrics(self.train_df_logs, epoch=epoch)
+            train_loss, train_logs = self._train_epoch(phase='train')
+            self.experiment.log_metrics(dic=train_logs, epoch=epoch)
             with torch.no_grad():
-                val_loss = self._train_epoch(phase='val')
-                self.experiment.log_metrics(self.val_df_logs, epoch=epoch)
+                val_loss, val_logs = self._train_epoch(phase='val')
+                self.experiment.log_metrics(dic=val_logs, epoch=epoch)
                 self.scheduler.step()
             
             if val_loss < self.best_loss:

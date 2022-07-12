@@ -19,17 +19,17 @@ class Config:
     n_clusters = 2
     lr=1e-3
     batch_size = 32
-    n_epochs = 10
+    n_epochs = 2
     emb_size = 2
     model_save_directory = "./models"
     use_comet_experiments = True
 
     PSA_DATA = True
-    MOD_RAW = False
+    MOD_RAW = True
     MOD_SIMPLE_AC = False
     MOD_DEEP_AC = False
     MOD_LSTM = False
-    MOD_CNN = True
+    MOD_CNN = False
     MOD_RNN_ATT = False
     MOD_TRANSF = False
 
@@ -75,9 +75,9 @@ if __name__ == '__main__':
     if config.MOD_RAW == True:
         df_train = df_train.iloc[:,:-2]
         df_train_values = df_train.values
-        kmeans_labels = run_kmeans(df_train_values, config.n_clusters, config.metric, config.experiment_name)
-        run_umap(df_train, y_real, kmeans_labels, config.experiment_name)
-        calculate_clustering_scores(y_real, kmeans_labels)
+        kmeans_labels = run_kmeans(df_train_values, config.n_clusters, config.metric, config.experiment_name, experiment)
+        run_umap(df_train, y_real, kmeans_labels, config.experiment_name, experiment)
+        calculate_clustering_scores(y_real, kmeans_labels, experiment)
 
 
     # run embedding models and kmeans
