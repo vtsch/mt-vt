@@ -6,6 +6,7 @@ from torch import nn, Tensor
 import torch.optim as optim
 import torch.nn.functional as F
 from torch.nn.modules import MultiheadAttention, Linear, Dropout, BatchNorm1d, TransformerEncoderLayer
+from x_transformers import XTransformer, TransformerWrapper, Encoder
 
 # from https://github.com/gzerveas/mvts_transformer/blob/master/src/models/ts_transformer.py
 

@@ -1,5 +1,6 @@
 import torch
 import os
+import tqdm
 from comet_ml import Experiment
 from torchsummary import summary
 from dataloader import load_ecg_data_to_pd, upsample_data, load_psa_data_to_pd, create_psa_df
@@ -9,6 +10,7 @@ from umapplot import run_umap
 from modules import CNN, RNNModel, RNNAttentionModel, SimpleAutoencoder, DeepAutoencoder
 from train import Trainer
 from utils import get_bunch_config_from_json, build_save_path, build_comet_logger
+from x_transformers import XTransformer, TransformerWrapper, Encoder
 #from transformer import TSTransformerEncoder
 
 
@@ -19,21 +21,20 @@ class Config:
     n_clusters = 2
     lr=1e-3
     batch_size = 32
-    n_epochs = 30
+    n_epochs = 50
     emb_size = 4
     model_save_directory = "./models"
-    use_comet_experiments = True
 
     PSA_DATA = True
     MOD_RAW = False
     MOD_SIMPLE_AC = False
     MOD_DEEP_AC = False
     MOD_LSTM = False
-    MOD_CNN = True
+    MOD_CNN = False
     MOD_RNN_ATT = False
-    MOD_TRANSF = False
+    MOD_TRANSFORMER = True
 
-    experiment_name = "raw_model" if MOD_RAW else "simple_ac" if MOD_SIMPLE_AC else "deep_ac" if MOD_DEEP_AC else "lstm_model" if MOD_LSTM else "cnn_model" if MOD_CNN else "rnn_attmodel" if MOD_RNN_ATT else "transformer_model" if MOD_TRANSF else "notimplemented"
+    experiment_name = "raw_model" if MOD_RAW else "simple_ac" if MOD_SIMPLE_AC else "deep_ac" if MOD_DEEP_AC else "lstm_model" if MOD_LSTM else "cnn_model" if MOD_CNN else "rnn_attmodel" if MOD_RNN_ATT else "transformer_model" if MOD_TRANSFORMER else "notimplemented"
 
 
 if __name__ == '__main__':
@@ -136,16 +137,48 @@ if __name__ == '__main__':
         run_umap(output, target, kmeans_labels, config.experiment_name, experiment)
         calculate_clustering_scores(target, kmeans_labels, experiment)
     
-    """
-    if config.TRANSFORMER_MOD == True: 
-        name = "Transformer"
-        model = TSTransformerEncoder(feat_dim=1, max_len=186, d_model=64, n_heads=8, num_layers=3, dim_feedforward=256)
-        summary(model, input_size=(1, 186))
-        trainer = Trainer(config=config, train_data=df_train, test_data=df_test, net=model, lr=lr, batch_size=batch_size, num_epochs=n_epochs)
-        trainer.run()
-        output, target = trainer.eval(emb_size)
+    def cycle(loader):
+        while True:
+            #prefix = torch.ones((config.batch_size, 1)).long().to(config.device)
+            #src = torch.randint(2, 6+1, (config.batch_size, ts_length)).long().to(config.device)
+            #tgt = torch.cat((prefix, src, src), 1)
+            #src_mask = torch.ones(config.batch_size, src.shape[1]).bool().to(config.device)
+            #tgt_mask = torch.ones(config.batch_size, tgt.shape[1]).bool().to(config.device)
+            #yield (src, tgt, src_mask, tgt_mask)
+            for data in loader:
+                yield data
 
-        kmeans_labels = run_kmeans(output, n_clusters, metric, config.experiment_name)
-        run_umap(output, target, kmeans_labels, config.experiment_name)
-        calculate_clustering_scores(target, kmeans_labels)
-    """
+    if config.MOD_TRANSFORMER == True: 
+        name = "Transformer"
+        #model = TSTransformerEncoder(feat_dim=1, max_len=186, d_model=64, n_heads=8, num_layers=3, dim_feedforward=256)
+        # encoder only
+        model = TransformerWrapper(
+            num_tokens = 100,
+            max_seq_len = ts_length,
+            attn_layers = Encoder(dim = config.emb_size, n_heads = 6, depth=4),
+            ).to(config.device)
+        """
+        model = XTransformer(
+            dim = 256,
+            tie_token_embeds = True,
+            return_tgt_loss = True,
+            enc_num_tokens=6 + 2,
+            enc_depth = 3,
+            enc_heads = 8,
+            enc_max_seq_len = ts_length,
+            dec_num_tokens = 6 + 2,
+            dec_depth = 3,
+            dec_heads = 8,
+            dec_max_seq_len = config.emb_size
+        ).to(config.device)
+        """
+
+        summary(model, input_size=(1, ts_length))
+        trainer = Trainer(config=config, experiment=experiment, train_data=df_train, test_data=df_test, net=model, batch_size=config.batch_size, num_epochs=config.n_epochs)
+        trainer.run()
+        output, target = trainer.eval(config.emb_size)
+
+        kmeans_labels = run_kmeans(output, config.n_clusters, config.metric, config.experiment_name, experiment)
+        run_umap(output, target, kmeans_labels, config.experiment_name, experiment)
+        calculate_clustering_scores(target, kmeans_labels, experiment)
+    

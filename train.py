@@ -16,14 +16,14 @@ import numpy as np
 #https://www.kaggle.com/code/polomarco/ecg-classification-cnn-lstm-attention-mechanism 
 
 class Trainer:
-    def __init__(self, config, experiment, train_data, test_data, net, lr, batch_size, num_epochs):
+    def __init__(self, config, experiment, train_data, test_data, net, batch_size, num_epochs):
         #self.net = net.to(config.device)
         self.net = net.to('cpu')
         self.config = config
         self.experiment = experiment
         self.num_epochs = num_epochs
         self.criterion = nn.CrossEntropyLoss()
-        self.optimizer = Adam(self.net.parameters(), lr=lr)
+        self.optimizer = Adam(self.net.parameters(), lr=config.lr)
         self.scheduler = CosineAnnealingLR(self.optimizer, T_max=num_epochs, eta_min=5e-6)
         self.best_loss = float('inf')
         self.phases = ['train', 'val']
