@@ -42,7 +42,7 @@ def build_save_path(config: Bunch) -> str:
 
 def build_comet_logger(config: Bunch) -> Experiment:
     experiment = Experiment(
-        api_key="HzUytPeFFfa9aiGmafVP6CMkP"if config.use_comet_experiments else None,
+        api_key="HzUytPeFFfa9aiGmafVP6CMkP",
         project_name="mt-vt",
         workspace="vtsch",
     )
