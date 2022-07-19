@@ -21,7 +21,7 @@ class Config:
     n_clusters = 2
     lr=1e-3
     batch_size = 32
-    n_epochs = 50
+    n_epochs = 3
     emb_size = 4
     model_save_directory = "./models"
 
@@ -86,7 +86,7 @@ if __name__ == '__main__':
     if config.MOD_SIMPLE_AC == True:
         model = SimpleAutoencoder(ts_length=ts_length, emb_size=config.emb_size)
         summary(model, input_size=(1, ts_length))
-        trainer = Trainer(config=config, experiment=experiment, train_data = df_train, test_data=df_test, net=model, lr=config.lr, batch_size=config.batch_size, num_epochs=config.n_epochs)
+        trainer = Trainer(config=config, experiment=experiment, train_data = df_train, test_data=df_test, net=model)
         trainer.run()
         output, target = trainer.eval(config.emb_size)
     
@@ -97,7 +97,7 @@ if __name__ == '__main__':
     if config.MOD_DEEP_AC == True:
         model = DeepAutoencoder()
         summary(model, input_size=(1, ts_length))
-        trainer = Trainer(config=config, experiment=experiment, train_data = df_train, test_data=df_test, net=model, lr=config.lr, batch_size=config.batch_size, num_epochs=config.n_epochs)
+        trainer = Trainer(config=config, experiment=experiment, train_data = df_train, test_data=df_test, net=model)
         trainer.run()
         output, target = trainer.eval(config.emb_size)
         kmeans_labels = run_kmeans(output, config.n_clusters, config.metric, config.experiment_name, experiment)
@@ -107,7 +107,7 @@ if __name__ == '__main__':
     if config.MOD_LSTM == True: 
         model = RNNModel(input_size=ts_length, hid_size=32, emb_size=config.emb_size, rnn_type='lstm', bidirectional=True)
         print(model)
-        trainer = Trainer(config=config, experiment=experiment, train_data=df_train, test_data=df_test, net=model, lr=config.lr, batch_size=config.batch_size, num_epochs=config.n_epochs)
+        trainer = Trainer(config=config, experiment=experiment, train_data=df_train, test_data=df_test, net=model)
         trainer.run()
         output, target = trainer.eval(config.emb_size)
 
@@ -118,7 +118,7 @@ if __name__ == '__main__':
     if config.MOD_CNN == True:
         model = CNN(emb_size=config.emb_size, hid_size=128)
         summary(model, input_size=(1, ts_length))
-        trainer = Trainer(config=config, experiment=experiment, train_data=df_train, test_data = df_test, net=model, lr=config.lr, batch_size=config.batch_size, num_epochs=config.n_epochs)
+        trainer = Trainer(config=config, experiment=experiment, train_data=df_train, test_data = df_test, net=model)
         trainer.run()
         output, target = trainer.eval(config.emb_size)
 
@@ -129,7 +129,7 @@ if __name__ == '__main__':
     if config.MOD_RNN_ATT == True: 
         model = RNNAttentionModel(input_size=1, hid_size=32, emb_size=config.emb_size, rnn_type='lstm', bidirectional=False)
         summary(model, input_size=(1, ts_length))
-        trainer = Trainer(config=config, experiment=experiment, train_data=df_train, test_data=df_test, net=model, lr=config.lr, batch_size=config.batch_size, num_epochs=config.n_epochs)
+        trainer = Trainer(config=config, experiment=experiment, train_data=df_train, test_data=df_test, net=model)
         trainer.run()
         output, target = trainer.eval(config.emb_size)
 
@@ -137,16 +137,6 @@ if __name__ == '__main__':
         run_umap(output, target, kmeans_labels, config.experiment_name, experiment)
         calculate_clustering_scores(target, kmeans_labels, experiment)
     
-    def cycle(loader):
-        while True:
-            #prefix = torch.ones((config.batch_size, 1)).long().to(config.device)
-            #src = torch.randint(2, 6+1, (config.batch_size, ts_length)).long().to(config.device)
-            #tgt = torch.cat((prefix, src, src), 1)
-            #src_mask = torch.ones(config.batch_size, src.shape[1]).bool().to(config.device)
-            #tgt_mask = torch.ones(config.batch_size, tgt.shape[1]).bool().to(config.device)
-            #yield (src, tgt, src_mask, tgt_mask)
-            for data in loader:
-                yield data
 
     if config.MOD_TRANSFORMER == True: 
         name = "Transformer"
@@ -174,7 +164,7 @@ if __name__ == '__main__':
         """
 
         summary(model, input_size=(1, ts_length))
-        trainer = Trainer(config=config, experiment=experiment, train_data=df_train, test_data=df_test, net=model, batch_size=config.batch_size, num_epochs=config.n_epochs)
+        trainer = Trainer(config=config, experiment=experiment, train_data=df_train, test_data=df_test, net=model)
         trainer.run()
         output, target = trainer.eval(config.emb_size)
 

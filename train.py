@@ -16,21 +16,20 @@ import numpy as np
 #https://www.kaggle.com/code/polomarco/ecg-classification-cnn-lstm-attention-mechanism 
 
 class Trainer:
-    def __init__(self, config, experiment, train_data, test_data, net, batch_size, num_epochs):
+    def __init__(self, config, experiment, train_data, test_data, net):
         #self.net = net.to(config.device)
         self.net = net.to('cpu')
         self.config = config
         self.experiment = experiment
-        self.num_epochs = num_epochs
         self.criterion = nn.CrossEntropyLoss()
         self.optimizer = Adam(self.net.parameters(), lr=config.lr)
-        self.scheduler = CosineAnnealingLR(self.optimizer, T_max=num_epochs, eta_min=5e-6)
+        self.scheduler = CosineAnnealingLR(self.optimizer, T_max=config.n_epochs, eta_min=5e-6)
         self.best_loss = float('inf')
         self.phases = ['train', 'val']
         self.dataloaders = {
-            phase: get_dataloader(train_data, phase, batch_size) for phase in self.phases
+            phase: get_dataloader(train_data, phase, config.batch_size) for phase in self.phases
         }
-        self.test_dataloader = get_test_dataloader(test_data, batch_size)
+        self.test_dataloader = get_test_dataloader(test_data, config.batch_size)
         self.train_df_logs = pd.DataFrame()
         self.val_df_logs = pd.DataFrame()
 
@@ -72,7 +71,7 @@ class Trainer:
         return loss, df_logs    
     
     def run(self):
-        for epoch in range(self.num_epochs):
+        for epoch in range(self.config.n_epochs):
             print('Epoch: %d | time: %s' %(epoch, time.strftime('%H:%M:%S')))
             train_loss, train_logs = self._train_epoch(phase='train')
             self.experiment.log_metrics(dic=train_logs, epoch=epoch)
