@@ -7,10 +7,9 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 class SimpleAutoencoder(nn.Module):
-    def __init__(self):
+    def __init__(self, ts_length, emb_size):
         super(SimpleAutoencoder, self).__init__()
-        self.fc = nn.Linear(in_features=6, out_features=2)
-        #self.fc = nn.Linear(in_features=186, out_features=5)
+        self.fc = nn.Linear(in_features=ts_length, out_features=emb_size)
 
     def forward(self, x):
         x = x.view(x.shape[0], -1)

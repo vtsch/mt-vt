@@ -15,21 +15,21 @@ from utils import get_bunch_config_from_json, build_save_path, build_comet_logge
 class Config:
     seed = 2021
     device = 'cuda:0' if torch.cuda.is_available() else 'cpu'
-    metric = "dtw" #metric : {“euclidean”, “dtw”, “softdtw”} 
+    metric = "euclidean" #metric : {“euclidean”, “dtw”, “softdtw”} 
     n_clusters = 2
     lr=1e-3
     batch_size = 32
-    n_epochs = 2
-    emb_size = 2
+    n_epochs = 30
+    emb_size = 4
     model_save_directory = "./models"
     use_comet_experiments = True
 
     PSA_DATA = True
-    MOD_RAW = True
+    MOD_RAW = False
     MOD_SIMPLE_AC = False
     MOD_DEEP_AC = False
     MOD_LSTM = False
-    MOD_CNN = False
+    MOD_CNN = True
     MOD_RNN_ATT = False
     MOD_TRANSF = False
 
@@ -83,7 +83,7 @@ if __name__ == '__main__':
     # run embedding models and kmeans
 
     if config.MOD_SIMPLE_AC == True:
-        model = SimpleAutoencoder()
+        model = SimpleAutoencoder(ts_length=ts_length, emb_size=config.emb_size)
         summary(model, input_size=(1, ts_length))
         trainer = Trainer(config=config, experiment=experiment, train_data = df_train, test_data=df_test, net=model, lr=config.lr, batch_size=config.batch_size, num_epochs=config.n_epochs)
         trainer.run()
