@@ -22,7 +22,7 @@ class Config:
     n_clusters = 2
     lr=1e-3
     batch_size = 16
-    n_epochs = 10
+    n_epochs = 50
     emb_size = 4
     model_save_directory = "./models"
 
@@ -164,8 +164,8 @@ if __name__ == '__main__':
         ).to(config.device)
         """
         model = Transformer(emb=ts_length,
-                          heads=1,
-                          depth=1,
+                          heads=2,
+                          depth=2,
                           num_features=1,
                           num_out_channels_emb=config.emb_size,
                           dropout=0.2) 
@@ -174,12 +174,12 @@ if __name__ == '__main__':
         trainer = TransformerTrainer(config=config, experiment=experiment, train_data=df_train, test_data=df_test, net=model)
         trainer.run(model)
         predictions, target = trainer.eval(config.emb_size)
-        print("output", predictions.shape)
-        print("target", target.shape)
-        predictions = predictions.reshape(-1, 1)
+        #print("output", predictions.shape)
+        #print("target", target.shape)
+        predictions = predictions.reshape(-1, 1) #note. here prediction is already a classification --> TODO: change this
 
         kmeans_labels = run_kmeans(predictions, config.n_clusters, config.metric, config.experiment_name, experiment)
-        print("kmeans_labels", kmeans_labels.shape)
+        #print("kmeans_labels", kmeans_labels.shape)
         run_umap(predictions, target, kmeans_labels, config.experiment_name, experiment)
         calculate_clustering_scores(target, kmeans_labels, experiment)
     
