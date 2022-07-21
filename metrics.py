@@ -18,11 +18,11 @@ def calculate_clustering_scores(y_true, y_pred, experiment):
     print('Confusion Matrix:')
     print(cm)
     experiment.log_metrics(pd.DataFrame({'accuracy': [accuracy], 'ri': [ri], 'ari': [ari], 'mi': [mi], 'nmi': [nmi]}))
-    experiment.log_metrics(pd.DataFrame(cm), 'confusion_matrix')
+    experiment.log_confusion_matrix(y_true.astype(int), y_pred, title = "Confusion Matrix")
 
 
 class Meter:
-    def __init__(self, n_classes=5):
+    def __init__(self, n_classes):
         self.metrics = {}
         self.confusion = torch.zeros((n_classes, n_classes))
     
