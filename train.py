@@ -17,8 +17,7 @@ import numpy as np
 
 class Trainer:
     def __init__(self, config, experiment, train_data, test_data, net):
-        #self.net = net.to(config.device)
-        self.net = net.to('cpu')
+        self.net = net.to(config.device)
         self.config = config
         self.experiment = experiment
         self.criterion = nn.CrossEntropyLoss()
@@ -90,7 +89,7 @@ class Trainer:
 
     
     def eval(self, emb_size):
-        #self.net.eval()
+        self.net.eval()
         embeddings = np.array([])
         targets = np.array([])
         with torch.no_grad():
