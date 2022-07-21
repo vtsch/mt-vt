@@ -11,7 +11,8 @@ from modules import CNN, RNNModel, RNNAttentionModel, SimpleAutoencoder, DeepAut
 from train import Trainer
 from utils import get_bunch_config_from_json, build_save_path, build_comet_logger
 from x_transformers import XTransformer, TransformerWrapper, Encoder
-#from transformer import TSTransformerEncoder
+from traintransformer import TransformerTrainer
+from transformer import Transformer
 
 
 class Config:
@@ -20,8 +21,8 @@ class Config:
     metric = "euclidean" #metric : {“euclidean”, “dtw”, “softdtw”} 
     n_clusters = 2
     lr=1e-3
-    batch_size = 32
-    n_epochs = 3
+    batch_size = 16
+    n_epochs = 10
     emb_size = 4
     model_save_directory = "./models"
 
@@ -140,35 +141,45 @@ if __name__ == '__main__':
 
     if config.MOD_TRANSFORMER == True: 
         name = "Transformer"
-        #model = TSTransformerEncoder(feat_dim=1, max_len=186, d_model=64, n_heads=8, num_layers=3, dim_feedforward=256)
+        """
         # encoder only
         model = TransformerWrapper(
-            num_tokens = 100,
+            num_tokens = 50,
             max_seq_len = ts_length,
             attn_layers = Encoder(dim = config.emb_size, n_heads = 6, depth=4),
             ).to(config.device)
-        """
+        
         model = XTransformer(
-            dim = 256,
+            dim = 32,
             tie_token_embeds = True,
             return_tgt_loss = True,
-            enc_num_tokens=6 + 2,
-            enc_depth = 3,
-            enc_heads = 8,
+            enc_num_tokens = 8,
+            enc_depth = 2,
+            enc_heads = 4,
             enc_max_seq_len = ts_length,
-            dec_num_tokens = 6 + 2,
-            dec_depth = 3,
-            dec_heads = 8,
-            dec_max_seq_len = config.emb_size
+            dec_num_tokens = 8,
+            dec_depth = 2,
+            dec_heads = 4,
+            dec_max_seq_len = ts_length
         ).to(config.device)
         """
+        model = Transformer(emb=ts_length,
+                          heads=1,
+                          depth=1,
+                          num_features=1,
+                          num_out_channels_emb=config.emb_size,
+                          dropout=0.2) 
 
         summary(model, input_size=(1, ts_length))
-        trainer = Trainer(config=config, experiment=experiment, train_data=df_train, test_data=df_test, net=model)
-        trainer.run()
-        output, target = trainer.eval(config.emb_size)
+        trainer = TransformerTrainer(config=config, experiment=experiment, train_data=df_train, test_data=df_test, net=model)
+        trainer.run(model)
+        predictions, target = trainer.eval(config.emb_size)
+        print("output", predictions.shape)
+        print("target", target.shape)
+        predictions = predictions.reshape(-1, 1)
 
-        kmeans_labels = run_kmeans(output, config.n_clusters, config.metric, config.experiment_name, experiment)
-        run_umap(output, target, kmeans_labels, config.experiment_name, experiment)
+        kmeans_labels = run_kmeans(predictions, config.n_clusters, config.metric, config.experiment_name, experiment)
+        print("kmeans_labels", kmeans_labels.shape)
+        run_umap(predictions, target, kmeans_labels, config.experiment_name, experiment)
         calculate_clustering_scores(target, kmeans_labels, experiment)
     

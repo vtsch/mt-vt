@@ -1,220 +1,503 @@
-
 from typing import Optional, Any
 import math
 import torch
 from torch import nn, Tensor
 import torch.optim as optim
 import torch.nn.functional as F
-from torch.nn.modules import MultiheadAttention, Linear, Dropout, BatchNorm1d, TransformerEncoderLayer
-from x_transformers import XTransformer, TransformerWrapper, Encoder
+from torch.nn.modules import MultiheadAttention, Linear, Dropout, BatchNorm1d, TransformerEncoder, TransformerEncoderLayer
+import numpy as np
+import torch.nn as nn
 
-# from https://github.com/gzerveas/mvts_transformer/blob/master/src/models/ts_transformer.py
+from transformer_modules import TransformerBlock, DenseInterpolation
 
-class FixedPositionalEncoding(nn.Module):
-    """Inject some information about the relative or absolute position of the tokens
-        in the sequence. The positional encodings have the same dimension as
-        the embeddings, so that the two can be summed. Here, we use sine and cosine
-        functions of different frequencies.
-    Args:
-        d_model: the embed dim (required).
-        dropout: the dropout value (default=0.1).
-        max_len: the max. length of the incoming sequence (default=1024).
+
+class PositionwiseFeedForward(nn.Module):
+    """Position-wise Feed Forward Network block from Attention is All You Need.
+    Apply two linear transformations to each input, separately but indetically. We
+    implement them as 1D convolutions. Input and output have a shape (batch_size, d_model).
+    Parameters
+    ----------
+    d_model:
+        Dimension of input tensor.
+    d_ff:
+        Dimension of hidden layer, default is 2048.
     """
 
-    def __init__(self, d_model, dropout=0.1, max_len=1024, scale_factor=1.0):
-        super(FixedPositionalEncoding, self).__init__()
-        self.dropout = nn.Dropout(p=dropout)
+    def __init__(self,
+                 d_model: int,
+                 d_ff: Optional[int] = 2048):
+        """Initialize the PFF block."""
+        super().__init__()
 
-        pe = torch.zeros(max_len, d_model)  # positional encoding
-        position = torch.arange(0, max_len, dtype=torch.float).unsqueeze(1)
-        div_term = torch.exp(torch.arange(0, d_model, 2).float() * (-math.log(10000.0) / d_model))
-        pe[:, 0::2] = torch.sin(position * div_term)
-        pe[:, 1::2] = torch.cos(position * div_term)
-        pe = scale_factor * pe.unsqueeze(0).transpose(0, 1)
-        self.register_buffer('pe', pe)  # this stores the variable in the state_dict (used for non-trainable variables)
+        self._linear1 = nn.Linear(d_model, d_ff)
+        self._linear2 = nn.Linear(d_ff, d_model)
 
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Propagate forward the input through the PFF block.
+        Apply the first linear transformation, then a relu actvation,
+        and the second linear transformation.
+        Parameters
+        ----------
+        x:
+            Input tensor with shape (batch_size, K, d_model).
+        Returns
+        -------
+            Output tensor with shape (batch_size, K, d_model).
+        """
+        return self._linear2(F.relu(self._linear1(x)))
+
+class MultiHeadAttention(nn.Module):
+    """Multi Head Attention block from Attention is All You Need.
+    Given 3 inputs of shape (batch_size, K, d_model), that will be used
+    to compute query, keys and values, we output a self attention
+    tensor of shape (batch_size, K, d_model).
+    Parameters
+    ----------
+    d_model:
+        Dimension of the input vector.
+    q:
+        Dimension of all query matrix.
+    v:
+        Dimension of all value matrix.
+    h:
+        Number of heads.
+    attention_size:
+        Number of backward elements to apply attention.
+        Deactivated if ``None``. Default is ``None``.
+    """
+
+    def __init__(self,
+                 d_model: int,
+                 q: int,
+                 v: int,
+                 h: int,
+                 attention_size: int = None):
+        """Initialize the Multi Head Block."""
+        super().__init__()
+
+        self._h = h
+        self._attention_size = attention_size
+
+        # Query, keys and value matrices
+        self._W_q = nn.Linear(d_model, q*self._h)
+        self._W_k = nn.Linear(d_model, q*self._h)
+        self._W_v = nn.Linear(d_model, v*self._h)
+
+        # Output linear function
+        self._W_o = nn.Linear(self._h*v, d_model)
+
+        # Score placeholder
+        self._scores = None
+
+    def forward(self,
+                query: torch.Tensor,
+                key: torch.Tensor,
+                value: torch.Tensor,
+                mask: Optional[str] = None) -> torch.Tensor:
+        """Propagate forward the input through the MHB.
+        We compute for each head the queries, keys and values matrices,
+        followed by the Scaled Dot-Product. The result is concatenated 
+        and returned with shape (batch_size, K, d_model).
+        Parameters
+        ----------
+        query:
+            Input tensor with shape (batch_size, K, d_model) used to compute queries.
+        key:
+            Input tensor with shape (batch_size, K, d_model) used to compute keys.
+        value:
+            Input tensor with shape (batch_size, K, d_model) used to compute values.
+        mask:
+            Mask to apply on scores before computing attention.
+            One of ``'subsequent'``, None. Default is None.
+        Returns
+        -------
+            Self attention tensor with shape (batch_size, K, d_model).
+        """
+        K = query.shape[1]
+
+        # Compute Q, K and V, concatenate heads on batch dimension
+        queries = torch.cat(self._W_q(query).chunk(self._h, dim=-1), dim=0)
+        keys = torch.cat(self._W_k(key).chunk(self._h, dim=-1), dim=0)
+        values = torch.cat(self._W_v(value).chunk(self._h, dim=-1), dim=0)
+
+        # Scaled Dot Product
+        self._scores = torch.bmm(queries, keys.transpose(1, 2)) / np.sqrt(K)
+
+        # Compute local map mask
+        if self._attention_size is not None:
+            attention_mask = generate_local_map_mask(K, self._attention_size, mask_future=False, device=self._scores.device)
+            self._scores = self._scores.masked_fill(attention_mask, float('-inf'))
+
+        # Compute future mask
+        if mask == "subsequent":
+            future_mask = torch.triu(torch.ones((K, K)), diagonal=1).bool()
+            future_mask = future_mask.to(self._scores.device)
+            self._scores = self._scores.masked_fill(future_mask, float('-inf'))
+
+        # Apply sotfmax
+        self._scores = F.softmax(self._scores, dim=-1)
+
+        attention = torch.bmm(self._scores, values)
+
+        # Concatenat the heads
+        attention_heads = torch.cat(attention.chunk(self._h, dim=0), dim=-1)
+
+        # Apply linear transformation W^O
+        self_attention = self._W_o(attention_heads)
+
+        return self_attention
+
+    @property
+    def attention_map(self) -> torch.Tensor:
+        """Attention map after a forward propagation,
+        variable `score` in the original paper.
+        """
+        if self._scores is None:
+            raise RuntimeError(
+                "Evaluate the model once to generate attention map")
+        return self._scores
+
+
+class MultiHeadAttentionChunk(MultiHeadAttention):
+    """Multi Head Attention block with chunk.
+    Given 3 inputs of shape (batch_size, K, d_model), that will be used
+    to compute query, keys and values, we output a self attention
+    tensor of shape (batch_size, K, d_model).
+    Queries, keys and values are divided in chunks of constant size.
+    Parameters
+    ----------
+    d_model:
+        Dimension of the input vector.
+    q:
+        Dimension of all query matrix.
+    v:
+        Dimension of all value matrix.
+    h:
+        Number of heads.
+    attention_size:
+        Number of backward elements to apply attention.
+        Deactivated if ``None``. Default is ``None``.
+    chunk_size:
+        Size of chunks to apply attention on. Last one may be smaller (see :class:`torch.Tensor.chunk`).
+        Default is 168.
+    """
+
+    def __init__(self,
+                 d_model: int,
+                 q: int,
+                 v: int,
+                 h: int,
+                 attention_size: int = None,
+                 chunk_size: Optional[int] = 168,
+                 **kwargs):
+        """Initialize the Multi Head Block."""
+        super().__init__(d_model, q, v, h, attention_size, **kwargs)
+
+        self._chunk_size = chunk_size
+
+        # Score mask for decoder
+        self._future_mask = nn.Parameter(torch.triu(torch.ones((self._chunk_size, self._chunk_size)), diagonal=1).bool(),
+                                         requires_grad=False)
+
+        if self._attention_size is not None:
+            self._attention_mask = nn.Parameter(generate_local_map_mask(self._chunk_size, self._attention_size),
+                                                requires_grad=False)
+
+    def forward(self,
+                query: torch.Tensor,
+                key: torch.Tensor,
+                value: torch.Tensor,
+                mask: Optional[str] = None) -> torch.Tensor:
+        """Propagate forward the input through the MHB.
+        We compute for each head the queries, keys and values matrices,
+        followed by the Scaled Dot-Product. The result is concatenated 
+        and returned with shape (batch_size, K, d_model).
+        Parameters
+        ----------
+        query:
+            Input tensor with shape (batch_size, K, d_model) used to compute queries.
+        key:
+            Input tensor with shape (batch_size, K, d_model) used to compute keys.
+        value:
+            Input tensor with shape (batch_size, K, d_model) used to compute values.
+        mask:
+            Mask to apply on scores before computing attention.
+            One of ``'subsequent'``, None. Default is None.
+        Returns
+        -------
+            Self attention tensor with shape (batch_size, K, d_model).
+        """
+        K = query.shape[1]
+        n_chunk = K // self._chunk_size
+
+        # Compute Q, K and V, concatenate heads on batch dimension
+        queries = torch.cat(torch.cat(self._W_q(query).chunk(self._h, dim=-1), dim=0).chunk(n_chunk, dim=1), dim=0)
+        keys = torch.cat(torch.cat(self._W_k(key).chunk(self._h, dim=-1), dim=0).chunk(n_chunk, dim=1), dim=0)
+        values = torch.cat(torch.cat(self._W_v(value).chunk(self._h, dim=-1), dim=0).chunk(n_chunk, dim=1), dim=0)
+
+        # Scaled Dot Product
+        self._scores = torch.bmm(queries, keys.transpose(1, 2)) / np.sqrt(self._chunk_size)
+
+        # Compute local map mask
+        if self._attention_size is not None:
+            self._scores = self._scores.masked_fill(self._attention_mask, float('-inf'))
+
+        # Compute future mask
+        if mask == "subsequent":
+            self._scores = self._scores.masked_fill(self._future_mask, float('-inf'))
+
+        # Apply softmax
+        self._scores = F.softmax(self._scores, dim=-1)
+
+        attention = torch.bmm(self._scores, values)
+
+        # Concatenat the heads
+        attention_heads = torch.cat(torch.cat(attention.chunk(
+            n_chunk, dim=0), dim=1).chunk(self._h, dim=0), dim=-1)
+
+        # Apply linear transformation W^O
+        self_attention = self._W_o(attention_heads)
+
+        return self_attention
+
+
+class MultiHeadAttentionWindow(MultiHeadAttention):
+    """Multi Head Attention block with moving window.
+    Given 3 inputs of shape (batch_size, K, d_model), that will be used
+    to compute query, keys and values, we output a self attention
+    tensor of shape (batch_size, K, d_model).
+    Queries, keys and values are divided in chunks using a moving window.
+    Parameters
+    ----------
+    d_model:
+        Dimension of the input vector.
+    q:
+        Dimension of all query matrix.
+    v:
+        Dimension of all value matrix.
+    h:
+        Number of heads.
+    attention_size:
+        Number of backward elements to apply attention.
+        Deactivated if ``None``. Default is ``None``.
+    window_size:
+        Size of the window used to extract chunks.
+        Default is 168
+    padding:
+        Padding around each window. Padding will be applied to input sequence.
+        Default is 168 // 4 = 42.
+    """
+
+    def __init__(self,
+                 d_model: int,
+                 q: int,
+                 v: int,
+                 h: int,
+                 attention_size: int = None,
+                 window_size: Optional[int] = 168,
+                 padding: Optional[int] = 168 // 4,
+                 **kwargs):
+        """Initialize the Multi Head Block."""
+        super().__init__(d_model, q, v, h, attention_size, **kwargs)
+
+        self._window_size = window_size
+        self._padding = padding
+        self._q = q
+        self._v = v
+
+        # Step size for the moving window
+        self._step = self._window_size - 2 * self._padding
+
+        # Score mask for decoder
+        self._future_mask = nn.Parameter(torch.triu(torch.ones((self._window_size, self._window_size)), diagonal=1).bool(),
+                                         requires_grad=False)
+
+        if self._attention_size is not None:
+            self._attention_mask = nn.Parameter(generate_local_map_mask(self._window_size, self._attention_size),
+                                                requires_grad=False)
+
+    def forward(self,
+                query: torch.Tensor,
+                key: torch.Tensor,
+                value: torch.Tensor,
+                mask: Optional[str] = None) -> torch.Tensor:
+        """Propagate forward the input through the MHB.
+        We compute for each head the queries, keys and values matrices,
+        followed by the Scaled Dot-Product. The result is concatenated 
+        and returned with shape (batch_size, K, d_model).
+        Parameters
+        ----------
+        query:
+            Input tensor with shape (batch_size, K, d_model) used to compute queries.
+        key:
+            Input tensor with shape (batch_size, K, d_model) used to compute keys.
+        value:
+            Input tensor with shape (batch_size, K, d_model) used to compute values.
+        mask:
+            Mask to apply on scores before computing attention.
+            One of ``'subsequent'``, None. Default is None.
+        Returns
+        -------
+            Self attention tensor with shape (batch_size, K, d_model).
+        """
+        batch_size = query.shape[0]
+
+        # Apply padding to input sequence
+        query = F.pad(query.transpose(1, 2), (self._padding, self._padding), 'replicate').transpose(1, 2)
+        key = F.pad(key.transpose(1, 2), (self._padding, self._padding), 'replicate').transpose(1, 2)
+        value = F.pad(value.transpose(1, 2), (self._padding, self._padding), 'replicate').transpose(1, 2)
+
+        # Compute Q, K and V, concatenate heads on batch dimension
+        queries = torch.cat(self._W_q(query).chunk(self._h, dim=-1), dim=0)
+        keys = torch.cat(self._W_k(key).chunk(self._h, dim=-1), dim=0)
+        values = torch.cat(self._W_v(value).chunk(self._h, dim=-1), dim=0)
+
+        # Divide Q, K and V using a moving window
+        queries = queries.unfold(dimension=1, size=self._window_size, step=self._step).reshape((-1, self._q, self._window_size)).transpose(1, 2)
+        keys = keys.unfold(dimension=1, size=self._window_size, step=self._step).reshape((-1, self._q, self._window_size)).transpose(1, 2)
+        values = values.unfold(dimension=1, size=self._window_size, step=self._step).reshape((-1, self._v, self._window_size)).transpose(1, 2)
+
+        # Scaled Dot Product
+        self._scores = torch.bmm(queries, keys.transpose(1, 2)) / np.sqrt(self._window_size)
+
+        # Compute local map mask
+        if self._attention_size is not None:
+            self._scores = self._scores.masked_fill(self._attention_mask, float('-inf'))
+
+        # Compute future mask
+        if mask == "subsequent":
+            self._scores = self._scores.masked_fill(self._future_mask, float('-inf'))
+
+        # Apply softmax
+        self._scores = F.softmax(self._scores, dim=-1)
+
+        attention = torch.bmm(self._scores, values)
+
+        # Fold chunks back
+        attention = attention.reshape((batch_size*self._h, -1, self._window_size, self._v))
+        attention = attention[:, :, self._padding:-self._padding, :]
+        attention = attention.reshape((batch_size*self._h, -1, self._v))
+
+        # Concatenat the heads
+        attention_heads = torch.cat(attention.chunk(self._h, dim=0), dim=-1)
+
+        # Apply linear transformation W^O
+        self_attention = self._W_o(attention_heads)
+
+        return self_attention
+
+class Transformer(nn.Module):
+
+    # https://github.com/Sarunas-Girdenas/transformer_for_time_series/blob/master/transformers_time_series.ipynb 
+
+    def __init__(self, emb: int, heads: int,
+                 depth: int,
+                 num_features: int,
+                 num_out_channels_emb: int=3,
+                 dropout: float=0.0,
+                 mask: bool=True):
+        """
+        Transformer for time series.
+        Inputs:
+        =======
+        emb (int): Embedding dimension
+        heads (int): Number of attention heads
+        depth (int): Number of transformer blocks
+        seq_length (int): length of the sequence
+        num_features (int): number of time series features
+        mask (bool): if mask diagonal
+        """
+
+        super().__init__()
+
+        self.num_features = num_features
+
+        # 1D Conv for actual values of time series
+        self.time_series_features_encoding = nn.Conv1d(
+                in_channels=num_features,
+                out_channels=num_features,
+                kernel_size=1,
+                bias=False
+            )
+
+        # positional embedding for time series
+        self.pos_embedding = nn.Embedding(embedding_dim=emb, num_embeddings=emb)
+
+        # transformer blocks
+        tblocks = []
+        for _ in range(depth):
+            tblocks.append(
+                TransformerBlock(
+                    emb=emb,
+                    heads=heads,
+                    seq_length=emb,
+                    mask=mask,
+                    dropout=dropout
+                )
+            )
+        
+        # transformer blocks put together
+        self.transformer_blocks = nn.Sequential(*tblocks)
+
+        # conv1d for embeddings
+        self.conv1d_for_embeddings = nn.Conv1d(
+            in_channels=num_features,
+            out_channels=num_out_channels_emb,
+            kernel_size=1,
+            bias=False
+        )
+        
+        # feed forward through maxpooled embeddings to reduce them to probability
+        self.feed_forward = torch.nn.Linear(
+            emb,
+            1
+            )
+
+        self.dropout = nn.Dropout(dropout)
+
+        return None
+    
+    @staticmethod
+    def init_weights(layer):
+        """Purpose: initialize weights in each
+        LINEAR layer.
+        Input: pytorch layer
+        """
+
+        if isinstance(layer, torch.nn.Linear):
+            np.random.seed(42)
+            size = layer.weight.size()
+            fan_out = size[0] # number of rows
+            fan_in = size[1] # number of columns
+            variance = np.sqrt(2.0/(fan_in + fan_out))
+            # initialize weights
+            layer.weight.data.normal_(0.0, variance)
+        
     def forward(self, x):
-        """Inputs of forward function
-        Args:
-            x: the sequence fed to the positional encoder model (required).
-        Shape:
-            x: [sequence length, batch size, embed dim]
-            output: [sequence length, batch size, embed dim]
+        """
+        Forward pass.
+        x (torch.tensor): 3D tensor of size (batch, num_features, 1)
         """
 
-        x = x + self.pe[:x.size(0), :]
-        return self.dropout(x)
+        # 1D Convolution to convert time series data to features (kind of embeddings)
+        time_series_features = self.time_series_features_encoding(x)
+        b, t, e = time_series_features.size()  # b: batch size, t: 1, e: embedding = ts length
 
+        positions = self.pos_embedding(torch.arange(t))[None, :, :].expand(b, t, e)
+        
+        # sum encoded time serie features and positional encodings and pass on to transfmer block
+        x = time_series_features + positions
+        x = self.dropout(x)
 
-class LearnablePositionalEncoding(nn.Module):
+        x = self.transformer_blocks(x)
 
-    def __init__(self, d_model, dropout=0.1, max_len=1024):
-        super(LearnablePositionalEncoding, self).__init__()
-        self.dropout = nn.Dropout(p=dropout)
-        # Each position gets its own embedding
-        # Since indices are always 0 ... max_len, we don't have to do a look-up
-        self.pe = nn.Parameter(torch.empty(max_len, 1, d_model))  # requires_grad automatically set to True
-        nn.init.uniform_(self.pe, -0.02, 0.02)
+        x = self.conv1d_for_embeddings(x) # (batch, num out channels, emb)
+        # maxpool
+        x = x.max(dim=1)[0] # (batch, emb)
 
-    def forward(self, x):
-        """Inputs of forward function
-        Args:
-            x: the sequence fed to the positional encoder model (required).
-        Shape:
-            x: [sequence length, batch size, embed dim]
-            output: [sequence length, batch size, embed dim]
-        """
+        x = self.feed_forward(x) # (batch, 1)
+        #x = x.reshape(b, -1) # (batch)
 
-        x = x + self.pe[:x.size(0), :]
-        return self.dropout(x)
+        x = torch.sigmoid(x)
 
-
-def get_pos_encoder(pos_encoding):
-    if pos_encoding == "learnable":
-        return LearnablePositionalEncoding
-    elif pos_encoding == "fixed":
-        return FixedPositionalEncoding
-
-    raise NotImplementedError("pos_encoding should be 'learnable'/'fixed', not '{}'".format(pos_encoding))
-
-def _get_activation_fn(activation):
-    if activation == "relu":
-        return F.relu
-    elif activation == "gelu":
-        return F.gelu
-    raise ValueError("activation should be relu/gelu, not {}".format(activation))
-
-class TransformerBatchNormEncoderLayer(nn.modules.Module):
-    """This transformer encoder layer block is made up of self-attn and feedforward network.
-    It differs from TransformerEncoderLayer in torch/nn/modules/transformer.py in that it replaces LayerNorm
-    with BatchNorm.
-    Args:
-        d_model: the number of expected features in the input (required).
-        nhead: the number of heads in the multiheadattention models (required).
-        dim_feedforward: the dimension of the feedforward network model (default=2048).
-        dropout: the dropout value (default=0.1).
-        activation: the activation function of intermediate layer, relu or gelu (default=relu).
-    """
-
-    def __init__(self, d_model, nhead, dim_feedforward=2048, dropout=0.1, activation="relu"):
-        super(TransformerBatchNormEncoderLayer, self).__init__()
-        self.self_attn = MultiheadAttention(d_model, nhead, dropout=dropout)
-        # Implementation of Feedforward model
-        self.linear1 = Linear(d_model, dim_feedforward)
-        self.dropout = Dropout(dropout)
-        self.linear2 = Linear(dim_feedforward, d_model)
-
-        self.norm1 = BatchNorm1d(d_model, eps=1e-5)  # normalizes each feature across batch samples and time steps
-        self.norm2 = BatchNorm1d(d_model, eps=1e-5)
-        self.dropout1 = Dropout(dropout)
-        self.dropout2 = Dropout(dropout)
-
-        self.activation = _get_activation_fn(activation)
-
-    def __setstate__(self, state):
-        if 'activation' not in state:
-            state['activation'] = F.relu
-        super(TransformerBatchNormEncoderLayer, self).__setstate__(state)
-
-    def forward(self, src: Tensor, src_mask: Optional[Tensor] = None,
-                src_key_padding_mask: Optional[Tensor] = None) -> Tensor:
-        r"""Pass the input through the encoder layer.
-        Args:
-            src: the sequence to the encoder layer (required).
-            src_mask: the mask for the src sequence (optional).
-            src_key_padding_mask: the mask for the src keys per batch (optional).
-        Shape:
-            see the docs in Transformer class.
-        """
-        src2 = self.self_attn(src, src, src, attn_mask=src_mask,
-                              key_padding_mask=src_key_padding_mask)[0]
-        src = src + self.dropout1(src2)  # (seq_len, batch_size, d_model)
-        src = src.permute(1, 2, 0)  # (batch_size, d_model, seq_len)
-        # src = src.reshape([src.shape[0], -1])  # (batch_size, seq_length * d_model)
-        src = self.norm1(src)
-        src = src.permute(2, 0, 1)  # restore (seq_len, batch_size, d_model)
-        src2 = self.linear2(self.dropout(self.activation(self.linear1(src))))
-        src = src + self.dropout2(src2)  # (seq_len, batch_size, d_model)
-        src = src.permute(1, 2, 0)  # (batch_size, d_model, seq_len)
-        src = self.norm2(src)
-        src = src.permute(2, 0, 1)  # restore (seq_len, batch_size, d_model)
-        return src
-
-
-class TSTransformerEncoder(nn.Module):
-    """
-    max_seq_len: int
-        Maximum input sequence length. Determines size of transformer layers. If not provided, then the value defined inside the data class will be used
-    d_model: int, default=64
-        Internal dimension of transformer embeddings
-    dim_feedforward: int, default=256, 
-        Dimension of dense feedforward part of transformer layer
-    num_heads: int, default=8, 
-        Number of multi-headed attention heads
-    num_layers: int, default=3
-        Number of transformer encoder layers (blocks)
-    dropout: float, default=0.1
-        Dropout applied to most transformer encoder layers
-    pos_encoding: {'fixed', 'learnable'}, default='fixed'
-        Internal dimension of transformer embeddings
-    activation:  choices={'relu', 'gelu'}, default='gelu', 
-        Activation to be used in transformer encoder
-    normalization_layer: choices={'BatchNorm', 'LayerNorm'}, default='BatchNorm', 
-        Normalization layer to be used internally in transformer encoder
-    """
-
-    def __init__(self, feat_dim, max_len, d_model, n_heads, num_layers, dim_feedforward, dropout=0.1,
-                 pos_encoding='fixed', activation='gelu', norm='LayerNorm', freeze=False):
-        super(TSTransformerEncoder, self).__init__()
-
-        self.max_len = max_len
-        self.d_model = d_model
-        self.n_heads = n_heads
-        self.feat_dim = feat_dim
-        self.dim_feedforward = dim_feedforward
-        self.dropout = dropout
-        self.activation = activation
-        self.num_layers = num_layers
-        self.norm = norm
-
-        self.project_inp = nn.Linear(feat_dim, d_model)
-        self.pos_enc = get_pos_encoder(pos_encoding)(d_model, dropout=dropout*(1.0 - freeze), max_len=max_len)
-
-        if norm == 'LayerNorm':
-            # By using torch.nn.TransformerEncoderLayerthe layer will automatically have the self-attention layer and the feed forward layer depicted above as well as the “Add & Normalize” in-between.
-            encoder_layer = TransformerEncoderLayer(d_model, self.n_heads, dim_feedforward, dropout*(1.0 - freeze), activation=activation)
-        else:
-            encoder_layer = TransformerBatchNormEncoderLayer(d_model, self.n_heads, dim_feedforward, dropout*(1.0 - freeze), activation=activation)
-
-        self.transformer_encoder = nn.TransformerEncoder(encoder_layer, num_layers)
-
-        self.output_layer = nn.Linear(d_model, feat_dim)
-
-        self.act = _get_activation_fn(activation)
-
-        self.dropout1 = nn.Dropout(dropout)
-
-        self.feat_dim = feat_dim
-
-    def forward(self, X):
-        """
-        Args:
-            X: (batch_size, seq_length, feat_dim) torch tensor of masked features (input)
-            padding_masks: (batch_size, seq_length) boolean tensor, 1 means keep vector at this position, 0 means padding
-        Returns:
-            output: (batch_size, seq_length, feat_dim)
-        """
-        #create padding_masks
-        padding_masks = Tensor(X.shape[0], X.shape[2]).fill_(1).bool()
-        # permute because pytorch convention for transformers is [seq_length, batch_size, feat_dim]. padding_masks [batch_size, feat_dim]
-        inp = X.permute(2, 0, 1)
-        #inp = self.project_inp(inp) * math.sqrt(self.d_model)  # [seq_length, batch_size, d_model] project input vectors to d_model dimensional space
-        inp = self.project_inp(inp) #sqrt of 1 is 1 thus not needed in univariate case
-        # NOTE: logic for padding masks is reversed to comply with definition in MultiHeadAttention, TransformerEncoderLayer
-        output = self.transformer_encoder(inp, src_key_padding_mask=~padding_masks)  # (seq_length, batch_size, d_model)
-        output = output.permute(1, 0, 2)  # (batch_size, seq_length, d_model)
-        output = self.dropout1(output)
-        # Most probably defining a Linear(d_model,feat_dim) vectorizes the operation over (seq_length, batch_size).
-        output = self.output_layer(output)  # (batch_size, seq_length, feat_dim)
-
-        return output
+        return x
