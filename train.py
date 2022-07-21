@@ -37,7 +37,7 @@ class Trainer:
     def _train_epoch(self, phase):
 
         self.net.train() if phase == 'train' else self.net.eval()
-        meter = Meter()
+        meter = Meter(self.config.n_clusters)
         meter.init_metrics()
 
         for i, (data, target) in enumerate(self.dataloaders[phase]):
