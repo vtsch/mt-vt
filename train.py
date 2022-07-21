@@ -10,7 +10,7 @@ from torch.optim.lr_scheduler import (CosineAnnealingLR,
                                       ExponentialLR)
 import pandas as pd
 from metrics import Meter
-from dataloader import get_dataloader, get_test_dataloader
+from dataloader import get_dataloader, dataloader
 import numpy as np
 
 #https://www.kaggle.com/code/polomarco/ecg-classification-cnn-lstm-attention-mechanism 
@@ -29,7 +29,7 @@ class Trainer:
         self.dataloaders = {
             phase: get_dataloader(train_data, phase, config.batch_size) for phase in self.phases
         }
-        self.test_dataloader = get_test_dataloader(test_data, config.batch_size)
+        self.test_dataloader = dataloader(test_data, config.batch_size)
         self.train_df_logs = pd.DataFrame()
         self.val_df_logs = pd.DataFrame()
 

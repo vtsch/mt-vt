@@ -142,7 +142,7 @@ def get_dataloader(train_data, phase: str, batch_size: int) -> DataLoader:
     dataloader = DataLoader(dataset=dataset, batch_size=batch_size, num_workers=4)
     return dataloader
 
-def get_test_dataloader(test_data, batch_size: int) -> DataLoader:
+def dataloader(data, batch_size: int) -> DataLoader:
     '''
     Dataset and DataLoader.
     Parameters:
@@ -150,8 +150,8 @@ def get_test_dataloader(test_data, batch_size: int) -> DataLoader:
     Returns:
         data generator
     '''
-    test_data = test_data.reset_index(drop=True)
-    dataset = MyDataset(test_data)
-    print(f'test data shape: {dataset.df.shape}')
+    data = data.reset_index(drop=True)
+    dataset = MyDataset(data)
+    print(f'data shape: {dataset.df.shape}')
     dataloader = DataLoader(dataset=dataset, batch_size=batch_size, num_workers=0)
     return dataloader
