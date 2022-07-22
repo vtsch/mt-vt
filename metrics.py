@@ -18,36 +18,25 @@ def calculate_clustering_scores(y_true, y_pred, experiment):
     print('Confusion Matrix:')
     print(cm)
     experiment.log_metrics(pd.DataFrame({'accuracy': [accuracy], 'ri': [ri], 'ari': [ari], 'mi': [mi], 'nmi': [nmi]}))
-    experiment.log_confusion_matrix(y_true.astype(int), y_pred, title = "Confusion Matrix")
+    experiment.log_confusion_matrix(y_true, title = "Confusion Matrix")
 
 
 class Meter:
-    def __init__(self, n_classes):
+    def __init__(self):
         self.metrics = {}
-        self.confusion = torch.zeros((n_classes, n_classes))
-    
-    def update(self, x, y, loss):
+
+    def update(self, x, y, phase, loss):
         x = np.argmax(x.detach().cpu().numpy(), axis=1)
         y = y.detach().cpu().numpy()
-        self.metrics['loss'] += loss
-        self.metrics['accuracy'] += accuracy_score(x,y)
-        self.metrics['f1'] += f1_score(x,y,average='macro')
-        #self._compute_cm(x, y)
-        
-    def _compute_cm(self, x, y):
-        for prob, target in zip(x, y):
-            if prob == target:
-                self.confusion[target][target] += 1
-            else:
-                self.confusion[target][prob] += 1
+        self.metrics[phase + '_loss'] += loss
+        self.metrics[phase + '_accuracy'] += accuracy_score(x,y)
+        self.metrics[phase + '_f1'] += f1_score(x,y,average='macro')
     
-    def init_metrics(self):
-        self.metrics['loss'] = 0
-        self.metrics['accuracy'] = 0
-        self.metrics['f1'] = 0
+    def init_metrics(self, phase):
+        self.metrics[phase + '_loss'] = 0
+        self.metrics[phase + '_accuracy'] = 0
+        self.metrics[phase + '_f1'] = 0
         
     def get_metrics(self):
         return self.metrics
     
-    def get_confusion_matrix(self):
-        return self.confusion
