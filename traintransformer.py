@@ -11,6 +11,17 @@ import pandas as pd
 from metrics import Meter
 import numpy as np
 
+def generate_square_subsequent_mask(ts_length):
+        t0 = np.floor(ts_length *0.9)
+
+        t0 = t0.astype(int)
+        mask = torch.zeros(ts_length, ts_length)
+        for i in range(0,t0):
+            mask[i,t0:] = 1 
+        for i in range(t0,ts_length):
+            mask[i,i+1:] = 1
+        mask = mask.float().masked_fill(mask == 1, float('-inf'))#.masked_fill(mask == 1, float(0.0))
+        return mask
 
 class TransformerTrainer:
     def __init__(self, config, experiment, train_data, test_data, net):
@@ -26,6 +37,8 @@ class TransformerTrainer:
         self.train_dataloader = {
             phase: get_dataloader(train_data, phase, config.batch_size) for phase in self.phases
         }
+        self.train_data = train_data
+        self.attention_masks = generate_square_subsequent_mask(6)
 
 
     def _train_epoch(self, phase):
@@ -35,12 +48,16 @@ class TransformerTrainer:
         self.net.train() if phase == 'train' else self.net.eval()
         meter = Meter()
         meter.init_metrics(phase)
+        
 
         for i, (data, target) in enumerate(self.train_dataloader[phase]):
             #print("data shape: ", data.shape)
             #data = data.reshape(self.config.batch_size, -1, 1)
-            predictions = self.net(data)
-            loss = self.criterion(predictions, target.float().view(-1, 1))
+            #predictions = self.net(data)
+            data = nn.functional.normalize(data, p=2, dim=0)
+            predictions, psu_class, transf_emb, transf_reconst = self.net(data, target, self.attention_masks)
+            target = target.unsqueeze(1).repeat(1, predictions.shape[2])
+            loss = self.criterion(predictions.squeeze(1), target.float()) #.view(-1, 1))
 
             if phase == 'train':
                 self.optimizer.zero_grad()
@@ -49,7 +66,10 @@ class TransformerTrainer:
                 torch.nn.utils.clip_grad_norm_(self.net.parameters(), 1)
                 self.optimizer.step()
             
-            meter.update(predictions, target, phase, loss.item())
+            #meter.update(predictions, target, phase, loss.item())
+            #remove 2nd axis in predictions and data
+            predictions = predictions.squeeze(1)
+            meter.update(predictions.detach().numpy(), target, phase, loss.item())
                 
         metrics = meter.get_metrics()
         metrics = {k:v / i for k, v in metrics.items()}
@@ -63,18 +83,18 @@ class TransformerTrainer:
             
             print('Epoch: %d | time: %s' %(epoch, time.strftime('%H:%M:%S')))
             _, train_logs = self._train_epoch(phase='train')
-            print("train logs \n", train_logs)
+            print(train_logs)
             self.experiment.log_metrics(dic=train_logs, step=epoch)
 
             with torch.no_grad():
                 val_loss, val_logs = self._train_epoch(phase='val')
-                print("val logs \n", val_logs)
+                print(val_logs)
                 self.experiment.log_metrics(dic=val_logs, step=epoch)
                 self.scheduler.step()
             
             if val_loss < self.best_loss:
                 self.best_loss = val_loss
-                print('New checkpoint')
+                print('-- new checkpoint --')
                 self.best_loss = val_loss
                 self.experiment.log_metric('best_loss', self.best_loss, step=epoch)
                 #save best model here
@@ -87,12 +107,14 @@ class TransformerTrainer:
         with torch.no_grad():
             for data, target in self.test_dataloader:
                 #data = data.to(config.device)
-                prediction = self.net(data)
+                #prediction = self.net(data)
+                data = nn.functional.normalize(data, p=2, dim=0)
+                prediction, psu_class, transf_emb, transf_reconst = self.net(data, target, self.attention_masks)
                 predictions = np.append(predictions, prediction.detach().numpy() )
                 targets = np.append(targets, target.detach().numpy())  #always +bs
 
-        #embeddings = embeddings.reshape(-1, emb_size)
+        embeddings = predictions.reshape(-1, emb_size)
 
-        return predictions, targets
+        return embeddings, targets
 
 
