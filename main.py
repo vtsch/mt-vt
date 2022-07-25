@@ -1,3 +1,4 @@
+import trace
 import torch
 import os
 import tqdm
@@ -12,7 +13,7 @@ from train import Trainer
 from utils import get_bunch_config_from_json, build_save_path, build_comet_logger
 from x_transformers import XTransformer, TransformerWrapper, Encoder
 from traintransformer import TransformerTrainer
-from transformer import Transformer
+from transformer import Transformer, TransformerTimeSeries
 
 
 class Config:
@@ -21,8 +22,8 @@ class Config:
     metric = "euclidean" #metric : {“euclidean”, “dtw”, “softdtw”} 
     n_clusters = 2
     lr=1e-3
-    batch_size = 16
-    n_epochs = 50
+    batch_size = 24
+    n_epochs = 20
     emb_size = 4
     model_save_directory = "./models"
 
@@ -35,7 +36,7 @@ class Config:
     MOD_RNN_ATT = False
     MOD_TRANSFORMER = True
 
-    experiment_name = "raw_model" if MOD_RAW else "simple_ac" if MOD_SIMPLE_AC else "deep_ac" if MOD_DEEP_AC else "lstm_model" if MOD_LSTM else "cnn_model" if MOD_CNN else "rnn_attmodel" if MOD_RNN_ATT else "transformer_model" if MOD_TRANSFORMER else "notimplemented"
+    experiment_name = "raw_model" if MOD_RAW else "simple_ac" if MOD_SIMPLE_AC else "deep_ac" if MOD_DEEP_AC else "lstm_model" if MOD_LSTM else "cnn_model" if MOD_CNN else "rnn_attmodel" if MOD_RNN_ATT else "transformer_model TS" if MOD_TRANSFORMER else "notimplemented"
 
 
 if __name__ == '__main__':
@@ -56,7 +57,7 @@ if __name__ == '__main__':
         #load data
         df_raw = load_psa_data_to_pd(file_name)
         df_psa = create_psa_df(df_raw)
-        df_psa = upsample_data(df_psa, n_clusters=config.n_clusters, sample_size=3000)
+        df_psa = upsample_data(df_psa, n_clusters=config.n_clusters, sample_size=6000)
         #create train test split
         df_train, df_test = df_psa.iloc[:int(len(df_psa)*0.8)], df_psa.iloc[int(len(df_psa)*0.8):]
         y_real = df_train['pros_cancer']
@@ -163,23 +164,27 @@ if __name__ == '__main__':
             dec_max_seq_len = ts_length
         ).to(config.device)
         """
+
+        """
         model = Transformer(emb=ts_length,
-                          heads=2,
-                          depth=2,
+                          heads=1,
+                          depth=1,
                           num_features=1,
                           num_out_channels_emb=config.emb_size,
                           dropout=0.2) 
+        """
+        model = TransformerTimeSeries() 
 
         summary(model, input_size=(1, ts_length))
         trainer = TransformerTrainer(config=config, experiment=experiment, train_data=df_train, test_data=df_test, net=model)
-        trainer.run(model)
-        predictions, target = trainer.eval(config.emb_size)
-        #print("output", predictions.shape)
-        #print("target", target.shape)
-        predictions = predictions.reshape(-1, 1) #note. here prediction is already a classification --> TODO: change this
+        trainer.run()
+        predictions, target = trainer.eval(ts_length)
+        print("output", predictions.shape)
+        print("target", target.shape)
+        # for Transformer():# predictions = predictions.reshape(-1, 1) #note. here prediction is already a classification 
 
         kmeans_labels = run_kmeans(predictions, config.n_clusters, config.metric, config.experiment_name, experiment)
-        #print("kmeans_labels", kmeans_labels.shape)
+        print("kmeans_labels", kmeans_labels.shape)
         run_umap(predictions, target, kmeans_labels, config.experiment_name, experiment)
-        calculate_clustering_scores(target, kmeans_labels, experiment)
+        calculate_clustering_scores(target.astype(int), kmeans_labels, experiment)
     
