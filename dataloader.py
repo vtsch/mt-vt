@@ -37,7 +37,7 @@ def upsample_data(df_mitbih, n_clusters, sample_size):
     df = pd.DataFrame()
     for i in range(n_clusters):
         #df = pd.concat([df, df_mitbih.loc[df_mitbih['class'] == i].sample(n=sample_size)])
-        df = pd.concat([df, df_mitbih.loc[df_mitbih['pros_cancer'] == i].sample(n=sample_size)])
+        df = pd.concat([df, df_mitbih.loc[df_mitbih['pros_cancer'] == i].sample(n=sample_size, replace=True)])
     #shuffle rows of df and remove index column
     df = df.sample(frac=1)
     df = df.reset_index(drop=True)  
