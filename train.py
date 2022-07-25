@@ -1,6 +1,4 @@
 import time
-from comet_ml import Experiment
-from sklearn import metrics
 import torch
 import torch.nn as nn
 from torch.optim import AdamW, Adam
@@ -13,7 +11,6 @@ from metrics import Meter
 from dataloader import get_dataloader, dataloader
 import numpy as np
 
-#https://www.kaggle.com/code/polomarco/ecg-classification-cnn-lstm-attention-mechanism 
 
 class Trainer:
     def __init__(self, config, experiment, train_data, test_data, net):
