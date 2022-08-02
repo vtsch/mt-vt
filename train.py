@@ -39,6 +39,7 @@ class Trainer:
         for i, (data, target) in enumerate(self.dataloaders[phase]):
             #data = data.to(config.device)
             #target = target.to(config.device)
+            data = nn.functional.normalize(data, p=2, dim=2)
             output = self.net(data)
             loss = self.criterion(output, target)
 
@@ -72,8 +73,8 @@ class Trainer:
                 self.best_loss = val_loss
                 print('New checkpoint')
                 self.best_loss = val_loss
-                #save best model here to config.model_save_path
-                torch.save(self.net.state_dict(), config.model_save_path)
+                #save best model 
+                torch.save(self.net.state_dict(), f"best_model_epoc{epoch}.pth")
             
             self.experiment.log_metrics(pd.DataFrame({'train_loss': [train_loss.detach().numpy()], 'val_loss': [val_loss.detach().numpy()]}), epoch=epoch)
 
@@ -89,6 +90,7 @@ class Trainer:
                 embeddings = np.append(embeddings, output.detach().numpy() )
                 targets = np.append(targets, target.detach().numpy())  #always +bs
 
+        targets = targets.astype(int)
         embeddings = embeddings.reshape(-1, config.emb_size)
         return embeddings, targets
 
