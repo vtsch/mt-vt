@@ -3,6 +3,7 @@ import pandas as pd
 
 from sklearn.utils import resample
 from sklearn.model_selection import train_test_split
+from sklearn import preprocessing
 
 import torch
 from torch.utils.data import Dataset, DataLoader
@@ -32,6 +33,8 @@ def load_ecg_data_to_pd(file_name_train, file_name_test):
 
     return df_mitbih_train, df_mitbih_test
 
+
+# ---- utils ----
 def upsample_data(df_mitbih, n_clusters, sample_size):
     #select sample_size samples from each class
     df = pd.DataFrame()
@@ -43,6 +46,13 @@ def upsample_data(df_mitbih, n_clusters, sample_size):
     df = df.reset_index(drop=True)  
     #print(df.head(5))
 
+    return df
+
+def normalize(df):
+    x = df.values #returns a numpy array
+    min_max_scaler = preprocessing.MinMaxScaler()
+    x_scaled = min_max_scaler.fit_transform(x)
+    df = pd.DataFrame(x_scaled)
     return df
 
 # ---- for PSA data ----
@@ -101,6 +111,7 @@ def load_psa_data_to_pd(file_name, config):
         df_raw = pd.read_csv(file_name, header=0)
         df_psa = create_psa_df(df_raw)
         df_psa = upsample_data(df_psa, n_clusters=config.n_clusters, sample_size=config.sample_size)
+        
         #create train test split
         df_train, df_test = df_psa.iloc[:int(len(df_psa)*0.8)], df_psa.iloc[int(len(df_psa)*0.8):]
         y_real = df_train['pros_cancer']
@@ -125,7 +136,7 @@ class MyDataset(Dataset):
     def __len__(self):
         return len(self.df)
 
-def generate_train_test(data):
+def generate_train_val(data):
     train_df, val_df = train_test_split(
         # data, test_size=0.15, random_state=42, stratify=data['class']
         data, test_size=0.15, random_state=42, stratify=data['pros_cancer']
@@ -142,7 +153,7 @@ def get_dataloader(train_data, phase: str, batch_size: int) -> DataLoader:
     Returns:
         data generator
     '''
-    train_df, val_df = generate_train_test(train_data)
+    train_df, val_df = generate_train_val(train_data)
     df = train_df if phase == 'train' else val_df
     dataset = MyDataset(df)
     print(f'{phase} data shape: {dataset.df.shape}')
