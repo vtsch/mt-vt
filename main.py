@@ -21,9 +21,9 @@ class Config:
     device = 'cuda:0' if torch.cuda.is_available() else 'cpu'
     metric = "euclidean" #metric : {“euclidean”, “dtw”, “softdtw”} 
     n_clusters = 2
-    lr=1e-3
+    lr=0.001
     batch_size = 24
-    n_epochs = 20
+    n_epochs = 80
     emb_size = 4
     model_save_directory = "./models"
 
@@ -57,7 +57,7 @@ if __name__ == '__main__':
         #load data
         df_raw = load_psa_data_to_pd(file_name)
         df_psa = create_psa_df(df_raw)
-        df_psa = upsample_data(df_psa, n_clusters=config.n_clusters, sample_size=6000)
+        df_psa = upsample_data(df_psa, n_clusters=config.n_clusters, sample_size=3000)
         #create train test split
         df_train, df_test = df_psa.iloc[:int(len(df_psa)*0.8)], df_psa.iloc[int(len(df_psa)*0.8):]
         y_real = df_train['pros_cancer']

@@ -1,3 +1,4 @@
+from comet_ml import Experiment
 from typing import Optional, Any
 import math
 import torch
@@ -149,11 +150,14 @@ class CausalConv1d(torch.nn.Conv1d):
         self.__padding = (kernel_size - 1) * dilation
         
     def forward(self, input):
-        return super(CausalConv1d, self).forward(F.pad(input, (self.__padding, 0)))
+        x = super(CausalConv1d, self)
+        y = F.pad(input, (self.__padding, 0))
+        x = x.forward(y)
+        return x
 
 
 class context_embedding(torch.nn.Module):
-    def __init__(self,in_channels=1,embedding_size=12,k=3):
+    def __init__(self,in_channels,embedding_size,k):
         super(context_embedding,self).__init__()
         self.causal_convolution = CausalConv1d(in_channels,embedding_size,kernel_size=k)
 
@@ -181,11 +185,11 @@ class TransformerTimeSeries(torch.nn.Module):
 
         self.feature_size = 12
         self.dropout = 0.1
-        self.num_layers = 4
+        self.num_layers = 2
         self.ts_length = 6
 
-        self.input_embedding = context_embedding(1, self.feature_size, 4)
-        self.positional_embedding = torch.nn.Embedding(80, self.feature_size) 
+        self.input_embedding = context_embedding(2, self.feature_size, 3)
+        self.positional_embedding = torch.nn.Embedding(60, self.feature_size) 
 
         self.encoder_layer = torch.nn.TransformerEncoderLayer(d_model=self.feature_size, nhead=2, dropout=self.dropout)
         self.transformer_encoder = torch.nn.TransformerEncoder(self.encoder_layer, num_layers=self.num_layers)
@@ -195,22 +199,22 @@ class TransformerTimeSeries(torch.nn.Module):
 
         self.fc1 = torch.nn.Linear(self.feature_size, 1)
         self.f_class = torch.nn.Linear(self.feature_size, 1)
-        self.softmax = torch.nn.Softmax(dim=0)
+        self.softmax = torch.nn.Softmax(dim=1)
 
 
-    def forward(self, x, y, attention_masks):
+    def forward(self, indices, data, attention_masks):
         # concatenate observed points and time covariate
         # (B*feature_size*n_time_points)
-        #z = torch.cat((y.unsqueeze(1), x.unsqueeze(1)), 1)
-        z = x
-        #print("z shape: ", z.shape)
+        z = torch.cat((data.unsqueeze(1), indices.unsqueeze(1)), 1)
 
         # input_embedding returns shape (Batch size,embedding size,sequence len) -> need (sequence len,Batch size,embedding_size)
         z_embedding = self.input_embedding(z).permute(2, 0, 1)
+        #print("z_emb", z_embedding)
         #print("z_embedding shape: ", z_embedding.shape)
 
         # get my positional embeddings (Batch size, sequence_len, embedding_size) -> need (sequence len,Batch size,embedding_size)
-        positional_embeddings = self.positional_embedding(x.type(torch.long))
+        positional_embeddings = self.positional_embedding(indices.type(torch.long))
+        #print("positional_embeddings", positional_embeddings)
         #print("positional_embeddings shape: ", positional_embeddings.shape)
         positional_embeddings = positional_embeddings.reshape(positional_embeddings.shape[0], self.ts_length, -1).permute(1, 0, 2)
         #print("positional_embeddings shape: ", positional_embeddings.shape)
