@@ -30,11 +30,11 @@ class Trainer:
         self.val_df_logs = pd.DataFrame()
 
     
-    def _train_epoch(self, phase):
+    def _train_epoch(self, config, phase):
 
         self.net.train() if phase == 'train' else self.net.eval()
-        meter = Meter(self.config.n_clusters)
-        meter.init_metrics()
+        meter = Meter()
+        meter.init_metrics(phase)
 
         for i, (data, target) in enumerate(self.dataloaders[phase]):
             #data = data.to(config.device)
@@ -47,45 +47,38 @@ class Trainer:
                 loss.backward()
                 self.optimizer.step()
 
-            meter.update(output, target, loss.item())
-        
+            target = target.unsqueeze(1).repeat(1, config.emb_size)
+            meter.update(output.detach().numpy(), target, phase, loss.item())
+
         metrics = meter.get_metrics()
         metrics = {k:v / i for k, v in metrics.items()}
         df_logs = pd.DataFrame([metrics])
-        
-        if phase == 'train':
-
-            self.train_df_logs = pd.concat([self.train_df_logs, df_logs], axis=0)
-        else:
-            self.val_df_logs = pd.concat([self.val_df_logs, df_logs], axis=0)
-        
-        # show logs
-        print('{} phase | {}: {}, {}: {}, {}: {}'
-              .format(phase, *(x for kv in metrics.items() for x in kv))
-             )
 
         return loss, df_logs    
     
-    def run(self):
+    def run(self, config):
         for epoch in range(self.config.n_epochs):
             print('Epoch: %d | time: %s' %(epoch, time.strftime('%H:%M:%S')))
-            train_loss, train_logs = self._train_epoch(phase='train')
-            self.experiment.log_metrics(dic=train_logs, epoch=epoch)
+            train_loss, train_logs = self._train_epoch(config, phase='train')
+            print(train_logs)
+            self.experiment.log_metrics(dic=train_logs, step=epoch)
             with torch.no_grad():
-                val_loss, val_logs = self._train_epoch(phase='val')
-                self.experiment.log_metrics(dic=val_logs, epoch=epoch)
+                val_loss, val_logs = self._train_epoch(config, phase='val')
+                print(val_logs)
+                self.experiment.log_metrics(dic=val_logs, step=epoch)
                 self.scheduler.step()
             
             if val_loss < self.best_loss:
                 self.best_loss = val_loss
                 print('New checkpoint')
                 self.best_loss = val_loss
-                #save best model here
+                #save best model here to config.model_save_path
+                torch.save(self.net.state_dict(), config.model_save_path)
             
             self.experiment.log_metrics(pd.DataFrame({'train_loss': [train_loss.detach().numpy()], 'val_loss': [val_loss.detach().numpy()]}), epoch=epoch)
 
     
-    def eval(self, emb_size):
+    def eval(self, config):
         self.net.eval()
         embeddings = np.array([])
         targets = np.array([])
@@ -96,7 +89,7 @@ class Trainer:
                 embeddings = np.append(embeddings, output.detach().numpy() )
                 targets = np.append(targets, target.detach().numpy())  #always +bs
 
-        embeddings = embeddings.reshape(-1, emb_size)
+        embeddings = embeddings.reshape(-1, config.emb_size)
         return embeddings, targets
 
 
