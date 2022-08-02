@@ -4,3 +4,5 @@
 
 * branch "playground" for first experiments
 * branch "simple_models" for baseline models
+* branch "transformer" for first transformer implementation
+* branch "ts-tcc" for TS-TCC architecture, from https://github.com/emadeldeen24/TS-TCC
