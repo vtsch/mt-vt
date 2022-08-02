@@ -1,7 +1,7 @@
 import torch
 import numpy as np
 import pandas as pd
-from sklearn.metrics import accuracy_score, auc, f1_score, mutual_info_score, rand_score, adjusted_rand_score, normalized_mutual_info_score, confusion_matrix
+from sklearn.metrics import accuracy_score, mutual_info_score, rand_score, adjusted_rand_score, normalized_mutual_info_score, confusion_matrix
 from sklearn.metrics import r2_score, mean_squared_error
 
 def calculate_clustering_scores(y_true, y_pred, experiment):
@@ -32,15 +32,11 @@ class Meter:
         self.metrics[phase + '_loss'] += loss
         self.metrics[phase + '_mse'] += mean_squared_error(x,y)
         self.metrics[phase + '_r2'] += r2_score(x,y)
-        #self.metrics[phase + '_accuracy'] += accuracy_score(x,y)
-        #self.metrics[phase + '_f1'] += f1_score(x,y,average='macro')
     
     def init_metrics(self, phase):
         self.metrics[phase + '_loss'] = 0
         self.metrics[phase + '_mse'] = 0
         self.metrics[phase + '_r2'] = 0
-        #self.metrics[phase + '_accuracy'] = 0
-        #self.metrics[phase + '_f1'] = 0
         
     def get_metrics(self):
         return self.metrics
