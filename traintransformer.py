@@ -28,8 +28,8 @@ class TransformerTrainer:
         self.net = net.to(config.device)
         self.config = config
         self.experiment = experiment
-        self.criterion = torch.nn.BCELoss()
-        self.optimizer = torch.optim.Adam(net.parameters(), lr=config.lr)
+        self.criterion = nn.MSELoss() #nn.BCELoss()
+        self.optimizer = Adam(net.parameters(), lr=config.lr)
         self.scheduler = CosineAnnealingLR(self.optimizer, T_max=config.n_epochs, eta_min=5e-6)
         self.best_loss = float('inf')
         self.phases = ['train', 'val']
@@ -54,10 +54,14 @@ class TransformerTrainer:
             #print("data shape: ", data.shape)
             #data = data.reshape(self.config.batch_size, -1, 1)
             #predictions = self.net(data)
-            data = nn.functional.normalize(data, p=2, dim=0)
-            predictions, psu_class, transf_emb, transf_reconst = self.net(data, target, self.attention_masks)
-            target = target.unsqueeze(1).repeat(1, predictions.shape[2])
-            loss = self.criterion(predictions.squeeze(1), target.float()) #.view(-1, 1))
+            data = nn.functional.normalize(data, p=2, dim=1).squeeze(1)
+            indices = torch.arange(0,6).repeat(self.config.batch_size, 1)
+            #predictions, psu_class, transf_emb, transf_reconst = self.net(data, target, self.attention_masks)
+            predictions, psu_class, transf_emb, transf_reconst = self.net(indices, data, self.attention_masks)
+            predictions = predictions.squeeze(1)
+            #print("preds", predictions)
+            #loss = self.criterion(predictions.squeeze(1), target.float()) #.view(-1, 1))
+            loss = self.criterion(data, predictions) #.view(-1, 1))
 
             if phase == 'train':
                 self.optimizer.zero_grad()
@@ -68,8 +72,7 @@ class TransformerTrainer:
             
             #meter.update(predictions, target, phase, loss.item())
             #remove 2nd axis in predictions and data
-            predictions = predictions.squeeze(1)
-            meter.update(predictions.detach().numpy(), target, phase, loss.item())
+            meter.update(predictions.detach().numpy(), data, phase, loss.item())
                 
         metrics = meter.get_metrics()
         metrics = {k:v / i for k, v in metrics.items()}
@@ -108,11 +111,14 @@ class TransformerTrainer:
             for data, target in self.test_dataloader:
                 #data = data.to(config.device)
                 #prediction = self.net(data)
-                data = nn.functional.normalize(data, p=2, dim=0)
-                prediction, psu_class, transf_emb, transf_reconst = self.net(data, target, self.attention_masks)
+                data = nn.functional.normalize(data, p=2, dim=1).squeeze(1)
+                indices = torch.arange(0,6).repeat(self.config.batch_size, 1)
+                #prediction, psu_class, transf_emb, transf_reconst = self.net(data, target, self.attention_masks)
+                prediction, psu_class, transf_emb, transf_reconst = self.net(indices, data, self.attention_masks)
                 predictions = np.append(predictions, prediction.detach().numpy() )
                 targets = np.append(targets, target.detach().numpy())  #always +bs
 
+        print("predictions size: ", predictions.shape)
         embeddings = predictions.reshape(-1, emb_size)
 
         return embeddings, targets
