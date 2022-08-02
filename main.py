@@ -23,9 +23,10 @@ class Config:
     n_clusters = 2
     lr=0.001
     batch_size = 24
-    n_epochs = 50
+    n_epochs = 5
     emb_size = 4
     model_save_directory = "./models"
+    sample_size = 3000
 
     PSA_DATA = True
     MOD_RAW = False
@@ -53,14 +54,7 @@ if __name__ == '__main__':
     if config.PSA_DATA == True:
         file_name = "data/pros_data_mar22_d032222.csv"
         ts_length = 6
-
-        #load data
-        df_raw = load_psa_data_to_pd(file_name)
-        df_psa = create_psa_df(df_raw)
-        df_psa = upsample_data(df_psa, n_clusters=config.n_clusters, sample_size=3000)
-        #create train test split
-        df_train, df_test = df_psa.iloc[:int(len(df_psa)*0.8)], df_psa.iloc[int(len(df_psa)*0.8):]
-        y_real = df_train['pros_cancer']
+        df_train, df_test, y_real = load_psa_data_to_pd(file_name, config)
         
     else:
         file_name_train = 'data/mitbih_train.csv'
@@ -89,8 +83,8 @@ if __name__ == '__main__':
         model = SimpleAutoencoder(ts_length=ts_length, emb_size=config.emb_size)
         summary(model, input_size=(1, ts_length))
         trainer = Trainer(config=config, experiment=experiment, train_data = df_train, test_data=df_test, net=model)
-        trainer.run()
-        output, target = trainer.eval(config.emb_size)
+        trainer.run(config)
+        output, target = trainer.eval(config)
     
         kmeans_labels = run_kmeans(output, config.n_clusters, config.metric, config.experiment_name, experiment)
         run_umap(output, target, kmeans_labels, config.experiment_name, experiment)
