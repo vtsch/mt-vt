@@ -23,7 +23,7 @@ class Config:
     n_clusters = 2
     lr=0.001
     batch_size = 24
-    n_epochs = 5
+    n_epochs = 10
     emb_size = 4
     model_save_directory = "./models"
     sample_size = 3000
@@ -35,7 +35,7 @@ class Config:
     MOD_LSTM = False
     MOD_CNN = False
     MOD_RNN_ATT = False
-    MOD_TRANSFORMER = False
+    MOD_TRANSFORMER = True
 
     experiment_name = "raw_model" if MOD_RAW else "simple_ac" if MOD_SIMPLE_AC else "deep_ac" if MOD_DEEP_AC else "lstm_model" if MOD_LSTM else "cnn_model" if MOD_CNN else "rnn_attmodel" if MOD_RNN_ATT else "transformer_model TS" if MOD_TRANSFORMER else "notimplemented"
 
@@ -45,8 +45,8 @@ if __name__ == '__main__':
     config = Config()
 
     save_path = build_save_path(config)
-    os.makedirs(save_path)
-    config.model_save_path = save_path
+    #os.makedirs(save_path)
+    #config.model_save_path = save_path
 
     experiment = build_comet_logger(config)
 
@@ -80,7 +80,7 @@ if __name__ == '__main__':
     # run embedding models and kmeans
 
     if config.MOD_SIMPLE_AC == True:
-        model = SimpleAutoencoder(ts_length=ts_length, emb_size=config.emb_size)
+        model = SimpleAutoencoder(ts_length, config.emb_size)
         summary(model, input_size=(1, ts_length))
         trainer = Trainer(config=config, experiment=experiment, train_data = df_train, test_data=df_test, net=model)
         trainer.run(config)
@@ -91,13 +91,15 @@ if __name__ == '__main__':
         calculate_clustering_scores(target, kmeans_labels, experiment)
 
     if config.MOD_DEEP_AC == True:
-        model = DeepAutoencoder()
+        model = DeepAutoencoder(ts_length, config.emb_size)
         summary(model, input_size=(1, ts_length))
         trainer = Trainer(config=config, experiment=experiment, train_data = df_train, test_data=df_test, net=model)
-        trainer.run()
-        output, target = trainer.eval(config.emb_size)
+        trainer.run(config)
+        output, target = trainer.eval(config)
         kmeans_labels = run_kmeans(output, config.n_clusters, config.metric, config.experiment_name, experiment)
         run_umap(output, target, kmeans_labels, config.experiment_name, experiment)
+        print("target: ", target)
+        print("kmeans_labels: ", kmeans_labels)
         calculate_clustering_scores(target, kmeans_labels, experiment)
 
     if config.MOD_LSTM == True: 
