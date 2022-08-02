@@ -54,7 +54,7 @@ class TransformerTrainer:
             #print("data shape: ", data.shape)
             #data = data.reshape(self.config.batch_size, -1, 1)
             #predictions = self.net(data)
-            data = nn.functional.normalize(data, p=2, dim=1).squeeze(1)
+            data = nn.functional.normalize(data, p=2, dim=2).squeeze(1)
             indices = torch.arange(0,6).repeat(self.config.batch_size, 1)
             #predictions, psu_class, transf_emb, transf_reconst = self.net(data, target, self.attention_masks)
             predictions, psu_class, transf_emb, transf_reconst = self.net(indices, data, self.attention_masks)
@@ -101,6 +101,7 @@ class TransformerTrainer:
                 self.best_loss = val_loss
                 self.experiment.log_metric('best_loss', self.best_loss, step=epoch)
                 #save best model here
+                torch.save(self.net.state_dict(), f"best_model_epoc{epoch}.pth")
 
                 
     def eval(self, emb_size):
