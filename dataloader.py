@@ -47,10 +47,6 @@ def upsample_data(df_mitbih, n_clusters, sample_size):
 
 # ---- for PSA data ----
 
-def load_psa_data_to_pd(file_name):
-    df_raw = pd.read_csv(file_name, header=0)
-    return df_raw
-
 def create_psa_df(df):
     # select columns with psa data, set threshold to have at least 5 measurements
     # psa_levels per year: 69-74
@@ -100,6 +96,18 @@ def create_timesteps_df(df):
     return df
 
 
+def load_psa_data_to_pd(file_name, config):
+        #load data
+        df_raw = pd.read_csv(file_name, header=0)
+        df_psa = create_psa_df(df_raw)
+        df_psa = upsample_data(df_psa, n_clusters=config.n_clusters, sample_size=config.sample_size)
+        #create train test split
+        df_train, df_test = df_psa.iloc[:int(len(df_psa)*0.8)], df_psa.iloc[int(len(df_psa)*0.8):]
+        y_real = df_train['pros_cancer']
+
+        return df_train, df_test, y_real
+
+
 # ---- Dataloader ----
 
 class MyDataset(Dataset):
@@ -137,7 +145,7 @@ def get_dataloader(train_data, phase: str, batch_size: int) -> DataLoader:
     train_df, val_df = generate_train_test(train_data)
     df = train_df if phase == 'train' else val_df
     dataset = MyDataset(df)
-    print(f'{phase} data shape: {dataset.shape}')
+    print(f'{phase} data shape: {dataset.df.shape}')
     dataloader = DataLoader(dataset=dataset, batch_size=batch_size, num_workers=4)
     return dataloader
 
@@ -155,24 +163,21 @@ def dataloader(data, batch_size: int) -> DataLoader:
     dataloader = DataLoader(dataset=dataset, batch_size=batch_size, num_workers=0)
     return dataloader
 
+
 def data_generator(data_path, configs, training_mode):
 
-    train_dataset = torch.load(os.path.join(data_path, "train.pt"))
-    valid_dataset = torch.load(os.path.join(data_path, "val.pt"))
-    test_dataset = torch.load(os.path.join(data_path, "test.pt"))
+    train_dataset = MyDataset(train_dataset, configs, training_mode)
+    valid_dataset = MyDataset(valid_dataset, configs, training_mode)
+    test_dataset = MyDataset(test_dataset, configs, training_mode)
 
-    train_dataset = Load_Dataset(train_dataset, configs, training_mode)
-    valid_dataset = Load_Dataset(valid_dataset, configs, training_mode)
-    test_dataset = Load_Dataset(test_dataset, configs, training_mode)
-
-    train_loader = torch.utils.data.DataLoader(dataset=train_dataset, batch_size=configs.batch_size,
+    train_loader = DataLoader(dataset=train_dataset, batch_size=configs.batch_size,
                                                shuffle=True, drop_last=configs.drop_last,
                                                num_workers=0)
-    valid_loader = torch.utils.data.DataLoader(dataset=valid_dataset, batch_size=configs.batch_size,
+    valid_loader = DataLoader(dataset=valid_dataset, batch_size=configs.batch_size,
                                                shuffle=False, drop_last=configs.drop_last,
                                                num_workers=0)
 
-    test_loader = torch.utils.data.DataLoader(dataset=test_dataset, batch_size=configs.batch_size,
+    test_loader = DataLoader(dataset=test_dataset, batch_size=configs.batch_size,
                                               shuffle=False, drop_last=False,
                                               num_workers=0)
 
