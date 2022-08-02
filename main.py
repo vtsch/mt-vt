@@ -23,18 +23,18 @@ class Config:
     n_clusters = 2
     lr=0.001
     batch_size = 24
-    n_epochs = 80
+    n_epochs = 50
     emb_size = 4
     model_save_directory = "./models"
 
     PSA_DATA = True
     MOD_RAW = False
-    MOD_SIMPLE_AC = False
+    MOD_SIMPLE_AC = True
     MOD_DEEP_AC = False
     MOD_LSTM = False
     MOD_CNN = False
     MOD_RNN_ATT = False
-    MOD_TRANSFORMER = True
+    MOD_TRANSFORMER = False
 
     experiment_name = "raw_model" if MOD_RAW else "simple_ac" if MOD_SIMPLE_AC else "deep_ac" if MOD_DEEP_AC else "lstm_model" if MOD_LSTM else "cnn_model" if MOD_CNN else "rnn_attmodel" if MOD_RNN_ATT else "transformer_model TS" if MOD_TRANSFORMER else "notimplemented"
 

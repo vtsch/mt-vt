@@ -111,7 +111,6 @@ class MyDataset(Dataset):
     def __getitem__(self, idx):
         signal = self.df.loc[idx, self.data_columns].astype('float32')
         signal = torch.tensor(np.array([signal.values]))         
-        # target = torch.LongTensor(np.array(self.df.loc[idx, 'class']))
         target = torch.tensor(np.array(self.df.loc[idx, 'pros_cancer']))
         return signal, target
 
@@ -138,7 +137,7 @@ def get_dataloader(train_data, phase: str, batch_size: int) -> DataLoader:
     train_df, val_df = generate_train_test(train_data)
     df = train_df if phase == 'train' else val_df
     dataset = MyDataset(df)
-    print(f'{phase} data shape: {df.shape}')
+    print(f'{phase} data shape: {dataset.shape}')
     dataloader = DataLoader(dataset=dataset, batch_size=batch_size, num_workers=4)
     return dataloader
 
@@ -155,3 +154,26 @@ def dataloader(data, batch_size: int) -> DataLoader:
     print(f'data shape: {dataset.df.shape}')
     dataloader = DataLoader(dataset=dataset, batch_size=batch_size, num_workers=0)
     return dataloader
+
+def data_generator(data_path, configs, training_mode):
+
+    train_dataset = torch.load(os.path.join(data_path, "train.pt"))
+    valid_dataset = torch.load(os.path.join(data_path, "val.pt"))
+    test_dataset = torch.load(os.path.join(data_path, "test.pt"))
+
+    train_dataset = Load_Dataset(train_dataset, configs, training_mode)
+    valid_dataset = Load_Dataset(valid_dataset, configs, training_mode)
+    test_dataset = Load_Dataset(test_dataset, configs, training_mode)
+
+    train_loader = torch.utils.data.DataLoader(dataset=train_dataset, batch_size=configs.batch_size,
+                                               shuffle=True, drop_last=configs.drop_last,
+                                               num_workers=0)
+    valid_loader = torch.utils.data.DataLoader(dataset=valid_dataset, batch_size=configs.batch_size,
+                                               shuffle=False, drop_last=configs.drop_last,
+                                               num_workers=0)
+
+    test_loader = torch.utils.data.DataLoader(dataset=test_dataset, batch_size=configs.batch_size,
+                                              shuffle=False, drop_last=False,
+                                              num_workers=0)
+
+    return train_loader, valid_loader, test_loader
