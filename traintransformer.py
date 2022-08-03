@@ -110,7 +110,7 @@ class TransformerTrainer:
         predictions = np.array([])
         targets = np.array([])
         with torch.no_grad():
-            for data, target in self.test_dataloader:
+            for (data, target) in self.test_dataloader:
                 #data = data.to(config.device)
                 #prediction = self.net(data)
                 data = nn.functional.normalize(data, p=2, dim=1).squeeze(1)
@@ -120,9 +120,9 @@ class TransformerTrainer:
                 predictions = np.append(predictions, prediction.detach().numpy() )
                 targets = np.append(targets, target.detach().numpy())  #always +bs
 
-        print("predictions size: ", predictions.shape)
-        embeddings = predictions.reshape(-1, self.config.emb_size)
-
+        print("predictions: ", predictions.shape)
+        embeddings = predictions.reshape(-1, 6)
+        print("embs", embeddings.shape)
         return embeddings, targets
 
 

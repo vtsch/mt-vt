@@ -114,9 +114,8 @@ def load_psa_data_to_pd(file_name, config):
         
         #create train test split
         df_train, df_test = df_psa.iloc[:int(len(df_psa)*0.8)], df_psa.iloc[int(len(df_psa)*0.8):]
-        y_real = df_train['pros_cancer']
 
-        return df_train, df_test, y_real
+        return df_train, df_test
 
 
 # ---- Dataloader ----

@@ -85,13 +85,13 @@ class Trainer:
         embeddings = np.array([])
         targets = np.array([])
         with torch.no_grad():
-            for i, (data, target) in enumerate(self.test_dataloader):
+            for (data, target) in self.test_dataloader:
                 #data = data.to(config.device)
+                data = nn.functional.normalize(data, p=2, dim=1)
                 output = self.net(data)
                 embeddings = np.append(embeddings, output.detach().numpy() )
                 targets = np.append(targets, target.detach().numpy())  #always +bs
 
-        targets = targets.astype(int)
         embeddings = embeddings.reshape(-1, self.config.emb_size)
         return embeddings, targets
 
