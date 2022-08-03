@@ -30,7 +30,7 @@ class Config:
 
     PSA_DATA = True
     MOD_RAW = False
-    MOD_SIMPLE_AC = True
+    MOD_SIMPLE_AC = False
     MOD_DEEP_AC = False
     MOD_LSTM = False
     MOD_CNN = False
@@ -45,8 +45,8 @@ if __name__ == '__main__':
     config = Config()
 
     save_path = build_save_path(config)
-    #os.makedirs(save_path)
-    #config.model_save_path = save_path
+    os.makedirs(save_path)
+    config.model_save_path = save_path
 
     experiment = build_comet_logger(config)
 
@@ -83,8 +83,8 @@ if __name__ == '__main__':
         model = SimpleAutoencoder(ts_length, config.emb_size)
         summary(model, input_size=(1, ts_length))
         trainer = Trainer(config=config, experiment=experiment, train_data = df_train, test_data=df_test, net=model)
-        trainer.run(config)
-        output, target = trainer.eval(config)
+        trainer.run()
+        output, target = trainer.eval()
     
         kmeans_labels = run_kmeans(output, config.n_clusters, config.metric, config.experiment_name, experiment)
         run_umap(output, target, kmeans_labels, config.experiment_name, experiment)
@@ -94,12 +94,10 @@ if __name__ == '__main__':
         model = DeepAutoencoder(ts_length, config.emb_size)
         summary(model, input_size=(1, ts_length))
         trainer = Trainer(config=config, experiment=experiment, train_data = df_train, test_data=df_test, net=model)
-        trainer.run(config)
-        output, target = trainer.eval(config)
+        trainer.run()
+        output, target = trainer.eval()
         kmeans_labels = run_kmeans(output, config.n_clusters, config.metric, config.experiment_name, experiment)
         run_umap(output, target, kmeans_labels, config.experiment_name, experiment)
-        print("target: ", target)
-        print("kmeans_labels: ", kmeans_labels)
         calculate_clustering_scores(target, kmeans_labels, experiment)
 
     if config.MOD_LSTM == True: 
@@ -107,7 +105,7 @@ if __name__ == '__main__':
         print(model)
         trainer = Trainer(config=config, experiment=experiment, train_data=df_train, test_data=df_test, net=model)
         trainer.run()
-        output, target = trainer.eval(config.emb_size)
+        output, target = trainer.eval()
 
         kmeans_labels = run_kmeans(output, config.n_clusters, config.metric, config.experiment_name, experiment)
         run_umap(output, target, kmeans_labels, config.experiment_name, experiment)
@@ -118,7 +116,7 @@ if __name__ == '__main__':
         summary(model, input_size=(1, ts_length))
         trainer = Trainer(config=config, experiment=experiment, train_data=df_train, test_data = df_test, net=model)
         trainer.run()
-        output, target = trainer.eval(config.emb_size)
+        output, target = trainer.eval()
 
         kmeans_labels = run_kmeans(output, config.n_clusters, config.metric, config.experiment_name, experiment)
         run_umap(output, target, kmeans_labels, config.experiment_name, experiment)
@@ -129,7 +127,7 @@ if __name__ == '__main__':
         summary(model, input_size=(1, ts_length))
         trainer = Trainer(config=config, experiment=experiment, train_data=df_train, test_data=df_test, net=model)
         trainer.run()
-        output, target = trainer.eval(config.emb_size)
+        output, target = trainer.eval()
 
         kmeans_labels = run_kmeans(output, config.n_clusters, config.metric, config.experiment_name, experiment)
         run_umap(output, target, kmeans_labels, config.experiment_name, experiment)
@@ -174,9 +172,7 @@ if __name__ == '__main__':
         summary(model, input_size=(1, ts_length))
         trainer = TransformerTrainer(config=config, experiment=experiment, train_data=df_train, test_data=df_test, net=model)
         trainer.run()
-        predictions, target = trainer.eval(ts_length)
-        print("output", predictions.shape)
-        print("target", target.shape)
+        predictions, target = trainer.eval()
         # for Transformer():# predictions = predictions.reshape(-1, 1) #note. here prediction is already a classification 
 
         kmeans_labels = run_kmeans(predictions, config.n_clusters, config.metric, config.experiment_name, experiment)
