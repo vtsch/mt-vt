@@ -120,9 +120,7 @@ class TransformerTrainer:
                 predictions = np.append(predictions, prediction.detach().numpy() )
                 targets = np.append(targets, target.detach().numpy())  #always +bs
 
-        print("predictions: ", predictions.shape)
         embeddings = predictions.reshape(-1, 6)
-        print("embs", embeddings.shape)
         return embeddings, targets
 
 
