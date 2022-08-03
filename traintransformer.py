@@ -3,11 +3,8 @@ import torch
 import os
 import torch.nn as nn
 from torch.optim import AdamW, Adam
-from torch.optim.lr_scheduler import (CosineAnnealingLR,
-                                      CosineAnnealingWarmRestarts,
-                                      StepLR,
-                                      ExponentialLR)
-from dataloader import dataloader, get_dataloader
+from torch.optim.lr_scheduler import CosineAnnealingLR
+from dataloader import get_dataloader
 import pandas as pd
 from metrics import Meter
 import numpy as np
@@ -25,7 +22,7 @@ def generate_square_subsequent_mask(ts_length):
         return mask
 
 class TransformerTrainer:
-    def __init__(self, config, experiment, train_data, test_data, net):
+    def __init__(self, config, experiment, data, net):
         self.net = net.to(config.device)
         self.config = config
         self.experiment = experiment
@@ -33,12 +30,10 @@ class TransformerTrainer:
         self.optimizer = Adam(net.parameters(), lr=config.lr)
         self.scheduler = CosineAnnealingLR(self.optimizer, T_max=config.n_epochs, eta_min=5e-6)
         self.best_loss = float('inf')
-        self.phases = ['train', 'val']
-        self.test_dataloader = dataloader(test_data, config.batch_size)
-        self.train_dataloader = {
-            phase: get_dataloader(train_data, phase, config.batch_size) for phase in self.phases
+        self.phases = ['train', 'val', 'test']
+        self.dataloaders = {
+            phase: get_dataloader(data, phase, config.batch_size) for phase in self.phases
         }
-        self.train_data = train_data
         self.attention_masks = generate_square_subsequent_mask(6)
 
 
@@ -51,7 +46,7 @@ class TransformerTrainer:
         meter.init_metrics(phase)
         
 
-        for i, (data, target) in enumerate(self.train_dataloader[phase]):
+        for i, (data, target) in enumerate(self.dataloaders[phase]):
             #print("data shape: ", data.shape)
             #data = data.reshape(self.config.batch_size, -1, 1)
             #predictions = self.net(data)
@@ -110,7 +105,7 @@ class TransformerTrainer:
         predictions = np.array([])
         targets = np.array([])
         with torch.no_grad():
-            for (data, target) in self.test_dataloader:
+            for i, (data, target) in enumerate(self.dataloaders['test']):
                 #data = data.to(config.device)
                 #prediction = self.net(data)
                 data = nn.functional.normalize(data, p=2, dim=1).squeeze(1)

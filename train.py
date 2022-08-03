@@ -9,12 +9,12 @@ from torch.optim.lr_scheduler import (CosineAnnealingLR,
                                       ExponentialLR)
 import pandas as pd
 from metrics import Meter
-from dataloader import get_dataloader, dataloader
+from dataloader import get_dataloader
 import numpy as np
 
 
 class Trainer:
-    def __init__(self, config, experiment, train_data, test_data, net):
+    def __init__(self, config, experiment, data, net):
         self.net = net.to(config.device)
         self.config = config
         self.experiment = experiment
@@ -22,13 +22,10 @@ class Trainer:
         self.optimizer = Adam(self.net.parameters(), lr=config.lr)
         self.scheduler = CosineAnnealingLR(self.optimizer, T_max=config.n_epochs, eta_min=5e-6)
         self.best_loss = float('inf')
-        self.phases = ['train', 'val']
+        self.phases = ['train', 'val', 'test']
         self.dataloaders = {
-            phase: get_dataloader(train_data, phase, config.batch_size) for phase in self.phases
+            phase: get_dataloader(data, phase, config.batch_size) for phase in self.phases
         }
-        self.test_dataloader = dataloader(test_data, config.batch_size)
-        self.train_df_logs = pd.DataFrame()
-        self.val_df_logs = pd.DataFrame()
 
     
     def _train_epoch(self, phase):
@@ -85,8 +82,7 @@ class Trainer:
         embeddings = np.array([])
         targets = np.array([])
         with torch.no_grad():
-            for (data, target) in self.test_dataloader:
-                #data = data.to(config.device)
+            for i, (data, target) in enumerate(self.dataloaders['test']):
                 data = nn.functional.normalize(data, p=2, dim=1)
                 output = self.net(data)
                 embeddings = np.append(embeddings, output.detach().numpy() )

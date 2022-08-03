@@ -54,7 +54,7 @@ if __name__ == '__main__':
     if config.PSA_DATA == True:
         file_name = "data/pros_data_mar22_d032222.csv"
         ts_length = 6
-        df_train, df_test = load_psa_data_to_pd(file_name, config)
+        df_psa = load_psa_data_to_pd(file_name, config)
         
     else:
         file_name_train = 'data/mitbih_train.csv'
@@ -63,18 +63,18 @@ if __name__ == '__main__':
 
         #load data
         df_mitbih_train, df_mitbih_test = load_ecg_data_to_pd(file_name_train, file_name_test)
-        df_train = upsample_data(df_mitbih_train, n_clusters=config.n_clusters, sample_size=400)
+        df_psa = upsample_data(df_mitbih_train, n_clusters=config.n_clusters, sample_size=400)
         df_test = upsample_data(df_mitbih_test, n_clusters=config.n_clusters, sample_size=150)
-        y_real = df_train['class']
+        y_real = df_psa['class']
 
     # run kmeans on raw data
 
     if config.MOD_RAW == True:
-        y_real = df_train['pros_cancer']
-        df_train = df_train.iloc[:,:-2]
-        df_train_values = df_train.values
+        y_real = df_psa['pros_cancer']
+        df_psa = df_psa.iloc[:,:-2]
+        df_train_values = df_psa.values
         kmeans_labels = run_kmeans(df_train_values, config.n_clusters, config.metric, config.experiment_name, experiment)
-        run_umap(df_train, y_real, kmeans_labels, config.experiment_name, experiment)
+        run_umap(df_psa, y_real, kmeans_labels, config.experiment_name, experiment)
         calculate_clustering_scores(y_real.astype(int), kmeans_labels, experiment)
 
     # run embedding models and kmeans
@@ -82,7 +82,7 @@ if __name__ == '__main__':
     if config.MOD_SIMPLE_AC == True:
         model = SimpleAutoencoder(ts_length, config.emb_size)
         summary(model, input_size=(1, ts_length))
-        trainer = Trainer(config=config, experiment=experiment, train_data=df_train, test_data=df_test, net=model)
+        trainer = Trainer(config=config, experiment=experiment, data=df_psa, net=model)
         trainer.run()
         output, target = trainer.eval()
     
@@ -93,7 +93,7 @@ if __name__ == '__main__':
     if config.MOD_DEEP_AC == True:
         model = DeepAutoencoder(ts_length, config.emb_size)
         summary(model, input_size=(1, ts_length))
-        trainer = Trainer(config=config, experiment=experiment, train_data=df_train, test_data=df_test, net=model)
+        trainer = Trainer(config=config, experiment=experiment, data=df_psa, net=model)
         trainer.run()
         output, target = trainer.eval()
         kmeans_labels = run_kmeans(output, config.n_clusters, config.metric, config.experiment_name, experiment)
@@ -103,7 +103,7 @@ if __name__ == '__main__':
     if config.MOD_LSTM == True: 
         model = RNNModel(input_size=ts_length, hid_size=32, emb_size=config.emb_size, rnn_type='lstm', bidirectional=True)
         print(model)
-        trainer = Trainer(config=config, experiment=experiment, train_data=df_train, test_data=df_test, net=model)
+        trainer = Trainer(config=config, experiment=experiment, data=df_psa, net=model)
         trainer.run()
         output, target = trainer.eval()
 
@@ -114,7 +114,7 @@ if __name__ == '__main__':
     if config.MOD_CNN == True:
         model = CNN(emb_size=config.emb_size, hid_size=128)
         summary(model, input_size=(1, ts_length))
-        trainer = Trainer(config=config, experiment=experiment, train_data=df_train, test_data=df_test, net=model)
+        trainer = Trainer(config=config, experiment=experiment, data=df_psa, net=model)
         trainer.run()
         output, target = trainer.eval()
 
@@ -125,7 +125,7 @@ if __name__ == '__main__':
     if config.MOD_RNN_ATT == True: 
         model = RNNAttentionModel(input_size=1, hid_size=32, emb_size=config.emb_size, rnn_type='lstm', bidirectional=False)
         summary(model, input_size=(1, ts_length))
-        trainer = Trainer(config=config, experiment=experiment, train_data=df_train, test_data=df_test, net=model)
+        trainer = Trainer(config=config, experiment=experiment, data=df_psa, net=model)
         trainer.run()
         output, target = trainer.eval()
 
@@ -170,7 +170,7 @@ if __name__ == '__main__':
         model = TransformerTimeSeries() 
 
         summary(model, input_size=(1, ts_length))
-        trainer = TransformerTrainer(config=config, experiment=experiment, train_data=df_train, test_data=df_test, net=model)
+        trainer = TransformerTrainer(config=config, experiment=experiment, data=df_psa, net=model)
         trainer.run()
         predictions, target = trainer.eval()
     

@@ -113,10 +113,17 @@ def load_psa_data_to_pd(file_name, config):
         df_psa = upsample_data(df_psa, n_clusters=config.n_clusters, sample_size=config.sample_size)
         
         #create train test split
-        df_train, df_test = df_psa.iloc[:int(len(df_psa)*0.8)], df_psa.iloc[int(len(df_psa)*0.8):]
+        #df_train, df_test = df_psa.iloc[:int(len(df_psa)*0.8)], df_psa.iloc[int(len(df_psa)*0.8):]
 
-        return df_train, df_test
+        return df_psa
 
+def generate_split(data):
+    train_df, test_df = train_test_split(
+        # data, test_size=0.15, random_state=42, stratify=data['class']
+        data, test_size=0.2, random_state=42, stratify=data['pros_cancer']
+    )
+    train_df, test_df = train_df.reset_index(drop=True), test_df.reset_index(drop=True)
+    return train_df, test_df
 
 # ---- Dataloader ----
 
@@ -135,15 +142,7 @@ class MyDataset(Dataset):
     def __len__(self):
         return len(self.df)
 
-def generate_train_val(data):
-    train_df, val_df = train_test_split(
-        # data, test_size=0.15, random_state=42, stratify=data['class']
-        data, test_size=0.15, random_state=42, stratify=data['pros_cancer']
-    )
-    train_df, val_df = train_df.reset_index(drop=True), val_df.reset_index(drop=True)
-    return train_df, val_df
-
-def get_dataloader(train_data, phase: str, batch_size: int) -> DataLoader:
+def get_dataloader(data, phase: str, batch_size: int) -> DataLoader:
     '''
     Dataset and DataLoader.
     Parameters:
@@ -152,10 +151,18 @@ def get_dataloader(train_data, phase: str, batch_size: int) -> DataLoader:
     Returns:
         data generator
     '''
-    train_df, val_df = generate_train_val(train_data)
-    df = train_df if phase == 'train' else val_df
-    dataset = MyDataset(df)
-    print(f'{phase} data shape: {dataset.df.shape}')
+    train_df, test_df = generate_split(data)
+
+    if phase == 'test':
+        df = test_df
+        dataset = MyDataset(data)
+        print(f'{phase} data shape: {dataset.df.shape}')
+    else:
+        train_df, val_df = generate_split(train_df)
+        df = train_df if phase == 'train' else val_df
+        dataset = MyDataset(df)
+        print(f'{phase} data shape: {dataset.df.shape}')
+
     dataloader = DataLoader(dataset=dataset, batch_size=batch_size, num_workers=4)
     return dataloader
 
@@ -172,23 +179,3 @@ def dataloader(data, batch_size: int) -> DataLoader:
     print(f'data shape: {dataset.df.shape}')
     dataloader = DataLoader(dataset=dataset, batch_size=batch_size, num_workers=0)
     return dataloader
-
-
-def data_generator(data_path, configs, training_mode):
-
-    train_dataset = MyDataset(train_dataset, configs, training_mode)
-    valid_dataset = MyDataset(valid_dataset, configs, training_mode)
-    test_dataset = MyDataset(test_dataset, configs, training_mode)
-
-    train_loader = DataLoader(dataset=train_dataset, batch_size=configs.batch_size,
-                                               shuffle=True, drop_last=configs.drop_last,
-                                               num_workers=0)
-    valid_loader = DataLoader(dataset=valid_dataset, batch_size=configs.batch_size,
-                                               shuffle=False, drop_last=configs.drop_last,
-                                               num_workers=0)
-
-    test_loader = DataLoader(dataset=test_dataset, batch_size=configs.batch_size,
-                                              shuffle=False, drop_last=False,
-                                              num_workers=0)
-
-    return train_loader, valid_loader, test_loader
