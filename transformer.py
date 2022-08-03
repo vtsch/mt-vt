@@ -185,13 +185,13 @@ class TransformerTimeSeries(torch.nn.Module):
 
         self.feature_size = 12
         self.dropout = 0.1
-        self.num_layers = 2
+        self.num_layers = 4
         self.ts_length = 6
 
         self.input_embedding = context_embedding(2, self.feature_size, 3)
         self.positional_embedding = torch.nn.Embedding(60, self.feature_size) 
 
-        self.encoder_layer = torch.nn.TransformerEncoderLayer(d_model=self.feature_size, nhead=2, dropout=self.dropout)
+        self.encoder_layer = torch.nn.TransformerEncoderLayer(d_model=self.feature_size, nhead=4, dropout=self.dropout)
         self.transformer_encoder = torch.nn.TransformerEncoder(self.encoder_layer, num_layers=self.num_layers)
 
         self.decode_layer = torch.nn.TransformerEncoderLayer(d_model=self.feature_size, nhead=2)
