@@ -2,3 +2,5 @@
 *.pyc
 #ignore data folder
 find . -name "data" -prune -o -name "*.pyc" -exec rm -rf {} \;
+#ignore models
+find . -name "models" -prune -o -name "*.pth" -exec rm -rf {} \;
