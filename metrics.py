@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 from sklearn.metrics import accuracy_score, mutual_info_score, rand_score, adjusted_rand_score, normalized_mutual_info_score, confusion_matrix
-from sklearn.metrics import r2_score, mean_squared_error
+from sklearn.metrics import r2_score, mean_squared_error, mean_absolute_error
 
 def calculate_clustering_scores(y_true, y_pred, experiment):
     accuracy = accuracy_score(y_true, y_pred)
@@ -30,12 +30,15 @@ class Meter:
         #y = y.detach().cpu().numpy()
         self.metrics[phase + '_loss'] += loss
         self.metrics[phase + '_mse'] += mean_squared_error(x,y)
+        self.metrics[phase + '_mae'] += mean_absolute_error(x,y)
         self.metrics[phase + '_r2'] += r2_score(x,y)
     
     def init_metrics(self, phase):
         self.metrics[phase + '_loss'] = 0
         self.metrics[phase + '_mse'] = 0
+        self.metrics[phase + '_mae'] = 0
         self.metrics[phase + '_r2'] = 0
+        
         
     def get_metrics(self):
         return self.metrics
