@@ -3,10 +3,7 @@ import torch
 import os
 import torch.nn as nn
 from torch.optim import AdamW, Adam
-from torch.optim.lr_scheduler import (CosineAnnealingLR,
-                                      CosineAnnealingWarmRestarts,
-                                      StepLR,
-                                      ExponentialLR)
+from torch.optim.lr_scheduler import CosineAnnealingLR
 import pandas as pd
 from metrics import Meter
 from dataloader import get_dataloader

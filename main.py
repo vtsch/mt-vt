@@ -1,8 +1,5 @@
-import trace
 import torch
 import os
-import tqdm
-from comet_ml import Experiment
 from torchsummary import summary
 from dataloader import load_ecg_data_to_pd, upsample_data, load_psa_data_to_pd, create_psa_df
 from clustering_algorithms import run_kmeans
@@ -11,7 +8,6 @@ from umapplot import run_umap
 from modules import CNN, RNNModel, RNNAttentionModel, SimpleAutoencoder, DeepAutoencoder
 from train import Trainer
 from utils import get_bunch_config_from_json, build_save_path, build_comet_logger
-from x_transformers import XTransformer, TransformerWrapper, Encoder
 from traintransformer import TransformerTrainer
 from transformer import TransformerTimeSeries
 

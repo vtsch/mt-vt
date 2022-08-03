@@ -3,7 +3,6 @@ from comet_ml import Experiment
 import argparse
 import json
 import os
-from pytorch_lightning.loggers import CometLogger
 from datetime import datetime
 from bunch import Bunch
 

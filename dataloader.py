@@ -1,7 +1,6 @@
 import numpy as np
 import pandas as pd
 
-from sklearn.utils import resample
 from sklearn.model_selection import train_test_split
 from sklearn import preprocessing
 
@@ -54,6 +53,14 @@ def normalize(df):
     x_scaled = min_max_scaler.fit_transform(x)
     df = pd.DataFrame(x_scaled)
     return df
+
+def generate_split(data):
+    train_df, test_df = train_test_split(
+        # data, test_size=0.15, random_state=42, stratify=data['class']
+        data, test_size=0.15, random_state=42, stratify=data['pros_cancer']
+    )
+    train_df, test_df = train_df.reset_index(drop=True), test_df.reset_index(drop=True)
+    return train_df, test_df
 
 # ---- for PSA data ----
 
@@ -112,14 +119,6 @@ def load_psa_data_to_pd(file_name, config):
         df_psa = create_psa_df(df_raw)
         df_psa = upsample_data(df_psa, n_clusters=config.n_clusters, sample_size=config.sample_size)
         return df_psa
-
-def generate_split(data):
-    train_df, test_df = train_test_split(
-        # data, test_size=0.15, random_state=42, stratify=data['class']
-        data, test_size=0.15, random_state=42, stratify=data['pros_cancer']
-    )
-    train_df, test_df = train_df.reset_index(drop=True), test_df.reset_index(drop=True)
-    return train_df, test_df
 
 # ---- Dataloader ----
 
