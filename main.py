@@ -31,9 +31,9 @@ class Config:
     PSA_DATA = True
     MOD_RAW = False
     MOD_SIMPLE_AC = False
-    MOD_DEEP_AC = True
+    MOD_DEEP_AC = False
     MOD_LSTM = False
-    MOD_CNN = False
+    MOD_CNN = True
     MOD_RNN_ATT = False
     MOD_TRANSFORMER = False
 
@@ -49,7 +49,8 @@ if __name__ == '__main__':
     config.model_save_path = save_path
 
     experiment = build_comet_logger(config)
-    experiment.log_asset_folder(os.getcwd, step=None, log_file_name=True, recursive=False)
+    cwd = os.getcwd()
+    experiment.log_asset_folder(folder=cwd, step=None, log_file_name=True, recursive=False)
 
     # load and preprocess PSA or ECG data 
     if config.PSA_DATA == True:
