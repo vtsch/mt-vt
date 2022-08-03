@@ -1,5 +1,6 @@
 import time
 import torch
+import os
 import torch.nn as nn
 from torch.optim import AdamW, Adam
 from torch.optim.lr_scheduler import (CosineAnnealingLR,
@@ -30,7 +31,7 @@ class Trainer:
         self.val_df_logs = pd.DataFrame()
 
     
-    def _train_epoch(self, config, phase):
+    def _train_epoch(self, phase):
 
         self.net.train() if phase == 'train' else self.net.eval()
         meter = Meter()
@@ -48,7 +49,7 @@ class Trainer:
                 loss.backward()
                 self.optimizer.step()
 
-            target = target.unsqueeze(1).repeat(1, config.emb_size)
+            target = target.unsqueeze(1).repeat(1, self.config.emb_size)
             meter.update(output.detach().numpy(), target, phase, loss.item())
 
         metrics = meter.get_metrics()
@@ -57,29 +58,29 @@ class Trainer:
 
         return loss, df_logs    
     
-    def run(self, config):
+    def run(self):
         for epoch in range(self.config.n_epochs):
             print('Epoch: %d | time: %s' %(epoch, time.strftime('%H:%M:%S')))
-            train_loss, train_logs = self._train_epoch(config, phase='train')
+            train_loss, train_logs = self._train_epoch(phase='train')
             print(train_logs)
             self.experiment.log_metrics(dic=train_logs, step=epoch)
             with torch.no_grad():
-                val_loss, val_logs = self._train_epoch(config, phase='val')
+                val_loss, val_logs = self._train_epoch(phase='val')
                 print(val_logs)
                 self.experiment.log_metrics(dic=val_logs, step=epoch)
                 self.scheduler.step()
             
             if val_loss < self.best_loss:
                 self.best_loss = val_loss
-                print('New checkpoint')
+                print('-- new checkpoint --')
                 self.best_loss = val_loss
                 #save best model 
-                torch.save(self.net.state_dict(), f"best_model_epoc{epoch}.pth")
+                torch.save(self.net.state_dict(), os.path.join(self.config.model_save_path, f"best_model_epoc{epoch}.pth"))
             
             self.experiment.log_metrics(pd.DataFrame({'train_loss': [train_loss.detach().numpy()], 'val_loss': [val_loss.detach().numpy()]}), epoch=epoch)
 
     
-    def eval(self, config):
+    def eval(self):
         self.net.eval()
         embeddings = np.array([])
         targets = np.array([])
@@ -91,7 +92,7 @@ class Trainer:
                 targets = np.append(targets, target.detach().numpy())  #always +bs
 
         targets = targets.astype(int)
-        embeddings = embeddings.reshape(-1, config.emb_size)
+        embeddings = embeddings.reshape(-1, self.config.emb_size)
         return embeddings, targets
 
 

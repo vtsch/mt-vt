@@ -1,5 +1,6 @@
 import time
 import torch
+import os
 import torch.nn as nn
 from torch.optim import AdamW, Adam
 from torch.optim.lr_scheduler import (CosineAnnealingLR,
@@ -101,10 +102,10 @@ class TransformerTrainer:
                 self.best_loss = val_loss
                 self.experiment.log_metric('best_loss', self.best_loss, step=epoch)
                 #save best model here
-                torch.save(self.net.state_dict(), f"best_model_epoc{epoch}.pth")
+                torch.save(self.net.state_dict(), os.path.join(self.config.model_save_path, f"best_model_epoc{epoch}.pth"))
 
                 
-    def eval(self, emb_size):
+    def eval(self):
         self.net.eval()
         predictions = np.array([])
         targets = np.array([])
@@ -120,7 +121,7 @@ class TransformerTrainer:
                 targets = np.append(targets, target.detach().numpy())  #always +bs
 
         print("predictions size: ", predictions.shape)
-        embeddings = predictions.reshape(-1, emb_size)
+        embeddings = predictions.reshape(-1, self.config.emb_size)
 
         return embeddings, targets
 
