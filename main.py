@@ -26,7 +26,7 @@ class Config:
     n_epochs = 1
     emb_size = 4
     model_save_directory = "./models"
-    sample_size = 3000
+    sample_size = 6000
 
     PSA_DATA = True
     MOD_RAW = False

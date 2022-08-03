@@ -111,16 +111,12 @@ def load_psa_data_to_pd(file_name, config):
         df_raw = pd.read_csv(file_name, header=0)
         df_psa = create_psa_df(df_raw)
         df_psa = upsample_data(df_psa, n_clusters=config.n_clusters, sample_size=config.sample_size)
-        
-        #create train test split
-        #df_train, df_test = df_psa.iloc[:int(len(df_psa)*0.8)], df_psa.iloc[int(len(df_psa)*0.8):]
-
         return df_psa
 
 def generate_split(data):
     train_df, test_df = train_test_split(
         # data, test_size=0.15, random_state=42, stratify=data['class']
-        data, test_size=0.2, random_state=42, stratify=data['pros_cancer']
+        data, test_size=0.15, random_state=42, stratify=data['pros_cancer']
     )
     train_df, test_df = train_df.reset_index(drop=True), test_df.reset_index(drop=True)
     return train_df, test_df
@@ -155,13 +151,13 @@ def get_dataloader(data, phase: str, batch_size: int) -> DataLoader:
 
     if phase == 'test':
         df = test_df
-        dataset = MyDataset(data)
-        print(f'{phase} data shape: {dataset.df.shape}')
+        dataset = MyDataset(df)
     else:
         train_df, val_df = generate_split(train_df)
         df = train_df if phase == 'train' else val_df
         dataset = MyDataset(df)
-        print(f'{phase} data shape: {dataset.df.shape}')
+    
+    print(f'{phase} data shape: {dataset.df.shape}')
 
     dataloader = DataLoader(dataset=dataset, batch_size=batch_size, num_workers=4)
     return dataloader
