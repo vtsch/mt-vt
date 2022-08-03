@@ -13,7 +13,7 @@ from train import Trainer
 from utils import get_bunch_config_from_json, build_save_path, build_comet_logger
 from x_transformers import XTransformer, TransformerWrapper, Encoder
 from traintransformer import TransformerTrainer
-from transformer import Transformer, TransformerTimeSeries
+from transformer import TransformerTimeSeries
 
 
 class Config:
@@ -31,11 +31,11 @@ class Config:
     PSA_DATA = True
     MOD_RAW = False
     MOD_SIMPLE_AC = False
-    MOD_DEEP_AC = False
+    MOD_DEEP_AC = True
     MOD_LSTM = False
     MOD_CNN = False
     MOD_RNN_ATT = False
-    MOD_TRANSFORMER = True
+    MOD_TRANSFORMER = False
 
     experiment_name = "raw_model" if MOD_RAW else "simple_ac" if MOD_SIMPLE_AC else "deep_ac" if MOD_DEEP_AC else "lstm_model" if MOD_LSTM else "cnn_model" if MOD_CNN else "rnn_attmodel" if MOD_RNN_ATT else "transformer_model TS" if MOD_TRANSFORMER else "notimplemented"
 
@@ -49,6 +49,7 @@ if __name__ == '__main__':
     config.model_save_path = save_path
 
     experiment = build_comet_logger(config)
+    experiment.log_asset_folder(os.getcwd, step=None, log_file_name=True, recursive=False)
 
     # load and preprocess PSA or ECG data 
     if config.PSA_DATA == True:
@@ -136,37 +137,6 @@ if __name__ == '__main__':
 
     if config.MOD_TRANSFORMER == True: 
         name = "Transformer"
-        """
-        # encoder only
-        model = TransformerWrapper(
-            num_tokens = 50,
-            max_seq_len = ts_length,
-            attn_layers = Encoder(dim = config.emb_size, n_heads = 6, depth=4),
-            ).to(config.device)
-        
-        model = XTransformer(
-            dim = 32,
-            tie_token_embeds = True,
-            return_tgt_loss = True,
-            enc_num_tokens = 8,
-            enc_depth = 2,
-            enc_heads = 4,
-            enc_max_seq_len = ts_length,
-            dec_num_tokens = 8,
-            dec_depth = 2,
-            dec_heads = 4,
-            dec_max_seq_len = ts_length
-        ).to(config.device)
-        """
-
-        """
-        model = Transformer(emb=ts_length,
-                          heads=1,
-                          depth=1,
-                          num_features=1,
-                          num_out_channels_emb=config.emb_size,
-                          dropout=0.2) 
-        """
         model = TransformerTimeSeries() 
 
         summary(model, input_size=(1, ts_length))
