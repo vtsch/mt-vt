@@ -43,8 +43,8 @@ class Trainer:
                 loss.backward()
                 self.optimizer.step()
 
-            target = target.unsqueeze(1).repeat(1, self.config.emb_size)
-            meter.update(output.detach().numpy(), target, phase, loss.item())
+            data = data.squeeze(1)
+            meter.update(output.detach().numpy(), data, phase, loss.item())
 
         metrics = meter.get_metrics()
         metrics = {k:v / i for k, v in metrics.items()}

@@ -1,7 +1,7 @@
 import torch
 import os
 from torchsummary import summary
-from dataloader import load_ecg_data_to_pd, upsample_data, load_psa_data_to_pd, create_psa_df
+from dataloader import load_ecg_data_to_pd, upsample_data, load_psa_data_to_pd
 from clustering_algorithms import run_kmeans
 from metrics import calculate_clustering_scores
 from umapplot import run_umap
@@ -19,17 +19,17 @@ class Config:
     n_clusters = 2
     lr=0.001
     batch_size = 24
-    n_epochs = 1
-    emb_size = 4
+    n_epochs = 30
+    emb_size = 6
     model_save_directory = "./models"
     sample_size = 6000
 
     PSA_DATA = True
     MOD_RAW = False
-    MOD_SIMPLE_AC = False
+    MOD_SIMPLE_AC = True
     MOD_DEEP_AC = False
     MOD_LSTM = False
-    MOD_CNN = True
+    MOD_CNN = False
     MOD_RNN_ATT = False
     MOD_TRANSFORMER = False
 

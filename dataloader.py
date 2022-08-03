@@ -64,7 +64,7 @@ def generate_split(data):
 
 # ---- for PSA data ----
 
-def create_psa_df(df):
+def load_psa_df(df):
     # select columns with psa data, set threshold to have at least 5 measurements
     # psa_levels per year: 69-74
     # level from most recent test prior to diagnosis: 5
@@ -116,7 +116,7 @@ def create_timesteps_df(df):
 def load_psa_data_to_pd(file_name, config):
         #load data
         df_raw = pd.read_csv(file_name, header=0)
-        df_psa = create_psa_df(df_raw)
+        df_psa = load_psa_df(df_raw)
         df_psa = upsample_data(df_psa, n_clusters=config.n_clusters, sample_size=config.sample_size)
         return df_psa
 
@@ -159,18 +159,4 @@ def get_dataloader(data, phase: str, batch_size: int) -> DataLoader:
     print(f'{phase} data shape: {dataset.df.shape}')
 
     dataloader = DataLoader(dataset=dataset, batch_size=batch_size, num_workers=4)
-    return dataloader
-
-def dataloader(data, batch_size: int) -> DataLoader:
-    '''
-    Dataset and DataLoader.
-    Parameters:
-        batch_size: data per iteration.
-    Returns:
-        data generator
-    '''
-    data = data.reset_index(drop=True)
-    dataset = MyDataset(data)
-    print(f'data shape: {dataset.df.shape}')
-    dataloader = DataLoader(dataset=dataset, batch_size=batch_size, num_workers=0)
     return dataloader
