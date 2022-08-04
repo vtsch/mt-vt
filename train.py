@@ -21,7 +21,7 @@ class Trainer:
         self.best_loss = float('inf')
         self.phases = ['train', 'val', 'test']
         self.dataloaders = {
-            phase: get_dataloader(data, phase, config.batch_size) for phase in self.phases
+            phase: get_dataloader(config, data, phase) for phase in self.phases
         }
 
     

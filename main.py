@@ -18,11 +18,11 @@ class Config:
     metric = "euclidean" #metric : {“euclidean”, “dtw”, “softdtw”} 
     n_clusters = 2
     lr=0.001
-    batch_size = 24
-    n_epochs = 30
+    batch_size = 12
+    n_epochs = 1
     emb_size = 6
     model_save_directory = "./models"
-    sample_size = 6000
+    sample_size = 2000
 
     PSA_DATA = True
     MOD_RAW = False
@@ -133,9 +133,7 @@ if __name__ == '__main__':
     
 
     if config.MOD_TRANSFORMER == True: 
-        name = "Transformer"
         model = TransformerTimeSeries() 
-
         summary(model, input_size=(1, ts_length))
         trainer = TransformerTrainer(config=config, experiment=experiment, data=df_psa, net=model)
         trainer.run()
