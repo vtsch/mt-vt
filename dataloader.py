@@ -124,23 +124,23 @@ def load_psa_and_timesteps_df(df):
     df.fillna(0, inplace=True)
     return df
 
-def load_psa_data_to_pd(file_name, config):
-        #load data
-        df_raw = pd.read_csv(file_name, header=0)
-        #df_psa = load_psa_df(df_raw)
-        #df_ts = load_timesteps_df(df_raw)
-        #df_psa = upsample_data(df_psa, n_clusters=config.n_clusters, sample_size=config.sample_size)
-        #df_ts = upsample_data(df_ts, n_clusters=config.n_clusters, sample_size=config.sample_size)
-        df_psa_ts = load_psa_and_timesteps_df(df_raw)
-        df_psa_ts = upsample_data(df_psa_ts, n_clusters=config.n_clusters, sample_size=config.sample_size)
-        #return df_psa, df_ts
-        return df_psa_ts
+def load_psa_data_to_pd(file_name: str, config: dict) -> pd.DataFrame:
+    '''
+    Parameters:
+        file_name: str
+        config:dictionary with configuration parameters
+    Returns:
+        df_psa_ts: pd.DataFrame with psa values and timestep index and labels
+    '''
+    df_raw = pd.read_csv(file_name, header=0)
+    df_psa_ts = load_psa_and_timesteps_df(df_raw)
+    df_psa_ts = upsample_data(df_psa_ts, n_clusters=config.n_clusters, sample_size=config.sample_size)
+    return df_psa_ts
 
 
 # ---- Dataloader ----
 
 class PSADataset(Dataset):
-
     def __init__(self, data):
         self.df = data
         self.data_columns_psa = self.df.columns[0:6].tolist()
@@ -160,10 +160,10 @@ class PSADataset(Dataset):
 
 def get_dataloader(config, data, phase: str) -> DataLoader:
     '''
-    Dataset and DataLoader.
     Parameters:
-        phase: training or validation phase.
-        batch_size: data per iteration.
+        config: config file
+        data: dataframe
+        phase: training, validation or test
     Returns:
         data generator
     '''
