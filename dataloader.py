@@ -57,7 +57,7 @@ def normalize(df):
 def generate_split(data):
     train_df, test_df = train_test_split(
         # data, test_size=0.15, random_state=42, stratify=data['class']
-        data, test_size=0.15, random_state=42, stratify=data['pros_cancer']
+        data, test_size=0.2, random_state=42, stratify=data['pros_cancer']
     )
     train_df, test_df = train_df.reset_index(drop=True), test_df.reset_index(drop=True)
     return train_df, test_df
@@ -102,23 +102,40 @@ def create_context_df(df):
     df = df.iloc[:, [44, 142, 143, 144, 149, 170, 190, 39, 201, 205, 206, 38, 120, 4]]
     return df
 
-def create_timesteps_df(df):
+def load_timesteps_df(df):
     # select columns with timesteps data
     # pclo_id: 44
     # pros_dx_psa_gap: time last psa measurement to diagnosis: 6
     # pros_exitdays: entry to pros cancer diagnosis or trial exit: 49
     # mortality_exitdays: days until mortality, last day known to be alive: 174
     # day of psa level mesaurements: 80-85
-    df = df.iloc[:, [44, 6, 49, 174, 80, 81, 82, 83, 84, 85]]
+    # pros_cancer label: 4
+    df = df.iloc[:, [80, 81, 82, 83, 84, 85, 4]]
+    df.dropna(thresh=4, inplace=True)
+    df.fillna(0, inplace=True)
     return df
 
+def load_psa_and_timesteps_df(df):
+    # psa_levels per year: 69-74
+    # day of psa level mesaurements: 80-85
+    # pros_cancer label: 4
+    df = df.iloc[:, [69, 70, 71, 72, 73, 74, 80, 81, 82, 83, 84, 85, 4]]
+    df.dropna(thresh=8, inplace=True)
+    df.fillna(0, inplace=True)
+    return df
 
 def load_psa_data_to_pd(file_name, config):
         #load data
         df_raw = pd.read_csv(file_name, header=0)
-        df_psa = load_psa_df(df_raw)
-        df_psa = upsample_data(df_psa, n_clusters=config.n_clusters, sample_size=config.sample_size)
-        return df_psa
+        #df_psa = load_psa_df(df_raw)
+        #df_ts = load_timesteps_df(df_raw)
+        #df_psa = upsample_data(df_psa, n_clusters=config.n_clusters, sample_size=config.sample_size)
+        #df_ts = upsample_data(df_ts, n_clusters=config.n_clusters, sample_size=config.sample_size)
+        df_psa_ts = load_psa_and_timesteps_df(df_raw)
+        df_psa_ts = upsample_data(df_psa_ts, n_clusters=config.n_clusters, sample_size=config.sample_size)
+        #return df_psa, df_ts
+        return df_psa_ts
+
 
 # ---- Dataloader ----
 
@@ -147,16 +164,66 @@ def get_dataloader(data, phase: str, batch_size: int) -> DataLoader:
         data generator
     '''
     train_df, test_df = generate_split(data)
-
-    if phase == 'test':
+    train_df, val_df = generate_split(train_df)
+    
+    if phase == 'train':
+        df = train_df
+    elif phase == 'val':
+        df = val_df
+    elif phase == 'test':
         df = test_df
-        dataset = MyDataset(df)
-    else:
-        train_df, val_df = generate_split(train_df)
-        df = train_df if phase == 'train' else val_df
-        dataset = MyDataset(df)
+        
+    dataset = MyDataset(df)
     
     print(f'{phase} data shape: {dataset.df.shape}')
 
     dataloader = DataLoader(dataset=dataset, batch_size=batch_size, num_workers=4)
+    return dataloader
+
+class TransformerDataset(Dataset):
+
+    def __init__(self, data):
+        self.df = data
+        self.data_columns_psa = self.df.columns[0:6].tolist()
+        self.data_columns_ts = self.df.columns[6:12].tolist()
+
+    def __getitem__(self, idx):
+        target = torch.tensor(np.array(self.df.loc[idx, 'pros_cancer']))   
+        signal = self.df.loc[idx, self.data_columns_psa].astype('float32')
+        signal = torch.tensor(np.array([signal.values]))  
+        index = self.df.loc[idx, self.data_columns_ts]
+        index = torch.tensor(np.array([index.values.astype("int64")]))
+        #print("target", target, "index", index, "signal", signal)
+        return signal, target, index
+
+    def __len__(self):
+        return len(self.df)
+
+def get_transformer_dataloader(config, data, phase: str) -> DataLoader:
+    '''
+    Dataset and DataLoader.
+    Parameters:
+        phase: training or validation phase.
+        batch_size: data per iteration.
+    Returns:
+        data generator
+    '''
+    train_df, test_df = generate_split(data)
+    train_df, val_df = generate_split(train_df)
+
+    if phase == 'train':
+        df = train_df
+        #df_ind = train_df_ind
+    elif phase == 'val':
+        df = val_df
+        #df_ind = val_df_ind
+    elif phase == 'test':
+        df = test_df
+        #df_ind = test_df_ind
+
+    dataset = TransformerDataset(df)
+    
+    print(f'{phase} data shape: {dataset.df.shape}')
+
+    dataloader = DataLoader(dataset=dataset, batch_size=config.batch_size, num_workers=4)
     return dataloader

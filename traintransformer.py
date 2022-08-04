@@ -4,7 +4,7 @@ import os
 import torch.nn as nn
 from torch.optim import AdamW, Adam
 from torch.optim.lr_scheduler import CosineAnnealingLR
-from dataloader import get_dataloader
+from dataloader import get_transformer_dataloader
 import pandas as pd
 from metrics import Meter
 import numpy as np
@@ -32,7 +32,7 @@ class TransformerTrainer:
         self.best_loss = float('inf')
         self.phases = ['train', 'val', 'test']
         self.dataloaders = {
-            phase: get_dataloader(config, data, phase) for phase in self.phases
+            phase: get_transformer_dataloader(config, data, phase) for phase in self.phases
         }
         self.attention_masks = generate_square_subsequent_mask(6)
 
