@@ -139,48 +139,7 @@ def load_psa_data_to_pd(file_name, config):
 
 # ---- Dataloader ----
 
-class MyDataset(Dataset):
-
-    def __init__(self, df):
-        self.df = df
-        self.data_columns = self.df.columns[:-2].tolist()
-
-    def __getitem__(self, idx):
-        signal = self.df.loc[idx, self.data_columns].astype('float32')
-        signal = torch.tensor(np.array([signal.values]))         
-        target = torch.tensor(np.array(self.df.loc[idx, 'pros_cancer']))
-        return signal, target
-
-    def __len__(self):
-        return len(self.df)
-
-def get_dataloader(data, phase: str, batch_size: int) -> DataLoader:
-    '''
-    Dataset and DataLoader.
-    Parameters:
-        phase: training or validation phase.
-        batch_size: data per iteration.
-    Returns:
-        data generator
-    '''
-    train_df, test_df = generate_split(data)
-    train_df, val_df = generate_split(train_df)
-    
-    if phase == 'train':
-        df = train_df
-    elif phase == 'val':
-        df = val_df
-    elif phase == 'test':
-        df = test_df
-        
-    dataset = MyDataset(df)
-    
-    print(f'{phase} data shape: {dataset.df.shape}')
-
-    dataloader = DataLoader(dataset=dataset, batch_size=batch_size, num_workers=4)
-    return dataloader
-
-class TransformerDataset(Dataset):
+class PSADataset(Dataset):
 
     def __init__(self, data):
         self.df = data
@@ -199,7 +158,7 @@ class TransformerDataset(Dataset):
     def __len__(self):
         return len(self.df)
 
-def get_transformer_dataloader(config, data, phase: str) -> DataLoader:
+def get_dataloader(config, data, phase: str) -> DataLoader:
     '''
     Dataset and DataLoader.
     Parameters:
@@ -213,15 +172,14 @@ def get_transformer_dataloader(config, data, phase: str) -> DataLoader:
 
     if phase == 'train':
         df = train_df
-        #df_ind = train_df_ind
     elif phase == 'val':
         df = val_df
-        #df_ind = val_df_ind
     elif phase == 'test':
         df = test_df
-        #df_ind = test_df_ind
+    else:
+        raise ValueError('phase must be either train, val or test')
 
-    dataset = TransformerDataset(df)
+    dataset = PSADataset(df)
     
     print(f'{phase} data shape: {dataset.df.shape}')
 

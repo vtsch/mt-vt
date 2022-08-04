@@ -31,7 +31,7 @@ class Trainer:
         meter = Meter()
         meter.init_metrics(phase)
 
-        for i, (data, target) in enumerate(self.dataloaders[phase]):
+        for i, (data, target, index) in enumerate(self.dataloaders[phase]):
             #data = data.to(config.device)
             #target = target.to(config.device)
             data = nn.functional.normalize(data, p=2, dim=2)
@@ -79,7 +79,7 @@ class Trainer:
         embeddings = np.array([])
         targets = np.array([])
         with torch.no_grad():
-            for i, (data, target) in enumerate(self.dataloaders['test']):
+            for i, (data, target, index) in enumerate(self.dataloaders['test']):
                 data = nn.functional.normalize(data, p=2, dim=1)
                 output = self.net(data)
                 embeddings = np.append(embeddings, output.detach().numpy() )
