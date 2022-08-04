@@ -64,14 +64,16 @@ class TransformerTimeSeries(torch.nn.Module):
         self.dropout = 0.1
         self.num_layers = 4
         self.ts_length = 6
+        self.max_value = 3000
+        self.n_heads = 4
 
         self.input_embedding = context_embedding(2, self.feature_size, 3)
-        self.positional_embedding = torch.nn.Embedding(60, self.feature_size) 
+        self.positional_embedding = torch.nn.Embedding(self.max_value, self.feature_size) 
 
-        self.encoder_layer = torch.nn.TransformerEncoderLayer(d_model=self.feature_size, nhead=4, dropout=self.dropout)
+        self.encoder_layer = torch.nn.TransformerEncoderLayer(d_model=self.feature_size, nhead=self.n_heads, dropout=self.dropout)
         self.transformer_encoder = torch.nn.TransformerEncoder(self.encoder_layer, num_layers=self.num_layers)
 
-        self.decode_layer = torch.nn.TransformerEncoderLayer(d_model=self.feature_size, nhead=2)
+        self.decode_layer = torch.nn.TransformerEncoderLayer(d_model=self.feature_size, nhead=self.n_heads)
         self.transformer_decoder = torch.nn.TransformerEncoder(self.decode_layer, num_layers=self.num_layers)
 
         self.fc1 = torch.nn.Linear(self.feature_size, 1)
@@ -89,7 +91,7 @@ class TransformerTimeSeries(torch.nn.Module):
         #print("z_emb", z_embedding)
         #print("z_embedding shape: ", z_embedding.shape)
 
-        # get my positional embeddings (Batch size, sequence_len, embedding_size) -> need (sequence len,Batch size,embedding_size)
+        # get my positional embeddings (Batch s ize, sequence_len, embedding_size) -> need (sequence len,Batch size,embedding_size)
         positional_embeddings = self.positional_embedding(indices.type(torch.long))
         #print("positional_embeddings", positional_embeddings)
         #print("positional_embeddings shape: ", positional_embeddings.shape)
