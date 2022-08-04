@@ -15,7 +15,7 @@ class Trainer:
         self.net = net.to(config.device)
         self.config = config
         self.experiment = experiment
-        self.criterion = nn.CrossEntropyLoss()
+        self.criterion = nn.MSELoss()
         self.optimizer = Adam(self.net.parameters(), lr=config.lr)
         self.scheduler = CosineAnnealingLR(self.optimizer, T_max=config.n_epochs, eta_min=5e-6)
         self.best_loss = float('inf')
@@ -36,7 +36,8 @@ class Trainer:
             #target = target.to(config.device)
             data = nn.functional.normalize(data, p=2, dim=2)
             output = self.net(data)
-            loss = self.criterion(output, target)
+            data = data.squeeze(1)
+            loss = self.criterion(output, data)
 
             if phase == 'train':
                 self.optimizer.zero_grad()
