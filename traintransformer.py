@@ -4,7 +4,7 @@ import os
 import torch.nn as nn
 from torch.optim import AdamW, Adam
 from torch.optim.lr_scheduler import CosineAnnealingLR
-from dataloader import get_dataloader
+from dataloader import get_transformer_dataloader
 import pandas as pd
 from metrics import Meter
 import numpy as np
@@ -32,8 +32,9 @@ class TransformerTrainer:
         self.best_loss = float('inf')
         self.phases = ['train', 'val', 'test']
         self.dataloaders = {
-            phase: get_dataloader(data, phase, config.batch_size) for phase in self.phases
+            phase: get_transformer_dataloader(data, phase, config.batch_size) for phase in self.phases
         }
+        #self.indices = indices
         self.attention_masks = generate_square_subsequent_mask(6)
 
 
@@ -46,18 +47,12 @@ class TransformerTrainer:
         meter.init_metrics(phase)
         
 
-        for i, (data, target) in enumerate(self.dataloaders[phase]):
-            #print("data shape: ", data.shape)
-            #data = data.reshape(self.config.batch_size, -1, 1)
-            #predictions = self.net(data)
+        for i, (data, target, index) in enumerate(self.dataloaders[phase]):
             data = nn.functional.normalize(data, p=2, dim=2).squeeze(1)
-            indices = torch.arange(0,6).repeat(self.config.batch_size, 1)
-            #predictions, psu_class, transf_emb, transf_reconst = self.net(data, target, self.attention_masks)
-            predictions, psu_class, transf_emb, transf_reconst = self.net(indices, data, self.attention_masks)
+            index = index.squeeze(1)
+            predictions, psu_class, transf_emb, transf_reconst = self.net(index, data, self.attention_masks)
             predictions = predictions.squeeze(1)
-            #print("preds", predictions)
-            #loss = self.criterion(predictions.squeeze(1), target.float()) #.view(-1, 1))
-            loss = self.criterion(data, predictions) #.view(-1, 1))
+            loss = self.criterion(data, predictions)
 
             if phase == 'train':
                 self.optimizer.zero_grad()
@@ -66,8 +61,6 @@ class TransformerTrainer:
                 torch.nn.utils.clip_grad_norm_(self.net.parameters(), 1)
                 self.optimizer.step()
             
-            #meter.update(predictions, target, phase, loss.item())
-            #remove 2nd axis in predictions and data
             meter.update(predictions.detach().numpy(), data, phase, loss.item())
                 
         metrics = meter.get_metrics()
@@ -105,17 +98,16 @@ class TransformerTrainer:
         predictions = np.array([])
         targets = np.array([])
         with torch.no_grad():
-            for i, (data, target) in enumerate(self.dataloaders['test']):
+            for i, (data, target, index) in enumerate(self.dataloaders['test']):
                 #data = data.to(config.device)
                 #prediction = self.net(data)
                 data = nn.functional.normalize(data, p=2, dim=1).squeeze(1)
-                indices = torch.arange(0,6).repeat(self.config.batch_size, 1)
-                #prediction, psu_class, transf_emb, transf_reconst = self.net(data, target, self.attention_masks)
-                prediction, psu_class, transf_emb, transf_reconst = self.net(indices, data, self.attention_masks)
+                index = index.squeeze(1)
+                prediction, psu_class, transf_emb, transf_reconst = self.net(index, data, self.attention_masks)
                 predictions = np.append(predictions, prediction.detach().numpy() )
                 targets = np.append(targets, target.detach().numpy())  #always +bs
 
-        embeddings = predictions.reshape(-1, 6)
+        embeddings = predictions.reshape(-1, self.config.emb_size)
         return embeddings, targets
 
 
