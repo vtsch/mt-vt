@@ -8,6 +8,7 @@ import pandas as pd
 from metrics import Meter
 from dataloader import get_dataloader
 import numpy as np
+from transformer import generate_square_subsequent_mask
 
 
 class Trainer:
@@ -23,6 +24,7 @@ class Trainer:
         self.dataloaders = {
             phase: get_dataloader(config, data, phase) for phase in self.phases
         }
+        self.attention_masks = generate_square_subsequent_mask(6)
 
     
     def _train_epoch(self, phase):
@@ -35,17 +37,24 @@ class Trainer:
             #data = data.to(config.device)
             #target = target.to(config.device)
             data = nn.functional.normalize(data, p=2, dim=2)
-            output = self.net(data)
-            data = data.squeeze(1)
-            loss = self.criterion(output, data)
+
+            if self.config.MOD_TRANSFORMER == True:
+                data = data.squeeze(1)
+                index = index.squeeze(1)
+                output, psu_class, pred, transf_reconst = self.net(index, data, self.attention_masks)
+                pred = pred.squeeze(1)
+            else: 
+                pred = self.net(data)
+                data = data.squeeze(1)
+            
+            loss = self.criterion(pred, data)
 
             if phase == 'train':
                 self.optimizer.zero_grad()
                 loss.backward()
                 self.optimizer.step()
 
-            data = data.squeeze(1)
-            meter.update(output.detach().numpy(), data, phase, loss.item())
+            meter.update(pred.detach().numpy(), data, phase, loss.item())
 
         metrics = meter.get_metrics()
         metrics = {k:v / i for k, v in metrics.items()}
@@ -59,6 +68,7 @@ class Trainer:
             train_loss, train_logs = self._train_epoch(phase='train')
             print(train_logs)
             self.experiment.log_metrics(dic=train_logs, step=epoch)
+
             with torch.no_grad():
                 val_loss, val_logs = self._train_epoch(phase='val')
                 print(val_logs)
@@ -72,7 +82,7 @@ class Trainer:
                 #save best model 
                 torch.save(self.net.state_dict(), os.path.join(self.config.model_save_path, f"best_model_epoc{epoch}.pth"))
             
-            self.experiment.log_metrics(pd.DataFrame({'train_loss': [train_loss.detach().numpy()], 'val_loss': [val_loss.detach().numpy()]}), epoch=epoch)
+            #self.experiment.log_metrics(pd.DataFrame({'train_loss': [train_loss.detach().numpy()], 'val_loss': [val_loss.detach().numpy()]}), epoch=epoch)
 
     
     def eval(self):
@@ -81,9 +91,16 @@ class Trainer:
         targets = np.array([])
         with torch.no_grad():
             for i, (data, target, index) in enumerate(self.dataloaders['test']):
-                data = nn.functional.normalize(data, p=2, dim=1)
-                output = self.net(data)
-                embeddings = np.append(embeddings, output.detach().numpy() )
+
+                if self.config.MOD_TRANSFORMER == True:
+                    data = nn.functional.normalize(data, p=2, dim=1).squeeze(1)
+                    index = index.squeeze(1)
+                    pred, psu_class, transf_emb, transf_reconst = self.net(index, data, self.attention_masks)
+                else:
+                    data = nn.functional.normalize(data, p=2, dim=1)
+                    pred = self.net(data)
+                
+                embeddings = np.append(embeddings, pred.detach().numpy() )
                 targets = np.append(targets, target.detach().numpy())  #always +bs
 
         embeddings = embeddings.reshape(-1, self.config.emb_size)
