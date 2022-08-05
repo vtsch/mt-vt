@@ -18,10 +18,10 @@ class Config:
     n_clusters = 2
     lr=0.001
     batch_size = 12
-    n_epochs = 10
+    n_epochs = 20
     emb_size = 6
     model_save_directory = "./models"
-    sample_size = 6000
+    sample_size = 3000
 
     PSA_DATA = True
     MOD_RAW = False
