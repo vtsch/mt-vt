@@ -78,7 +78,7 @@ class TransformerTimeSeries(torch.nn.Module):
         self.num_layers = 4
         self.ts_length = 6
         self.max_value = 3000
-        self.n_heads = 8
+        self.n_heads = 4
 
         self.input_embedding = context_embedding(2, self.feature_size, 1)
         self.positional_embedding = torch.nn.Embedding(self.max_value, self.feature_size) 

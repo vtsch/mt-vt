@@ -41,7 +41,7 @@ class Trainer:
             if self.config.MOD_TRANSFORMER == True:
                 data = data.squeeze(1)
                 index = index.squeeze(1)
-                output, psu_class, pred, transf_reconst = self.net(index, data, self.attention_masks)
+                pred, psu_class, transf_emb, transf_reconst = self.net(index, data, self.attention_masks)
                 pred = pred.squeeze(1)
             else: 
                 pred = self.net(data)
