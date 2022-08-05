@@ -2,6 +2,21 @@ import torch
 import torch.optim as optim
 import torch.nn.functional as F
 import torch.nn as nn
+import numpy as np
+
+#https://github.com/sunnyqiny/Unsupervised-Temporal-Embedding-and-Clustering/tree/cc5a41df905efbac11788a43b6151c08c68b8c6c 
+
+def generate_square_subsequent_mask(ts_length):
+        t0 = np.floor(ts_length *0.9)
+
+        t0 = t0.astype(int)
+        mask = torch.zeros(ts_length, ts_length)
+        for i in range(0,t0):
+            mask[i,t0:] = 1 
+        for i in range(t0,ts_length):
+            mask[i,i+1:] = 1
+        mask = mask.float().masked_fill(mask == 1, float('-inf'))#.masked_fill(mask == 1, float(0.0))
+        return mask
 
 
 class CausalConv1d(torch.nn.Conv1d):
@@ -43,9 +58,7 @@ class context_embedding(torch.nn.Module):
         return torch.tanh(x)
 
 class TransformerTimeSeries(torch.nn.Module):
-    # https://github.com/sunnyqiny/Unsupervised-Temporal-Embedding-and-Clustering/tree/cc5a41df905efbac11788a43b6151c08c68b8c6c 
     """
-    Time Series application of transformers based on paper
     causal_convolution_layer parameters:
         in_channels: the number of features per time point
         out_channels: the number of features outputted per time point
@@ -65,9 +78,9 @@ class TransformerTimeSeries(torch.nn.Module):
         self.num_layers = 4
         self.ts_length = 6
         self.max_value = 3000
-        self.n_heads = 4
+        self.n_heads = 8
 
-        self.input_embedding = context_embedding(2, self.feature_size, 3)
+        self.input_embedding = context_embedding(2, self.feature_size, 1)
         self.positional_embedding = torch.nn.Embedding(self.max_value, self.feature_size) 
 
         self.encoder_layer = torch.nn.TransformerEncoderLayer(d_model=self.feature_size, nhead=self.n_heads, dropout=self.dropout)
@@ -88,24 +101,17 @@ class TransformerTimeSeries(torch.nn.Module):
 
         # input_embedding returns shape (Batch size,embedding size,sequence len) -> need (sequence len,Batch size,embedding_size)
         z_embedding = self.input_embedding(z).permute(2, 0, 1)
-        #print("z_emb", z_embedding)
-        #print("z_embedding shape: ", z_embedding.shape)
 
         # get my positional embeddings (Batch s ize, sequence_len, embedding_size) -> need (sequence len,Batch size,embedding_size)
         positional_embeddings = self.positional_embedding(indices.type(torch.long))
-        #print("positional_embeddings", positional_embeddings)
-        #print("positional_embeddings shape: ", positional_embeddings.shape)
         positional_embeddings = positional_embeddings.reshape(positional_embeddings.shape[0], self.ts_length, -1).permute(1, 0, 2)
-        #print("positional_embeddings shape: ", positional_embeddings.shape)
         input_embedding = z_embedding + positional_embeddings
-        #print("input_embedding shape: ", input_embedding.shape)
         transformer_embedding = self.transformer_encoder(input_embedding, attention_masks)
         #print("transformer_embedding shape: ", transformer_embedding.shape)
 
         transformer_reconstruction = self.transformer_decoder(transformer_embedding, attention_masks)
         #print("transformer_reconstruction shape: ", transformer_reconstruction.shape)
         output = self.fc1(transformer_reconstruction.permute(1, 0, 2))
-        output = self.softmax(output) #to restrict to [0,1]
         #print("output shape: ", output.shape)
         psu_class = self.f_class(transformer_reconstruction.permute(1, 0, 2))
         output = output.permute(0, 2, 1)
