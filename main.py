@@ -8,30 +8,29 @@ from umapplot import run_umap
 from modules import CNN, RNNModel, RNNAttentionModel, SimpleAutoencoder, DeepAutoencoder
 from train import Trainer
 from utils import get_bunch_config_from_json, build_save_path, build_comet_logger
-from traintransformer import TransformerTrainer
 from transformer import TransformerTimeSeries
 
 
 class Config:
     seed = 2021
     device = 'cuda:0' if torch.cuda.is_available() else 'cpu'
-    metric = "euclidean" #metric : {“euclidean”, “dtw”, “softdtw”} 
+    metric = "dtw" #metric : {“euclidean”, “dtw”, “softdtw”} 
     n_clusters = 2
     lr=0.001
     batch_size = 12
-    n_epochs = 1
+    n_epochs = 10
     emb_size = 6
     model_save_directory = "./models"
-    sample_size = 2000
+    sample_size = 6000
 
     PSA_DATA = True
     MOD_RAW = False
-    MOD_SIMPLE_AC = True
+    MOD_SIMPLE_AC = False
     MOD_DEEP_AC = False
     MOD_LSTM = False
     MOD_CNN = False
     MOD_RNN_ATT = False
-    MOD_TRANSFORMER = False
+    MOD_TRANSFORMER = True
 
     experiment_name = "raw_model" if MOD_RAW else "simple_ac" if MOD_SIMPLE_AC else "deep_ac" if MOD_DEEP_AC else "lstm_model" if MOD_LSTM else "cnn_model" if MOD_CNN else "rnn_attmodel" if MOD_RNN_ATT else "transformer_model TS" if MOD_TRANSFORMER else "notimplemented"
 
@@ -135,7 +134,7 @@ if __name__ == '__main__':
     if config.MOD_TRANSFORMER == True: 
         model = TransformerTimeSeries() 
         summary(model, input_size=(1, ts_length))
-        trainer = TransformerTrainer(config=config, experiment=experiment, data=df_psa, net=model)
+        trainer = Trainer(config=config, experiment=experiment, data=df_psa, net=model)
         trainer.run()
         predictions, target = trainer.eval()
     
