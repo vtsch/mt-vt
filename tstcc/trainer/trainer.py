@@ -22,7 +22,7 @@ def Trainer(model, temporal_contr_model, model_optimizer, temp_cont_optimizer, t
     for epoch in range(1, config.num_epoch + 1):
         # Train and validate
         train_loss, train_acc = model_train(model, temporal_contr_model, model_optimizer, temp_cont_optimizer, criterion, train_dl, config, device, training_mode)
-        valid_loss, valid_acc, _, _ = model_evaluate(model, temporal_contr_model, valid_dl, device, training_mode)
+        valid_loss, valid_acc, _, _, features = model_evaluate(model, temporal_contr_model, valid_dl, device, training_mode)
         if training_mode != 'self_supervised':  # use scheduler in all other modes.
             scheduler.step(valid_loss)
 
@@ -33,11 +33,12 @@ def Trainer(model, temporal_contr_model, model_optimizer, temp_cont_optimizer, t
     os.makedirs(os.path.join(experiment_log_dir, "saved_models"), exist_ok=True)
     chkpoint = {'model_state_dict': model.state_dict(), 'temporal_contr_model_state_dict': temporal_contr_model.state_dict()}
     torch.save(chkpoint, os.path.join(experiment_log_dir, "saved_models", f'ckp_last.pt'))
+    np.save(os.path.join(experiment_log_dir, "saved_models", f'features_last.npy'), features.detach().cpu().numpy())
 
     if training_mode != "self_supervised":  # no need to run the evaluation for self-supervised mode.
         # evaluate on the test set
         logger.debug('\nEvaluate on the Test set:')
-        test_loss, test_acc, _, _ = model_evaluate(model, temporal_contr_model, test_dl, device, training_mode)
+        test_loss, test_acc, _, _, features = model_evaluate(model, temporal_contr_model, test_dl, device, training_mode)
         logger.debug(f'Test loss      :{test_loss:0.4f}\t | Test Accuracy      : {test_acc:0.4f}')
 
     logger.debug("\n################## Training is Done! #########################")
@@ -51,6 +52,8 @@ def model_train(model, temporal_contr_model, model_optimizer, temp_cont_optimize
 
     for batch_idx, (data, labels, aug1, aug2) in enumerate(train_loader):
         # send to device
+        #print("data", data)
+        #print("labels", labels)
         data, labels = data.float().to(device), labels.long().to(device)
         aug1, aug2 = aug1.float().to(device), aug2.float().to(device)
 
@@ -144,4 +147,4 @@ def model_evaluate(model, temporal_contr_model, test_dl, device, training_mode):
         return total_loss, total_acc, [], []
     else:
         total_acc = torch.tensor(total_acc).mean()  # average acc
-    return total_loss, total_acc, outs, trgs
+    return total_loss, total_acc, outs, trgs, features

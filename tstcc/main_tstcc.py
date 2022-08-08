@@ -24,7 +24,7 @@ parser.add_argument('--run_description', default='run1', type=str,
                     help='Experiment Description')
 parser.add_argument('--seed', default=0, type=int,
                     help='seed value')
-parser.add_argument('--training_mode', default='self_supervised', type=str,
+parser.add_argument('--training_mode', default='supervised', type=str,
                     help='Modes of choice: random_init, supervised, self_supervised, fine_tune, train_linear')
 parser.add_argument('--selected_dataset', default='PSA', type=str,
                     help='Dataset of choice: PSA, Epilepsy')
@@ -148,7 +148,7 @@ Trainer(model, temporal_contr_model, model_optimizer, temporal_contr_optimizer, 
 if training_mode != "self_supervised":
     # Testing
     outs = model_evaluate(model, temporal_contr_model, test_dl, device, training_mode)
-    total_loss, total_acc, pred_labels, true_labels = outs
+    total_loss, total_acc, pred_labels, true_labels, features = outs
     _calc_metrics(pred_labels, true_labels, experiment_log_dir, args.home_path)
 
 logger.debug(f"Training time is : {datetime.now()-start_time}")
