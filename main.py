@@ -2,14 +2,14 @@ import torch
 import os
 from torchsummary import summary
 from dataloader import load_ecg_data_to_pd, upsample_data, load_psa_data_to_pd
-from clustering_algorithms import run_kmeans
+from clustering_algorithms import run_kmeans, run_kmeans_xd
 from metrics import calculate_clustering_scores
 from umapplot import run_umap
 from modules import CNN, RNNModel, RNNAttentionModel, SimpleAutoencoder, DeepAutoencoder
 from train import Trainer
 from utils import get_bunch_config_from_json, build_save_path, build_comet_logger
 from transformer import TransformerTimeSeries
-
+import numpy as np
 
 class Config:
     seed = 2021
@@ -24,15 +24,16 @@ class Config:
     sample_size = 3000
 
     PSA_DATA = True
+    CHECK_FEATURES = True
     MOD_RAW = False
     MOD_SIMPLE_AC = False
     MOD_DEEP_AC = False
     MOD_LSTM = False
     MOD_CNN = False
     MOD_RNN_ATT = False
-    MOD_TRANSFORMER = True
+    MOD_TRANSFORMER = False
 
-    experiment_name = "raw_model" if MOD_RAW else "simple_ac" if MOD_SIMPLE_AC else "deep_ac" if MOD_DEEP_AC else "lstm_model" if MOD_LSTM else "cnn_model" if MOD_CNN else "rnn_attmodel" if MOD_RNN_ATT else "transformer_model TS" if MOD_TRANSFORMER else "notimplemented"
+    experiment_name = "raw_model" if MOD_RAW else "loaded features" if CHECK_FEATURES else "simple_ac" if MOD_SIMPLE_AC else "deep_ac" if MOD_DEEP_AC else "lstm_model" if MOD_LSTM else "cnn_model" if MOD_CNN else "rnn_attmodel" if MOD_RNN_ATT else "transformer_model TS" if MOD_TRANSFORMER else "notimplemented"
 
 
 if __name__ == '__main__':
@@ -74,8 +75,18 @@ if __name__ == '__main__':
         run_umap(df_psa, y_real, kmeans_labels, config.experiment_name, experiment)
         calculate_clustering_scores(y_real.astype(int), kmeans_labels, experiment)
 
-    # run embedding models and kmeans
+    if config.CHECK_FEATURES == True:
+        features = np.load('data/features_last.npy')
+        y_real = np.load('data/labels_last.npy')
+        features = features.reshape(y_real.shape[0], -1)
+        print(features.shape)
+        print(y_real.shape)
+        kmeans_labels = run_kmeans_xd(features, config.n_clusters, config.metric, ts_length, config.experiment_name, experiment)
+        run_umap(features, y_real, kmeans_labels, config.experiment_name, experiment)
+        calculate_clustering_scores(y_real.astype(int), kmeans_labels, experiment)
 
+
+    # run embedding models and kmeans
     if config.MOD_SIMPLE_AC == True:
         model = SimpleAutoencoder(ts_length, config.emb_size)
         summary(model, input_size=(1, ts_length))
