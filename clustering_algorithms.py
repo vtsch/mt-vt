@@ -21,5 +21,13 @@ def run_kmeans(output, n_clusters, metric, name, experiment):
     plot_centroids(centroids, n_clusters, "%s kmeans centroids %s" %(metric, name), experiment)
     return kmeans_labels
 
+def run_kmeans_xd(data, n_clusters, metric, ndim, name, experiment):
+    data = data.reshape(data.shape[0], -1, ndim)
+    kmeans = TimeSeriesKMeans(n_clusters=n_clusters, metric=metric, max_iter=5, random_state=0, n_init=5).fit(data)
+    kmeans_labels = kmeans.predict(data)
+    centroids = kmeans.cluster_centers_
+    plot_centroids(centroids, n_clusters, "%s kmeans centroids %s" %(metric, name), experiment)
+    return kmeans_labels
+
 
 
