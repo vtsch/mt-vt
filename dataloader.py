@@ -124,6 +124,27 @@ def load_psa_and_timesteps_df(df):
     df.fillna(0, inplace=True)
     return df
 
+def load_psa_and_deltatime_df(df):
+    # psa_levels per year: 69-74
+    # day of psa level mesaurements: 80-85
+    # pros_cancer label: 4
+    df = df.iloc[:, [69, 70, 71, 72, 73, 74, 80, 81, 82, 83, 84, 85, 4]]
+    df.dropna(thresh=8, inplace=True)
+    df.fillna(0, inplace=True)
+    print(df.columns)
+    #calculate deltatime between psa measurements
+    df['psa_delta0'] = 0
+    df['psa_delta1'] = df['psa_days1'] - df['psa_days0']
+    df['psa_delta2'] = df['psa_days2'] - df['psa_days1']
+    df['psa_delta3'] = df['psa_days3'] - df['psa_days2']
+    df['psa_delta4'] = df['psa_days4'] - df['psa_days3']
+    df['psa_delta5'] = df['psa_days5'] - df['psa_days4']
+
+    df.drop(['psa_days0', 'psa_days1', 'psa_days2', 'psa_days3', 'psa_days4'], axis=1, inplace=True)
+    df[df < 0] = 0
+    print(df)
+    return df
+
 def load_psa_data_to_pd(file_name: str, config: dict) -> pd.DataFrame:
     '''
     Parameters:
@@ -133,9 +154,12 @@ def load_psa_data_to_pd(file_name: str, config: dict) -> pd.DataFrame:
         df_psa_ts: pd.DataFrame with psa values and timestep index and labels
     '''
     df_raw = pd.read_csv(file_name, header=0)
-    df_psa_ts = load_psa_and_timesteps_df(df_raw)
-    df_psa_ts = upsample_data(df_psa_ts, n_clusters=config.n_clusters, sample_size=config.sample_size)
-    return df_psa_ts
+    if config.DELTATIMES:
+        df = load_psa_and_deltatime_df(df_raw)
+    else:
+        df = load_psa_and_timesteps_df(df_raw)
+    df = upsample_data(df, n_clusters=config.n_clusters, sample_size=config.sample_size)
+    return df
 
 
 # ---- Dataloader ----
