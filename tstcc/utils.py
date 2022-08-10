@@ -41,56 +41,8 @@ def _calc_metrics(pred_labels, true_labels, log_dir, home_path):
 
     r = classification_report(true_labels, pred_labels, digits=6, output_dict=True)
     cm = confusion_matrix(true_labels, pred_labels)
+    print("cm", cm)
     df = pd.DataFrame(r)
     df["cohen"] = cohen_kappa_score(true_labels, pred_labels)
     df["accuracy"] = accuracy_score(true_labels, pred_labels)
     df = df * 100
-
-    # save classification report
-    exp_name = os.path.split(os.path.dirname(log_dir))[-1]
-    training_mode = os.path.basename(log_dir)
-    file_name = f"{exp_name}_{training_mode}_classification_report.xlsx"
-    report_Save_path = os.path.join(home_path, log_dir, file_name)
-    df.to_excel(report_Save_path)
-
-    # save confusion matrix
-    cm_file_name = f"{exp_name}_{training_mode}_confusion_matrix.torch"
-    cm_Save_path = os.path.join(home_path, log_dir, cm_file_name)
-    torch.save(cm, cm_Save_path)
-
-
-def _logger(logger_name, level=logging.DEBUG):
-    """
-    Method to return a custom logger with the given name and level
-    """
-    logger = logging.getLogger(logger_name)
-    logger.setLevel(level)
-    # format_string = ("%(asctime)s — %(name)s — %(levelname)s — %(funcName)s:"
-    #                 "%(lineno)d — %(message)s")
-    format_string = "%(message)s"
-    log_format = logging.Formatter(format_string)
-    # Creating and adding the console handler
-    console_handler = logging.StreamHandler(sys.stdout)
-    console_handler.setFormatter(log_format)
-    logger.addHandler(console_handler)
-    # Creating and adding the file handler
-    file_handler = logging.FileHandler(logger_name, mode='a')
-    file_handler.setFormatter(log_format)
-    logger.addHandler(file_handler)
-    return logger
-
-
-
-
-
-def copy_Files(destination, data_type):
-    destination_dir = os.path.join(destination, "model_files")
-    os.makedirs(destination_dir, exist_ok=True)
-    copy("main_tstcc.py", os.path.join(destination_dir, "main_tstcc.py"))
-    copy("trainer/trainer.py", os.path.join(destination_dir, "trainer.py"))
-    copy(f"config_files/Configs.py", os.path.join(destination_dir, f"Configs.py"))
-    copy("dataloader/augmentations.py", os.path.join(destination_dir, "augmentations.py"))
-    copy("dataloader/dataloader.py", os.path.join(destination_dir, "dataloader.py"))
-    copy(f"models/model.py", os.path.join(destination_dir, f"model.py"))
-    copy("models/loss.py", os.path.join(destination_dir, "loss.py"))
-    copy("models/TC.py", os.path.join(destination_dir, "TC.py"))

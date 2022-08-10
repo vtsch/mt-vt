@@ -4,11 +4,10 @@ import os
 import numpy as np
 from datetime import datetime
 import argparse
-from utils import _logger, set_requires_grad
+from utils import set_requires_grad
 from dataloader.dataloader import data_generator
 from trainer.trainer import Trainer, model_evaluate
 from models.TC import TC
-from utils import _calc_metrics, copy_Files
 from models.model import base_Model
 # Args selections
 start_time = datetime.now()
@@ -24,8 +23,8 @@ parser.add_argument('--run_description', default='run1', type=str,
                     help='Experiment Description')
 parser.add_argument('--seed', default=0, type=int,
                     help='seed value')
-parser.add_argument('--training_mode', default='supervised', type=str,
-                    help='Modes of choice: random_init, supervised, self_supervised, fine_tune, train_linear')
+parser.add_argument('--training_mode', default='random_init', type=str,
+                    help='Modes of choice: random_init, supervised, fine_tune, train_linear')
 parser.add_argument('--selected_dataset', default='PSA', type=str,
                     help='Dataset of choice: PSA, Epilepsy')
 parser.add_argument('--logs_save_dir', default='experiments_logs', type=str,
@@ -68,19 +67,9 @@ counter = 0
 src_counter = 0
 
 
-# Logging
-log_file_name = os.path.join(experiment_log_dir, f"logs_{datetime.now().strftime('%d_%m_%Y_%H_%M_%S')}.log")
-logger = _logger(log_file_name)
-logger.debug("=" * 45)
-logger.debug(f'Dataset: {data_type}')
-logger.debug(f'Method:  {method}')
-logger.debug(f'Mode:    {training_mode}')
-logger.debug("=" * 45)
-
 # Load datasets
 data_path = f"./data/{data_type}"
 train_dl, valid_dl, test_dl = data_generator(data_path, configs, training_mode)
-logger.debug("Data loaded ...")
 
 # Load Model
 model = base_Model(configs).to(device)
@@ -139,16 +128,5 @@ if training_mode == "random_init":
 model_optimizer = torch.optim.Adam(model.parameters(), lr=configs.lr, betas=(configs.beta1, configs.beta2), weight_decay=3e-4)
 temporal_contr_optimizer = torch.optim.Adam(temporal_contr_model.parameters(), lr=configs.lr, betas=(configs.beta1, configs.beta2), weight_decay=3e-4)
 
-if training_mode == "self_supervised":  # to do it only once
-    copy_Files(os.path.join(logs_save_dir, experiment_description, run_description), data_type)
-
 # Trainer
-Trainer(model, temporal_contr_model, model_optimizer, temporal_contr_optimizer, train_dl, valid_dl, test_dl, device, logger, configs, experiment_log_dir, training_mode)
-
-if training_mode != "self_supervised":
-    # Testing
-    outs = model_evaluate(model, temporal_contr_model, test_dl, device, training_mode)
-    total_loss, total_acc, pred_labels, true_labels, features = outs
-    _calc_metrics(pred_labels, true_labels, experiment_log_dir, args.home_path)
-
-logger.debug(f"Training time is : {datetime.now()-start_time}")
+Trainer(model, temporal_contr_model, model_optimizer, temporal_contr_optimizer, train_dl, valid_dl, test_dl, device, configs, experiment_log_dir, training_mode)
