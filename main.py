@@ -2,7 +2,7 @@ import torch
 import os
 from torchsummary import summary
 from dataloader import load_ecg_data_to_pd, upsample_data, load_psa_data_to_pd
-from clustering_algorithms import run_kmeans, run_kmeans_xd
+from clustering_algorithms import run_kmeans, run_kmeans_only
 from metrics import calculate_clustering_scores
 from umapplot import run_umap
 from modules import CNN, RNNModel, RNNAttentionModel, SimpleAutoencoder, DeepAutoencoder
@@ -18,20 +18,22 @@ class Config:
     n_clusters = 2
     lr=0.001
     batch_size = 12
-    n_epochs = 20
+    n_epochs = 10
     emb_size = 6
     model_save_directory = "./models"
-    sample_size = 3000
+    sample_size = 6000
 
     PSA_DATA = True
-    CHECK_FEATURES = True
+    DELTATIMES = True
+
+    CHECK_FEATURES = False
     MOD_RAW = False
     MOD_SIMPLE_AC = False
     MOD_DEEP_AC = False
     MOD_LSTM = False
     MOD_CNN = False
     MOD_RNN_ATT = False
-    MOD_TRANSFORMER = False
+    MOD_TRANSFORMER = True
 
     experiment_name = "raw_model" if MOD_RAW else "loaded features" if CHECK_FEATURES else "simple_ac" if MOD_SIMPLE_AC else "deep_ac" if MOD_DEEP_AC else "lstm_model" if MOD_LSTM else "cnn_model" if MOD_CNN else "rnn_attmodel" if MOD_RNN_ATT else "transformer_model TS" if MOD_TRANSFORMER else "notimplemented"
 
@@ -78,10 +80,8 @@ if __name__ == '__main__':
     if config.CHECK_FEATURES == True:
         features = np.load('data/features_last.npy')
         y_real = np.load('data/labels_last.npy')
-        features = features.reshape(y_real.shape[0], -1)
-        print(features.shape)
-        print(y_real.shape)
-        kmeans_labels = run_kmeans_xd(features, config.n_clusters, config.metric, ts_length, config.experiment_name, experiment)
+        kmeans_labels = run_kmeans_only(features, config.n_clusters, config.metric)
+        features = features.reshape(features.shape[0], -1)
         run_umap(features, y_real, kmeans_labels, config.experiment_name, experiment)
         calculate_clustering_scores(y_real.astype(int), kmeans_labels, experiment)
 
