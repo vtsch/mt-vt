@@ -16,7 +16,7 @@ class Trainer:
         self.net = net.to(config.device)
         self.config = config
         self.experiment = experiment
-        self.criterion = nn.MSELoss()
+        self.criterion = nn.CrossEntropyLoss()
         self.optimizer = Adam(self.net.parameters(), lr=config.lr)
         self.scheduler = CosineAnnealingLR(self.optimizer, T_max=config.n_epochs, eta_min=5e-6)
         self.best_loss = float('inf')
