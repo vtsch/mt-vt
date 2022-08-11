@@ -140,7 +140,7 @@ def load_psa_and_deltatime_df(df):
     df['psa_delta4'] = df['psa_days4'] - df['psa_days3']
     df['psa_delta5'] = df['psa_days5'] - df['psa_days4']
 
-    df.drop(['psa_days0', 'psa_days1', 'psa_days2', 'psa_days3', 'psa_days4'], axis=1, inplace=True)
+    df.drop(['psa_days0', 'psa_days1', 'psa_days2', 'psa_days3', 'psa_days4', 'psa_days5'], axis=1, inplace=True)
     df[df < 0] = 0
     print(df)
     return df
@@ -165,10 +165,13 @@ def load_psa_data_to_pd(file_name: str, config: dict) -> pd.DataFrame:
 # ---- Dataloader ----
 
 class PSADataset(Dataset):
-    def __init__(self, data):
+    def __init__(self, config, data):
         self.df = data
         self.data_columns_psa = self.df.columns[0:6].tolist()
-        self.data_columns_ts = self.df.columns[6:12].tolist()
+        if config.DELTATIMES:
+            self.data_columns_ts = self.df.columns[7:13].tolist()
+        else:
+            self.data_columns_ts = self.df.columns[6:12].tolist()
 
     def __getitem__(self, idx):
         target = torch.tensor(np.array(self.df.loc[idx, 'pros_cancer']))   
@@ -203,7 +206,7 @@ def get_dataloader(config, data, phase: str) -> DataLoader:
     else:
         raise ValueError('phase must be either train, val or test')
 
-    dataset = PSADataset(df)
+    dataset = PSADataset(config, df)
     
     print(f'{phase} data shape: {dataset.df.shape}')
 

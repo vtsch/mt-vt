@@ -18,7 +18,7 @@ class Config:
     n_clusters = 2
     lr=0.001
     batch_size = 12
-    n_epochs = 10
+    n_epochs = 40
     emb_size = 6
     model_save_directory = "./models"
     sample_size = 6000
