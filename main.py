@@ -1,3 +1,5 @@
+import configparser
+import comet_ml
 import torch
 import os
 from torchsummary import summary
@@ -15,25 +17,27 @@ class Config:
     seed = 2021
     device = 'cuda:0' if torch.cuda.is_available() else 'cpu'
     metric = "dtw" #metric : {“euclidean”, “dtw”, “softdtw”} 
-    n_clusters = 2
+    n_clusters = 5
+    n_clusters_kmeans = 5
     lr=0.001
     batch_size = 12
-    n_epochs = 40
+    n_epochs = 2
     emb_size = 6
     model_save_directory = "./models"
-    sample_size = 6000
+    sample_size = 12000
 
     PSA_DATA = True
-    DELTATIMES = True
+    DELTATIMES = False
+    NOPOSENC = False
 
     CHECK_FEATURES = False
     MOD_RAW = False
     MOD_SIMPLE_AC = False
     MOD_DEEP_AC = False
-    MOD_LSTM = False
+    MOD_LSTM = True
     MOD_CNN = False
     MOD_RNN_ATT = False
-    MOD_TRANSFORMER = True
+    MOD_TRANSFORMER = False
 
     experiment_name = "raw_model" if MOD_RAW else "loaded features" if CHECK_FEATURES else "simple_ac" if MOD_SIMPLE_AC else "deep_ac" if MOD_DEEP_AC else "lstm_model" if MOD_LSTM else "cnn_model" if MOD_CNN else "rnn_attmodel" if MOD_RNN_ATT else "transformer_model TS" if MOD_TRANSFORMER else "notimplemented"
 
@@ -73,7 +77,7 @@ if __name__ == '__main__':
         y_real = df_psa['pros_cancer']
         df_psa = df_psa.iloc[:,:-2]
         df_train_values = df_psa.values
-        kmeans_labels = run_kmeans(df_train_values, config.n_clusters, config.metric, config.experiment_name, experiment)
+        kmeans_labels = run_kmeans(df_train_values, config, experiment)
         run_umap(df_psa, y_real, kmeans_labels, config.experiment_name, experiment)
         calculate_clustering_scores(y_real.astype(int), kmeans_labels, experiment)
 
@@ -94,7 +98,7 @@ if __name__ == '__main__':
         trainer.run()
         output, target = trainer.eval()
     
-        kmeans_labels = run_kmeans(output, config.n_clusters, config.metric, config.experiment_name, experiment)
+        kmeans_labels = run_kmeans(output, config, experiment)
         run_umap(output, target, kmeans_labels, config.experiment_name, experiment)
         calculate_clustering_scores(target.astype(int), kmeans_labels, experiment)
 
@@ -104,7 +108,7 @@ if __name__ == '__main__':
         trainer = Trainer(config=config, experiment=experiment, data=df_psa, net=model)
         trainer.run()
         output, target = trainer.eval()
-        kmeans_labels = run_kmeans(output, config.n_clusters, config.metric, config.experiment_name, experiment)
+        kmeans_labels = run_kmeans(output, config, experiment)
         run_umap(output, target, kmeans_labels, config.experiment_name, experiment)
         calculate_clustering_scores(target.astype(int), kmeans_labels, experiment)
 
@@ -115,7 +119,7 @@ if __name__ == '__main__':
         trainer.run()
         output, target = trainer.eval()
 
-        kmeans_labels = run_kmeans(output, config.n_clusters, config.metric, config.experiment_name, experiment)
+        kmeans_labels = run_kmeans(output, config, experiment)
         run_umap(output, target, kmeans_labels, config.experiment_name, experiment)
         calculate_clustering_scores(target.astype(int), kmeans_labels, experiment)
 
@@ -126,7 +130,7 @@ if __name__ == '__main__':
         trainer.run()
         output, target = trainer.eval()
 
-        kmeans_labels = run_kmeans(output, config.n_clusters, config.metric, config.experiment_name, experiment)
+        kmeans_labels = run_kmeans(output, config, experiment)
         run_umap(output, target, kmeans_labels, config.experiment_name, experiment)
         calculate_clustering_scores(target.astype(int), kmeans_labels, experiment)
     
@@ -137,7 +141,7 @@ if __name__ == '__main__':
         trainer.run()
         output, target = trainer.eval()
 
-        kmeans_labels = run_kmeans(output, config.n_clusters, config.metric, config.experiment_name, experiment)
+        kmeans_labels = run_kmeans(output, config, experiment)
         run_umap(output, target, kmeans_labels, config.experiment_name, experiment)
         calculate_clustering_scores(target.astype(int), kmeans_labels, experiment)
     
@@ -149,7 +153,7 @@ if __name__ == '__main__':
         trainer.run()
         predictions, target = trainer.eval()
     
-        kmeans_labels = run_kmeans(predictions, config.n_clusters, config.metric, config.experiment_name, experiment)
+        kmeans_labels = run_kmeans(predictions, config, experiment)
         run_umap(predictions, target, kmeans_labels, config.experiment_name, experiment)
         calculate_clustering_scores(target.astype(int), kmeans_labels, experiment)
     
