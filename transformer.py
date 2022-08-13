@@ -78,7 +78,7 @@ class TransformerTimeSeries(torch.nn.Module):
         self.num_layers = 2
         self.ts_length = 6
         self.max_value = 3000
-        self.n_heads = 2
+        self.n_heads = 1
 
         self.input_embedding = context_embedding(2, self.feature_size, 1)
         self.positional_embedding = torch.nn.Embedding(self.max_value, self.feature_size) 
@@ -104,7 +104,7 @@ class TransformerTimeSeries(torch.nn.Module):
 
         # get my positional embeddings (Batch s ize, sequence_len, embedding_size) -> need (sequence len,Batch size,embedding_size)
         positional_embeddings = self.positional_embedding(indices.type(torch.long))
-        positional_embeddings = positional_embeddings.reshape(positional_embeddings.shape[0], self.ts_length, -1).permute(1, 0, 2)
+        positional_embeddings = positional_embeddings.reshape(self.ts_length, positional_embeddings.shape[0], -1)
         input_embedding = z_embedding + positional_embeddings
         transformer_embedding = self.transformer_encoder(input_embedding, attention_masks)
         #print("transformer_embedding shape: ", transformer_embedding.shape)
