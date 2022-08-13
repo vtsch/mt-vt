@@ -70,27 +70,20 @@ class TransformerTimeSeries(torch.nn.Module):
         dropout: the dropout to be used on the sum of positional+embedding vector
     """
 
-    def __init__(self):
+    def __init__(self, config):
         super(TransformerTimeSeries, self).__init__()
 
-        self.feature_size = 12
-        self.dropout = 0.1
-        self.num_layers = 2
-        self.ts_length = 6
-        self.max_value = 3000
-        self.n_heads = 1
+        self.input_embedding = context_embedding(2, config.emb_size, 1)
+        self.positional_embedding = torch.nn.Embedding(config.max_value, config.emb_size) 
 
-        self.input_embedding = context_embedding(2, self.feature_size, 1)
-        self.positional_embedding = torch.nn.Embedding(self.max_value, self.feature_size) 
+        self.encoder_layer = torch.nn.TransformerEncoderLayer(d_model=config.emb_size, nhead=config.n_heads, dropout=config.dropout)
+        self.transformer_encoder = torch.nn.TransformerEncoder(self.encoder_layer, num_layers=config.num_layers)
 
-        self.encoder_layer = torch.nn.TransformerEncoderLayer(d_model=self.feature_size, nhead=self.n_heads, dropout=self.dropout)
-        self.transformer_encoder = torch.nn.TransformerEncoder(self.encoder_layer, num_layers=self.num_layers)
+        self.decode_layer = torch.nn.TransformerEncoderLayer(d_model=config.emb_size, nhead=config.n_heads)
+        self.transformer_decoder = torch.nn.TransformerEncoder(self.decode_layer, num_layers=config.num_layers)
 
-        self.decode_layer = torch.nn.TransformerEncoderLayer(d_model=self.feature_size, nhead=self.n_heads)
-        self.transformer_decoder = torch.nn.TransformerEncoder(self.decode_layer, num_layers=self.num_layers)
-
-        self.fc1 = torch.nn.Linear(self.feature_size, 1)
-        self.f_class = torch.nn.Linear(self.feature_size, 1)
+        self.fc1 = torch.nn.Linear(config.emb_size, 1)
+        self.f_class = torch.nn.Linear(config.emb_size, 1)
         self.softmax = torch.nn.Softmax(dim=1)
 
 
@@ -101,10 +94,10 @@ class TransformerTimeSeries(torch.nn.Module):
 
         # input_embedding returns shape (Batch size,embedding size,sequence len) -> need (sequence len,Batch size,embedding_size)
         z_embedding = self.input_embedding(z).permute(2, 0, 1)
-
+   
         # get my positional embeddings (Batch s ize, sequence_len, embedding_size) -> need (sequence len,Batch size,embedding_size)
-        positional_embeddings = self.positional_embedding(indices.type(torch.long))
-        positional_embeddings = positional_embeddings.reshape(self.ts_length, positional_embeddings.shape[0], -1)
+        positional_embeddings = self.positional_embedding(indices.type(torch.long)).permute(1, 0, 2)
+
         input_embedding = z_embedding + positional_embeddings
         transformer_embedding = self.transformer_encoder(input_embedding, attention_masks)
         #print("transformer_embedding shape: ", transformer_embedding.shape)
