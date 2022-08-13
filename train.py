@@ -37,6 +37,8 @@ class Trainer:
             #data = data.to(config.device)
             #target = target.to(config.device)
             data = nn.functional.normalize(data, p=2, dim=2)
+            #if config.NOPOSENC:
+            #index = torch.zeros(index.shape) 
 
             if self.config.MOD_TRANSFORMER == True:
                 data = data.squeeze(1)
