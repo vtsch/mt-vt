@@ -158,7 +158,10 @@ def load_psa_data_to_pd(file_name: str, config: dict) -> pd.DataFrame:
         df = load_psa_and_deltatime_df(df_raw)
     else:
         df = load_psa_and_timesteps_df(df_raw)
-    df = upsample_data(df, n_clusters=config.n_clusters_real, sample_size=config.sample_size)
+        
+    if config.upsample:
+        df = upsample_data(df, n_clusters=config.n_clusters_real, sample_size=config.sample_size)
+
     return df
 
 
