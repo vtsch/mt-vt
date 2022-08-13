@@ -7,9 +7,9 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 class SimpleAutoencoder(nn.Module):
-    def __init__(self, ts_length, emb_size):
+    def __init__(self, config):
         super(SimpleAutoencoder, self).__init__()
-        self.fc = nn.Linear(in_features=ts_length, out_features=emb_size)
+        self.fc = nn.Linear(in_features=config.ts_length, out_features=config.emb_size)
 
     def forward(self, x):
         x = x.view(x.shape[0], -1)
@@ -17,17 +17,17 @@ class SimpleAutoencoder(nn.Module):
         return x
 
 class DeepAutoencoder(nn.Module):
-    def __init__(self, ts_length, emb_size):
+    def __init__(self, config):
         super(DeepAutoencoder, self).__init__()
         #self.fc1 = nn.Linear(in_features=186, out_features=128)
         #self.fc2 = nn.Linear(in_features=128, out_features=64)
         #self.fc3 = nn.Linear(in_features=64, out_features=32)
         #self.fc4 = nn.Linear(in_features=32, out_features=16)
         #self.fc5 = nn.Linear(in_features=16, out_features=5)
-        self.fc1 = nn.Linear(in_features=ts_length, out_features=12)
+        self.fc1 = nn.Linear(in_features=config.ts_length, out_features=12)
         self.fc2 = nn.Linear(in_features=12, out_features=8)
         self.fc3 = nn.Linear(in_features=8, out_features=6)
-        self.fc4 = nn.Linear(in_features=6, out_features=emb_size)
+        self.fc4 = nn.Linear(in_features=6, out_features=config.emb_size)
 
     def forward(self, x):
         x = x.view(x.shape[0], -1)

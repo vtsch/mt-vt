@@ -21,10 +21,10 @@ class Config:
     n_clusters_real = 2
     lr=0.001
     batch_size = 12
-    n_epochs = 2
+    n_epochs = 1
     emb_size = 24
     model_save_directory = "./models"
-    sample_size = 12000
+    sample_size = 2000
 
     PSA_DATA = True
     DELTATIMES = False
@@ -64,13 +64,12 @@ if __name__ == '__main__':
     # load and preprocess PSA or ECG data 
     if config.PSA_DATA == True:
         file_name = "data/pros_data_mar22_d032222.csv"
-        ts_length = 6
         df_psa = load_psa_data_to_pd(file_name, config)
         
     else:
         file_name_train = 'data/mitbih_train.csv'
         file_name_test = 'data/mitbih_test.csv'
-        ts_length = 186
+        config.ts_length = 186
 
         #load data
         df_mitbih_train, df_mitbih_test = load_ecg_data_to_pd(file_name_train, file_name_test)
@@ -99,8 +98,8 @@ if __name__ == '__main__':
 
     # run embedding models and kmeans
     if config.MOD_SIMPLE_AC == True:
-        model = SimpleAutoencoder(ts_length, config.emb_size)
-        summary(model, input_size=(1, ts_length))
+        model = SimpleAutoencoder(config)
+        summary(model, input_size=(1, config.ts_length))
         trainer = Trainer(config=config, experiment=experiment, data=df_psa, net=model)
         trainer.run()
         output, target = trainer.eval()
@@ -110,8 +109,8 @@ if __name__ == '__main__':
         calculate_clustering_scores(target.astype(int), kmeans_labels, experiment)
 
     if config.MOD_DEEP_AC == True:
-        model = DeepAutoencoder(ts_length, config.emb_size)
-        summary(model, input_size=(1, ts_length))
+        model = DeepAutoencoder(config)
+        summary(model, input_size=(1, config.ts_length))
         trainer = Trainer(config=config, experiment=experiment, data=df_psa, net=model)
         trainer.run()
         output, target = trainer.eval()
@@ -120,7 +119,7 @@ if __name__ == '__main__':
         calculate_clustering_scores(target.astype(int), kmeans_labels, experiment)
 
     if config.MOD_LSTM == True: 
-        model = RNNModel(input_size=ts_length, hid_size=32, emb_size=config.emb_size, rnn_type='lstm', bidirectional=True)
+        model = RNNModel(input_size=config.ts_length, hid_size=32, emb_size=config.emb_size, rnn_type='lstm', bidirectional=True)
         print(model)
         trainer = Trainer(config=config, experiment=experiment, data=df_psa, net=model)
         trainer.run()
@@ -132,7 +131,7 @@ if __name__ == '__main__':
 
     if config.MOD_CNN == True:
         model = CNN(emb_size=config.emb_size, hid_size=128)
-        summary(model, input_size=(1, ts_length))
+        summary(model, input_size=(1, config.ts_length))
         trainer = Trainer(config=config, experiment=experiment, data=df_psa, net=model)
         trainer.run()
         output, target = trainer.eval()
@@ -143,7 +142,7 @@ if __name__ == '__main__':
     
     if config.MOD_RNN_ATT == True: 
         model = RNNAttentionModel(input_size=1, hid_size=32, emb_size=config.emb_size, rnn_type='lstm', bidirectional=False)
-        summary(model, input_size=(1, ts_length))
+        summary(model, input_size=(1, config.ts_length))
         trainer = Trainer(config=config, experiment=experiment, data=df_psa, net=model)
         trainer.run()
         output, target = trainer.eval()
@@ -155,12 +154,15 @@ if __name__ == '__main__':
 
     if config.MOD_TRANSFORMER == True: 
         model = TransformerTimeSeries(config) 
-        summary(model, input_size=(1, ts_length))
+        summary(model, input_size=(1, config.ts_length))
         trainer = Trainer(config=config, experiment=experiment, data=df_psa, net=model)
         trainer.run()
         predictions, target = trainer.eval()
     
         kmeans_labels = run_kmeans(predictions, config, experiment)
+        print(kmeans_labels.shape)
+        print(predictions.shape)
+        print(target.shape)
         run_umap(predictions, target, kmeans_labels, config.experiment_name, experiment)
         calculate_clustering_scores(target.astype(int), kmeans_labels, experiment)
     
