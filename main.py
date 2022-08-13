@@ -21,12 +21,13 @@ class Config:
     n_clusters_real = 2
     lr=0.001
     batch_size = 12
-    n_epochs = 1
-    emb_size = 24
+    n_epochs = 30
+    emb_size = 12
     model_save_directory = "./models"
     sample_size = 2000
 
     PSA_DATA = True
+    upsample = True
     DELTATIMES = False
     NOPOSENC = False
 
@@ -34,17 +35,17 @@ class Config:
     MOD_RAW = False
     MOD_SIMPLE_AC = False
     MOD_DEEP_AC = False
-    MOD_LSTM = False
+    MOD_LSTM = True
     MOD_CNN = False
     MOD_RNN_ATT = False
-    MOD_TRANSFORMER = True
+    MOD_TRANSFORMER = False
 
     #transformer config
     dropout = 0.1
-    num_layers = 2
+    num_layers = 1
     ts_length = 6
     max_value = 3000
-    n_heads = 1
+    n_heads = 2
 
     experiment_name = "raw_model" if MOD_RAW else "loaded features" if CHECK_FEATURES else "simple_ac" if MOD_SIMPLE_AC else "deep_ac" if MOD_DEEP_AC else "lstm_model" if MOD_LSTM else "cnn_model" if MOD_CNN else "rnn_attmodel" if MOD_RNN_ATT else "transformer_model TS" if MOD_TRANSFORMER else "notimplemented"
 
@@ -160,9 +161,9 @@ if __name__ == '__main__':
         predictions, target = trainer.eval()
     
         kmeans_labels = run_kmeans(predictions, config, experiment)
-        print(kmeans_labels.shape)
-        print(predictions.shape)
-        print(target.shape)
         run_umap(predictions, target, kmeans_labels, config.experiment_name, experiment)
+        calculate_clustering_scores(target.astype(int), kmeans_labels, experiment)
+        #if n_clusters > 2: summarize all >1 to 1 for clustering metrics
+        kmeans_labels[kmeans_labels >= 1] = 1
         calculate_clustering_scores(target.astype(int), kmeans_labels, experiment)
     
