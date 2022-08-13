@@ -19,10 +19,6 @@ def kmeans(data, n_clusters, metric):
 def run_kmeans(output, config, experiment):
     centroids, kmeans_labels = kmeans(output, config.n_clusters, config.metric)
     plot_centroids(centroids, config.n_clusters, "%s kmeans centroids %s" %(config.metric, config.experiment_name), experiment)
-
-    #if n_clusters > 2: summarize all >1 to 1 for clustering metrics
-    kmeans_labels[kmeans_labels >= 1] = 1
-
     return kmeans_labels
 
 def run_kmeans_only(data, n_clusters, metric):
