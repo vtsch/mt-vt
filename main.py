@@ -18,11 +18,11 @@ class Config:
     device = 'cuda:0' if torch.cuda.is_available() else 'cpu'
     metric = "dtw" #metric : {“euclidean”, “dtw”, “softdtw”} 
     n_clusters = 5
-    n_clusters_kmeans = 5
+    n_clusters_real = 2
     lr=0.001
     batch_size = 12
     n_epochs = 2
-    emb_size = 6
+    emb_size = 24
     model_save_directory = "./models"
     sample_size = 12000
 
@@ -34,10 +34,17 @@ class Config:
     MOD_RAW = False
     MOD_SIMPLE_AC = False
     MOD_DEEP_AC = False
-    MOD_LSTM = True
+    MOD_LSTM = False
     MOD_CNN = False
     MOD_RNN_ATT = False
-    MOD_TRANSFORMER = False
+    MOD_TRANSFORMER = True
+
+    #transformer config
+    dropout = 0.1
+    num_layers = 2
+    ts_length = 6
+    max_value = 3000
+    n_heads = 1
 
     experiment_name = "raw_model" if MOD_RAW else "loaded features" if CHECK_FEATURES else "simple_ac" if MOD_SIMPLE_AC else "deep_ac" if MOD_DEEP_AC else "lstm_model" if MOD_LSTM else "cnn_model" if MOD_CNN else "rnn_attmodel" if MOD_RNN_ATT else "transformer_model TS" if MOD_TRANSFORMER else "notimplemented"
 
@@ -147,7 +154,7 @@ if __name__ == '__main__':
     
 
     if config.MOD_TRANSFORMER == True: 
-        model = TransformerTimeSeries() 
+        model = TransformerTimeSeries(config) 
         summary(model, input_size=(1, ts_length))
         trainer = Trainer(config=config, experiment=experiment, data=df_psa, net=model)
         trainer.run()
