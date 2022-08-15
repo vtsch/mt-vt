@@ -77,7 +77,7 @@ class Trainer:
                 self.experiment.log_metrics(dic=val_logs, step=epoch)
                 self.scheduler.step()
             
-            if val_loss < self.best_loss:
+            if (val_loss + 0.001) < self.best_loss:
                 self.best_loss = val_loss
                 print('-- new checkpoint --')
                 self.best_loss = val_loss
@@ -104,7 +104,7 @@ class Trainer:
                 embeddings = np.append(embeddings, pred.detach().numpy() )
                 targets = np.append(targets, target.detach().numpy())  #always +bs
 
-        embeddings = embeddings.reshape(-1, self.config.emb_size)
+        embeddings = embeddings.reshape(targets.shape[0], -1)
         return embeddings, targets
 
 
