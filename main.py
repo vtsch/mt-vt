@@ -3,14 +3,17 @@ import comet_ml
 import torch
 import os
 from torchsummary import summary
-from dataloader import load_ecg_data_to_pd, upsample_data, load_psa_data_to_pd
+from dataloader import load_ecg_data_to_pd, upsample_data, load_psa_data_to_pd, data_generator
 from clustering_algorithms import run_kmeans, run_kmeans_only
 from metrics import calculate_clustering_scores
 from umapplot import run_umap
 from modules import CNN, RNNModel, RNNAttentionModel, SimpleAutoencoder, DeepAutoencoder
 from train import Trainer
-from utils import get_bunch_config_from_json, build_save_path, build_comet_logger
+from utils import get_bunch_config_from_json, build_save_path, build_comet_logger, set_requires_grad
 from transformer import TransformerTimeSeries
+from models.model import base_Model
+from models.TC import TC
+from tstcctrainer import TSTCCTrainer
 import numpy as np
 
 class Config:
@@ -20,14 +23,14 @@ class Config:
     n_clusters = 5
     n_clusters_real = 2
     lr=0.001
-    batch_size = 12
-    n_epochs = 30
-    emb_size = 12
-    model_save_directory = "./models"
-    sample_size = 2000
+    batch_size = 24
+    n_epochs = 2
+    emb_size = 24 #needs to be = tslength if baselines
+    model_save_dir = "./saved_models"
+    sample_size = 4000
 
     PSA_DATA = True
-    upsample = True
+    upsample = False
     DELTATIMES = False
     NOPOSENC = False
 
@@ -35,19 +38,37 @@ class Config:
     MOD_RAW = False
     MOD_SIMPLE_AC = False
     MOD_DEEP_AC = False
-    MOD_LSTM = True
+    MOD_LSTM = False
     MOD_CNN = False
     MOD_RNN_ATT = False
     MOD_TRANSFORMER = False
+    MOD_TSTCC = True
 
     #transformer config
     dropout = 0.1
-    num_layers = 1
+    num_layers = 4
     ts_length = 6
     max_value = 3000
-    n_heads = 2
+    n_heads = 4
+    
+    #TSTCC
+    input_channels = 1
+    kernel_size = 2
+    stride = 1
+    final_out_channels = 16 #16 with k=2 #32 with k=8
+    hidden_dim = 100
 
-    experiment_name = "raw_model" if MOD_RAW else "loaded features" if CHECK_FEATURES else "simple_ac" if MOD_SIMPLE_AC else "deep_ac" if MOD_DEEP_AC else "lstm_model" if MOD_LSTM else "cnn_model" if MOD_CNN else "rnn_attmodel" if MOD_RNN_ATT else "transformer_model TS" if MOD_TRANSFORMER else "notimplemented"
+    num_classes = 2
+    dropout = 0.35
+    features_len = 6 #6 with k=2 #3 with k=8
+
+    # optimizer parameters
+    beta1 = 0.9
+    beta2 = 0.99
+
+    drop_last = True
+
+    experiment_name = "raw_model" if MOD_RAW else "loaded features" if CHECK_FEATURES else "simple_ac" if MOD_SIMPLE_AC else "deep_ac" if MOD_DEEP_AC else "lstm_model" if MOD_LSTM else "cnn_model" if MOD_CNN else "rnn_attmodel" if MOD_RNN_ATT else "transformer_model" if MOD_TRANSFORMER else "ts-tcc" if MOD_TSTCC else "notimplemented"
 
 
 if __name__ == '__main__':
@@ -108,6 +129,8 @@ if __name__ == '__main__':
         kmeans_labels = run_kmeans(output, config, experiment)
         run_umap(output, target, kmeans_labels, config.experiment_name, experiment)
         calculate_clustering_scores(target.astype(int), kmeans_labels, experiment)
+        kmeans_labels[kmeans_labels >= 1] = 1
+        calculate_clustering_scores(target.astype(int), kmeans_labels, experiment)
 
     if config.MOD_DEEP_AC == True:
         model = DeepAutoencoder(config)
@@ -117,6 +140,8 @@ if __name__ == '__main__':
         output, target = trainer.eval()
         kmeans_labels = run_kmeans(output, config, experiment)
         run_umap(output, target, kmeans_labels, config.experiment_name, experiment)
+        calculate_clustering_scores(target.astype(int), kmeans_labels, experiment)
+        kmeans_labels[kmeans_labels >= 1] = 1
         calculate_clustering_scores(target.astype(int), kmeans_labels, experiment)
 
     if config.MOD_LSTM == True: 
@@ -129,6 +154,8 @@ if __name__ == '__main__':
         kmeans_labels = run_kmeans(output, config, experiment)
         run_umap(output, target, kmeans_labels, config.experiment_name, experiment)
         calculate_clustering_scores(target.astype(int), kmeans_labels, experiment)
+        kmeans_labels[kmeans_labels >= 1] = 1
+        calculate_clustering_scores(target.astype(int), kmeans_labels, experiment)
 
     if config.MOD_CNN == True:
         model = CNN(emb_size=config.emb_size, hid_size=128)
@@ -139,6 +166,8 @@ if __name__ == '__main__':
 
         kmeans_labels = run_kmeans(output, config, experiment)
         run_umap(output, target, kmeans_labels, config.experiment_name, experiment)
+        calculate_clustering_scores(target.astype(int), kmeans_labels, experiment)
+        kmeans_labels[kmeans_labels >= 1] = 1
         calculate_clustering_scores(target.astype(int), kmeans_labels, experiment)
     
     if config.MOD_RNN_ATT == True: 
@@ -167,3 +196,32 @@ if __name__ == '__main__':
         kmeans_labels[kmeans_labels >= 1] = 1
         calculate_clustering_scores(target.astype(int), kmeans_labels, experiment)
     
+    if config.MOD_TSTCC: 
+        # Load datasets
+        train_dl, valid_dl, test_dl = data_generator(config)
+
+        # Load Model
+        model = base_Model(config).to(config.device)
+        temporal_contr_model = TC(config).to(config.device)
+        model_dict = model.state_dict()
+
+        # delete all the parameters except for logits
+        del_list = ['logits']
+        pretrained_dict_copy = model_dict.copy()
+        for i in pretrained_dict_copy.keys():
+            for j in del_list:
+                if j in i:
+                    del model_dict[i]
+        set_requires_grad(model, model_dict, requires_grad=False)  # Freeze everything except last layer.
+
+        model_optimizer = torch.optim.Adam(model.parameters(), lr=config.lr, betas=(config.beta1, config.beta2), weight_decay=3e-4)
+        temporal_contr_optimizer = torch.optim.Adam(temporal_contr_model.parameters(), lr=config.lr, betas=(config.beta1, config.beta2), weight_decay=3e-4)
+
+        # Trainer
+        features, targets = TSTCCTrainer(model, temporal_contr_model, model_optimizer, temporal_contr_optimizer, train_dl, valid_dl, test_dl, config)
+
+        kmeans_labels = run_kmeans_only(features, config.n_clusters, config.metric)
+        features = features.reshape(features.shape[0], -1)
+        run_umap(features, targets, kmeans_labels, config.experiment_name, experiment)
+        calculate_clustering_scores(targets.astype(int), kmeans_labels, experiment)
+
