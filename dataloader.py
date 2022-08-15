@@ -6,7 +6,10 @@ from sklearn import preprocessing
 
 import torch
 from torch.utils.data import Dataset, DataLoader
+import os
 
+from sklearn.preprocessing import MinMaxScaler
+from sklearn.utils import resample
 
 # ---- for ECG data ----
 def create_irregular_ts(data):
@@ -158,7 +161,7 @@ def load_psa_data_to_pd(file_name: str, config: dict) -> pd.DataFrame:
         df = load_psa_and_deltatime_df(df_raw)
     else:
         df = load_psa_and_timesteps_df(df_raw)
-        
+
     if config.upsample:
         df = upsample_data(df, n_clusters=config.n_clusters_real, sample_size=config.sample_size)
 
@@ -215,3 +218,97 @@ def get_dataloader(config, data, phase: str) -> DataLoader:
 
     dataloader = DataLoader(dataset=dataset, batch_size=config.batch_size, num_workers=4)
     return dataloader
+
+
+# TS-TCC
+
+class Load_Dataset(Dataset):
+    # Initialize your data, download, etc.
+    def __init__(self, dataset):
+        super(Load_Dataset, self).__init__()
+
+        X_train = dataset["samples"]
+        y_train = dataset["labels"]
+
+        if len(X_train.shape) < 3:
+            X_train = X_train.unsqueeze(2)
+
+        if X_train.shape.index(min(X_train.shape)) != 1:  # make sure the Channels in second dim
+            X_train = X_train.permute(0, 2, 1)
+
+        if isinstance(X_train, np.ndarray):
+            self.x_data = torch.from_numpy(X_train)
+            self.y_data = torch.from_numpy(y_train).long()
+        else:
+            self.x_data = X_train
+            self.y_data = y_train
+
+        self.len = X_train.shape[0]
+
+    def __getitem__(self, index):
+        return self.x_data[index], self.y_data[index], self.x_data[index], self.x_data[index]
+
+    def __len__(self):
+        return self.len
+
+
+def data_generator(config):
+
+    data = pd.read_csv("data/pros_data_mar22_d032222.csv", header = 0)
+
+    data = data.iloc[:, [44, 69, 70, 71, 72, 73, 74, 4]]
+    data.dropna(thresh=8, inplace=True)
+    data.fillna(0, inplace=True)
+
+    data = resample(data, replace=True, n_samples=6000, random_state=42)
+    df_majority = data[data['pros_cancer']==0]
+    df_minority = data[data['pros_cancer']==1]
+
+    df_minority_upsampled = resample(df_minority, replace=True, n_samples=5000, random_state=42) # reproducible results
+    df_minority_upsampled = resample(df_minority, replace=True, n_samples=5000, random_state=42) 
+    data = pd.concat([df_majority, df_minority_upsampled])
+
+    y = data.iloc[:, -1]
+    x = data.iloc[:, 1:-1]
+
+    x = x.to_numpy()
+    y = y.to_numpy()
+    y = y - 1
+    scaler = MinMaxScaler()
+    x = scaler.fit_transform(x)
+
+    for i, j in enumerate(y):
+        if j != 0:
+            y[i] = 1
+
+    X_train, X_test, y_train, y_test = train_test_split(x, y, test_size=0.2, random_state=42)
+    X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, test_size=0.2, random_state=42)
+
+    train_dataset = dict()
+    train_dataset["samples"] = torch.from_numpy(X_train).unsqueeze(1)
+    train_dataset["labels"] = torch.from_numpy(y_train)
+
+    valid_dataset = dict()
+    valid_dataset["samples"] = torch.from_numpy(X_val).unsqueeze(1)
+    valid_dataset["labels"] = torch.from_numpy(y_val)
+
+    test_dataset = dict()
+    test_dataset["samples"] = torch.from_numpy(X_test).unsqueeze(1)
+    test_dataset["labels"] = torch.from_numpy(y_test)
+
+    train_dataset = Load_Dataset(train_dataset)
+    valid_dataset = Load_Dataset(valid_dataset)
+    test_dataset = Load_Dataset(test_dataset)
+
+    train_loader = torch.utils.data.DataLoader(dataset=train_dataset, batch_size=config.batch_size,
+                                               shuffle=True, drop_last=config.drop_last,
+                                               num_workers=0)
+    valid_loader = torch.utils.data.DataLoader(dataset=valid_dataset, batch_size=config.batch_size,
+                                               shuffle=False, drop_last=config.drop_last,
+                                               num_workers=0)
+
+    test_loader = torch.utils.data.DataLoader(dataset=test_dataset, batch_size=config.batch_size,
+                                              shuffle=False, drop_last=False,
+                                              num_workers=0)
+
+    return train_loader, valid_loader, test_loader
