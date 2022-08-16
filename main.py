@@ -28,7 +28,7 @@ class Config:
     n_epochs = 2
     emb_size = 12 #needs to be = tslength if baselines
     model_save_dir = "./saved_models"
-    sample_size = 4000
+    sample_size = 2000
 
     PSA_DATA = True
     upsample = True
@@ -177,22 +177,21 @@ if __name__ == '__main__':
         summary(model, input_size=(1, config.ts_length))
         trainer = Trainer(config=config, experiment=experiment, data=df_psa, net=model)
         trainer.run()
-        predictions, target = trainer.eval()
+        total_loss, total_acc, outs, targets, predictions = trainer.eval()
     
         kmeans_labels = run_kmeans(predictions, config, experiment)
-        run_umap(predictions, target, kmeans_labels, config.experiment_name, experiment)
-        calculate_clustering_scores(target.astype(int), kmeans_labels, experiment)
+        run_umap(predictions, targets, kmeans_labels, config.experiment_name, experiment)
+        calculate_clustering_scores(targets.astype(int), kmeans_labels, experiment)
         #if n_clusters > 2: summarize all >1 to 1 for clustering metrics
         kmeans_labels[kmeans_labels >= 1] = 1
-        calculate_clustering_scores(target.astype(int), kmeans_labels, experiment)
+        calculate_clustering_scores(targets.astype(int), kmeans_labels, experiment)
     
     if config.MOD_TSTCC: 
         # Load datasets
-        train_dl, valid_dl, test_dl = data_generator(df_psa, config)
+        #train_dl, valid_dl, test_dl = data_generator(df_psa, config)
 
         # Load Model
         model = base_Model(config).to(config.device)
-        temporal_contr_model = TC(config).to(config.device)
         model_dict = model.state_dict()
 
         # delete all the parameters except for logits
@@ -205,11 +204,12 @@ if __name__ == '__main__':
         set_requires_grad(model, model_dict, requires_grad=False)  # Freeze everything except last layer.
 
         # Trainer
-        features, targets = TSTCCTrainer(model, temporal_contr_model, train_dl, valid_dl, test_dl, config)
+        trainer = Trainer(config=config, experiment=experiment, data=df_psa, net=model)
+        trainer.run()
+        total_loss, total_acc, outs, targets, embeddings = trainer.eval()
 
-        kmeans_labels = run_kmeans_only(features, config.n_clusters, config.metric)
-        features = features.reshape(features.shape[0], -1)
-        run_umap(features, targets, kmeans_labels, config.experiment_name, experiment)
+        kmeans_labels = run_kmeans_only(embeddings, config.n_clusters, config.metric)
+        run_umap(embeddings, targets, kmeans_labels, config.experiment_name, experiment)
         calculate_clustering_scores(targets.astype(int), kmeans_labels, experiment)
         kmeans_labels[kmeans_labels >= 1] = 1
         calculate_clustering_scores(targets.astype(int), kmeans_labels, experiment)
