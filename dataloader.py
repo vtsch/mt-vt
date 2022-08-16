@@ -73,16 +73,8 @@ class Load_Dataset(Dataset):
     def __init__(self, dataset):
         super(Load_Dataset, self).__init__()
 
-        X_train = dataset[:, 0:-2]
-        y_train = dataset[:, -1]
-        print(X_train)
-        print(y_train)
-
-        if len(X_train.shape) < 3:
-            X_train = X_train.unsqueeze(2)
-
-        if X_train.shape.index(min(X_train.shape)) != 1:  # make sure the Channels in second dim
-            X_train = X_train.permute(0, 2, 1)
+        X_train = dataset[['psa_level0', 'psa_level1', 'psa_level2', 'psa_level3', 'psa_level4', 'psa_level5']]
+        y_train = dataset['pros_cancer']
 
         if isinstance(X_train, np.ndarray):
             self.x_data = torch.from_numpy(X_train)
@@ -94,7 +86,10 @@ class Load_Dataset(Dataset):
         self.len = X_train.shape[0]
 
     def __getitem__(self, index):
-        return self.x_data[index], self.y_data[index], self.x_data[index], self.x_data[index]
+        target = np.array(self.y_data.loc[index])
+        x = self.x_data.loc[index].astype('float32')
+        x = x.values
+        return target, x, x, x
 
     def __len__(self):
         return self.len
@@ -107,8 +102,6 @@ def data_generator(data, config):
 
     train_df, val_df = generate_split(data)
     train_df, test_df = generate_split(train_df)
-
-    print ("train_df", train_df.head(5))
 
     train_dataset = Load_Dataset(train_df)
     valid_dataset = Load_Dataset(val_df)
