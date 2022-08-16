@@ -3,7 +3,8 @@ import comet_ml
 import torch
 import os
 from torchsummary import summary
-from dataloader import load_ecg_data_to_pd, upsample_data, load_psa_data_to_pd, data_generator
+from preprocess import upsample_data, load_psa_data_to_pd
+from dataloader import data_generator
 from clustering_algorithms import run_kmeans, run_kmeans_only
 from metrics import calculate_clustering_scores
 from umapplot import run_umap
@@ -20,17 +21,17 @@ class Config:
     seed = 2021
     device = 'cuda:0' if torch.cuda.is_available() else 'cpu'
     metric = "dtw" #metric : {“euclidean”, “dtw”, “softdtw”} 
-    n_clusters = 5
+    n_clusters = 2
     n_clusters_real = 2
     lr=0.001
     batch_size = 24
     n_epochs = 2
-    emb_size = 24 #needs to be = tslength if baselines
+    emb_size = 12 #needs to be = tslength if baselines
     model_save_dir = "./saved_models"
     sample_size = 4000
 
     PSA_DATA = True
-    upsample = False
+    upsample = True
     DELTATIMES = False
     NOPOSENC = False
 
@@ -88,17 +89,6 @@ if __name__ == '__main__':
         file_name = "data/pros_data_mar22_d032222.csv"
         df_psa = load_psa_data_to_pd(file_name, config)
         
-    else:
-        file_name_train = 'data/mitbih_train.csv'
-        file_name_test = 'data/mitbih_test.csv'
-        config.ts_length = 186
-
-        #load data
-        df_mitbih_train, df_mitbih_test = load_ecg_data_to_pd(file_name_train, file_name_test)
-        df_psa = upsample_data(df_mitbih_train, n_clusters=config.n_clusters, sample_size=400)
-        df_test = upsample_data(df_mitbih_test, n_clusters=config.n_clusters, sample_size=150)
-        y_real = df_psa['class']
-
     # run kmeans on raw data
 
     if config.MOD_RAW == True:
@@ -198,7 +188,7 @@ if __name__ == '__main__':
     
     if config.MOD_TSTCC: 
         # Load datasets
-        train_dl, valid_dl, test_dl = data_generator(config)
+        train_dl, valid_dl, test_dl = data_generator(df_psa, config)
 
         # Load Model
         model = base_Model(config).to(config.device)
@@ -214,14 +204,13 @@ if __name__ == '__main__':
                     del model_dict[i]
         set_requires_grad(model, model_dict, requires_grad=False)  # Freeze everything except last layer.
 
-        model_optimizer = torch.optim.Adam(model.parameters(), lr=config.lr, betas=(config.beta1, config.beta2), weight_decay=3e-4)
-        temporal_contr_optimizer = torch.optim.Adam(temporal_contr_model.parameters(), lr=config.lr, betas=(config.beta1, config.beta2), weight_decay=3e-4)
-
         # Trainer
-        features, targets = TSTCCTrainer(model, temporal_contr_model, model_optimizer, temporal_contr_optimizer, train_dl, valid_dl, test_dl, config)
+        features, targets = TSTCCTrainer(model, temporal_contr_model, train_dl, valid_dl, test_dl, config)
 
         kmeans_labels = run_kmeans_only(features, config.n_clusters, config.metric)
         features = features.reshape(features.shape[0], -1)
         run_umap(features, targets, kmeans_labels, config.experiment_name, experiment)
+        calculate_clustering_scores(targets.astype(int), kmeans_labels, experiment)
+        kmeans_labels[kmeans_labels >= 1] = 1
         calculate_clustering_scores(targets.astype(int), kmeans_labels, experiment)
 
