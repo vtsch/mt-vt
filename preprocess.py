@@ -145,12 +145,6 @@ def load_psa_and_deltatime_df(df):
     print(df)
     return df
 
-def load_psa_with_id(data):
-    data = data.iloc[:, [69, 70, 71, 72, 73, 74, 4]]
-    data.dropna(thresh=5, inplace=True)
-    data.fillna(0, inplace=True)
-    return data
-
 def load_psa_data_to_pd(file_name: str, config: dict) -> pd.DataFrame:
     '''
     Parameters:
@@ -164,9 +158,6 @@ def load_psa_data_to_pd(file_name: str, config: dict) -> pd.DataFrame:
         df = load_psa_and_deltatime_df(df_raw)
     else:
         df = load_psa_and_timesteps_df(df_raw)
-    
-    if config.MOD_TSTCC:
-        df = load_psa_with_id(df_raw)
 
     if config.upsample:
         df = upsample_data(df, n_clusters=config.n_clusters_real, sample_size=config.sample_size)
