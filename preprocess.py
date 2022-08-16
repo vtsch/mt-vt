@@ -4,13 +4,6 @@ import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import MinMaxScaler
 
-import torch
-from torch.utils.data import Dataset, DataLoader
-import os
-
-from sklearn.preprocessing import MinMaxScaler
-from sklearn.utils import resample
-
 # ---- for ECG data ----
 def create_irregular_ts(data):
     # random boolean mask for which values will be changed
@@ -37,15 +30,15 @@ def load_ecg_data_to_pd(file_name_train, file_name_test):
 
 
 # ---- utils ----
-def upsample_data(df, n_clusters, sample_size):
+def upsample_data(df, config):
     #select sample_size samples from each class
-    for i in range(n_clusters):
-        df = pd.concat([df, df.loc[df['pros_cancer'] == i].sample(n=sample_size, replace=True)])
+    upsampled_data = pd.DataFrame()
+    for i in range(config.n_clusters_real):
+        upsampled_data = pd.concat([upsampled_data, df.loc[df['pros_cancer'] == i].sample(n=config.sample_size, replace=True)])
     #shuffle rows of df and remove index column
-    df = df.sample(frac=1)
-    df = df.reset_index(drop=True)  
-    #print(df.head(5))
-    return df
+    upsampled_data = upsampled_data.sample(frac=1)
+    upsampled_data = upsampled_data.reset_index(drop=True)  
+    return upsampled_data
 
 def normalize(data):
     #x = df.values #returns a numpy array
@@ -160,7 +153,7 @@ def load_psa_data_to_pd(file_name: str, config: dict) -> pd.DataFrame:
         df = load_psa_and_timesteps_df(df_raw)
 
     if config.upsample:
-        df = upsample_data(df, n_clusters=config.n_clusters_real, sample_size=config.sample_size)
+        df = upsample_data(df, config)
 
     return df
 
