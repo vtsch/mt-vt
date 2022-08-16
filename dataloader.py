@@ -75,7 +75,7 @@ class Load_Dataset(Dataset):
 
         X_train = dataset[['psa_level0', 'psa_level1', 'psa_level2', 'psa_level3', 'psa_level4', 'psa_level5']]
         y_train = dataset['pros_cancer']
-
+        
         if isinstance(X_train, np.ndarray):
             self.x_data = torch.from_numpy(X_train)
             self.y_data = torch.from_numpy(y_train).long()
@@ -86,10 +86,12 @@ class Load_Dataset(Dataset):
         self.len = X_train.shape[0]
 
     def __getitem__(self, index):
-        target = np.array(self.y_data.loc[index])
+        y = np.array(self.y_data.loc[index])
         x = self.x_data.loc[index].astype('float32')
         x = x.values
-        return target, x, x, x
+        if len(x.shape) < 3:
+            x = x.reshape(1, x.shape[0])
+        return x, y, x, x
 
     def __len__(self):
         return self.len

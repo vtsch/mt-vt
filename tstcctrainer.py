@@ -12,26 +12,28 @@ from models.loss import NTXentLoss
 
 
 
-def TSTCCTrainer(model, temporal_contr_model, model_optimizer, temp_cont_optimizer, train_dl, valid_dl, test_dl, config):
+def TSTCCTrainer(model, temporal_contr_model, train_dl, valid_dl, test_dl, config):
     # Start training
+    model_optimizer = torch.optim.Adam(model.parameters(), lr=config.lr, betas=(config.beta1, config.beta2), weight_decay=3e-4)
+    temporal_contr_optimizer = torch.optim.Adam(temporal_contr_model.parameters(), lr=config.lr, betas=(config.beta1, config.beta2), weight_decay=3e-4)
+
     criterion = nn.CrossEntropyLoss()
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(model_optimizer, 'min')
 
     for epoch in range(1, config.n_epochs + 1):
         # Train and validate
-        train_loss, train_acc = model_train(model, temporal_contr_model, model_optimizer, temp_cont_optimizer, criterion, train_dl, config)
+        train_loss, train_acc = model_train(model, temporal_contr_model, model_optimizer, temporal_contr_optimizer, criterion, train_dl, config)
         valid_loss, valid_acc, _, trgs, features = model_evaluate(model, temporal_contr_model, valid_dl, config)
         scheduler.step(valid_loss)
 
-        print(f'\nEpoch : {epoch}\n'
-                     f'Train Loss     : {train_loss:.4f}\t | \tTrain Accuracy     : {train_acc:2.4f}\n'
-                     f'Valid Loss     : {valid_loss:.4f}\t | \tValid Accuracy     : {valid_acc:2.4f}')
+        if epoch % 5 == 0:
+            print(f'\nEpoch : {epoch}\n'
+                        f'Train Loss     : {train_loss:.4f}\t | \tTrain Accuracy     : {train_acc:2.4f}\n'
+                        f'Valid Loss     : {valid_loss:.4f}\t | \tValid Accuracy     : {valid_acc:2.4f}')
 
-    os.makedirs(os.path.join(config.model_save_dir, "saved_models"), exist_ok=True)
+    #os.makedirs(os.path.join(config.model_save_dir, "saved_models"), exist_ok=True)
     #chkpoint = {'model_state_dict': model.state_dict(), 'temporal_contr_model_state_dict': temporal_contr_model.state_dict()}
     #torch.save(chkpoint, os.path.join(config.model_save_dir, "saved_models", f'ckp_last.pt'))
-    #np.save(os.path.join(config.model_save_dir, "saved_models", f'features_last.npy'), features)
-    #np.save(os.path.join(config.model_save_dir, "saved_models", f'labels_last.npy'), trgs)
 
     # evaluate on the test set
     test_loss, test_acc, outs, trgs, features = model_evaluate(model, temporal_contr_model, test_dl, config)
@@ -50,8 +52,6 @@ def model_train(model, temporal_contr_model, model_optimizer, temp_cont_optimize
 
     for batch_idx, (data, labels, aug1, aug2) in enumerate(train_loader):
         # send to device
-        #print("data", data)
-        #print("labels", labels)
         data, labels = data.float().to(config.device), labels.long().to(config.device)
         aug1, aug2 = aug1.float().to(config.device), aug2.float().to(config.device)
 
