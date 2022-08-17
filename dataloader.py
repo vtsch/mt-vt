@@ -68,6 +68,8 @@ def get_dataloader(config, data, phase: str) -> DataLoader:
     Returns:
         data generator
     '''
+    data = normalize(data)
+
     train_df, test_df = generate_split(data)
     train_df, val_df = generate_split(train_df)
 
@@ -91,7 +93,6 @@ def get_dataloader(config, data, phase: str) -> DataLoader:
 def data_generator(data, config):
 
     data = normalize(data)
-    print(data.head(5))
 
     train_df, val_df = generate_split(data)
     train_df, test_df = generate_split(train_df)
@@ -108,7 +109,7 @@ def data_generator(data, config):
                                                num_workers=0)
 
     test_loader = torch.utils.data.DataLoader(dataset=test_dataset, batch_size=config.batch_size,
-                                              shuffle=False, drop_last=False,
+                                              shuffle=False, drop_last=config.drop_last,
                                               num_workers=0)
 
     return train_loader, valid_loader, test_loader
