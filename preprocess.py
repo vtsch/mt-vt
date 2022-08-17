@@ -35,6 +35,8 @@ def upsample_data(df, config):
     upsampled_data = pd.DataFrame()
     for i in range(config.n_clusters_real):
         upsampled_data = pd.concat([upsampled_data, df.loc[df['pros_cancer'] == i].sample(n=config.sample_size, replace=True)])
+    #print nr of values in each class
+    #print(df['pros_cancer'].value_counts())
     #shuffle rows of df and remove index column
     upsampled_data = upsampled_data.sample(frac=1)
     upsampled_data = upsampled_data.reset_index(drop=True)  
