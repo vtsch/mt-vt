@@ -65,8 +65,9 @@ class Trainer:
         return loss, df_logs    
 
     def _train_tstcc_epoch(self):
-        total_loss = []
-        total_acc = []
+        meter = Meter()
+        meter.init_metrics('train')
+
         self.net.train()
         self.temporal_contr_model.train()
 
@@ -83,16 +84,18 @@ class Trainer:
                 
             predictions, features = output
             loss = self.criterion(predictions, labels)
-            total_acc.append(labels.eq(predictions.detach().argmax(dim=1)).float().mean())
-
-            total_loss.append(loss.item())
             loss.backward()
             self.optimizer.step()
             self.temp_cont_optimizer.step()
 
-        total_loss = torch.tensor(total_loss).mean()
-        total_acc = torch.tensor(total_acc).mean()
-        return total_loss, total_acc
+            pred = predictions.max(1, keepdim=True)[1]
+            meter.update(pred.detach().numpy(), labels, 'train', loss.item())
+
+        metrics = meter.get_metrics()
+        metrics = {k:v / batch_idx for k, v in metrics.items()}
+        df_logs = pd.DataFrame([metrics])
+
+        return loss, df_logs
         
     
     def run(self):
@@ -100,9 +103,13 @@ class Trainer:
             print('Epoch: %d | time: %s' %(epoch, time.strftime('%H:%M:%S')))
             
             if self.config.MOD_TSTCC:
-                train_loss, train_acc = self._train_tstcc_epoch()
-                valid_loss, valid_acc, _, trgs, features = self.eval()
-                self.scheduler.step(valid_loss)
+                train_loss, train_logs = self._train_tstcc_epoch()
+                print(train_logs)
+                self.experiment.log_metrics(dic=train_logs, step=epoch)
+                val_loss, valid_acc, outs, trgs, features, val_logs = self.eval()
+                print(val_logs)
+                self.experiment.log_metrics(dic=val_logs, step=epoch)
+                self.scheduler.step(val_loss)
             else:
                 train_loss, train_logs = self._train_epoch(phase='train')
                 print(train_logs)
@@ -114,13 +121,13 @@ class Trainer:
                     self.experiment.log_metrics(dic=val_logs, step=epoch)
                     self.scheduler.step(val_loss)
             
-                if (val_loss + 0.001) < self.best_loss:
-                    self.best_loss = val_loss
-                    print('-- new checkpoint --')
-                    self.best_loss = val_loss
-                    #self.experiment.log_metrics(self.best_loss, step=epoch)
-                    #save best model 
-                    #torch.save(self.net.state_dict(), os.path.join(self.config.model_save_path, f"best_model_epoc{epoch}.pth"))
+            if (val_loss + 0.001) < self.best_loss:
+                self.best_loss = val_loss
+                print('-- new checkpoint --')
+                self.best_loss = val_loss
+                #self.experiment.log_metrics(self.best_loss, step=epoch)
+                #save best model 
+                #torch.save(self.net.state_dict(), os.path.join(self.config.model_save_path, f"best_model_epoc{epoch}.pth"))
 
 
     def eval(self):
@@ -130,12 +137,14 @@ class Trainer:
         total_loss = []
         total_acc = []
         outs = np.array([])
-        embeddings = np.array([])
         targets = np.array([])
+        embeddings = np.array([])
 
         with torch.no_grad():
             if self.config.MOD_TSTCC:
-                for data, labels, _, _ in self.tstcc_test_dl:
+                meter = Meter()
+                meter.init_metrics('val')
+                for batch_idx, (data, labels, _, _) in enumerate(self.tstcc_test_dl):
                     data = data.float().to(self.config.device)
                     labels = labels.long().to(self.config.device)
                     output = self.net(data)
@@ -145,14 +154,21 @@ class Trainer:
                     loss = self.criterion(predictions, labels)
                     total_acc.append(labels.eq(predictions.detach().argmax(dim=1)).float().mean())
                     total_loss.append(loss.item())
+                    embeddings = np.append(embeddings, features.detach().numpy())
 
                     pred = predictions.max(1, keepdim=True)[1]  # get the index of the max log-probability
+                    meter.update(pred.detach().numpy(), labels, 'val', loss.item())
                     outs = np.append(outs, pred.cpu().numpy())
                     targets = np.append(targets, labels.data.cpu().numpy())
                     embeddings = np.append(embeddings, features.detach().numpy())
 
+                metrics = meter.get_metrics()
+                metrics = {k:v / batch_idx for k, v in metrics.items()}
+                df_logs = pd.DataFrame([metrics])
+
                 total_loss = torch.tensor(total_loss).mean()  # average loss
                 total_acc = torch.tensor(total_acc).mean()  # average acc
+                embeddings = embeddings.reshape(targets.shape[0], -1, features.shape[2])
 
             else:
                 for i, (data, target, index) in enumerate(self.dataloaders['test']):
@@ -166,10 +182,10 @@ class Trainer:
                     
                     embeddings = np.append(embeddings, pred.detach().numpy() )
                     targets = np.append(targets, target.detach().numpy())  #always +bs
+            
+                embeddings = embeddings.reshape(targets.shape[0], -1)
 
-
-        embeddings = embeddings.reshape(targets.shape[0], -1)
-        return total_loss, total_acc, outs, targets, embeddings
+        return total_loss, total_acc, outs, targets, embeddings, df_logs
 
             
             
