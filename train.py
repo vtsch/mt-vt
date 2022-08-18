@@ -184,6 +184,7 @@ class Trainer:
                     targets = np.append(targets, target.detach().numpy())  #always +bs
             
                 embeddings = embeddings.reshape(targets.shape[0], -1)
+                df_logs = pd.DataFrame([])
 
         return total_loss, total_acc, outs, targets, embeddings, df_logs
 
