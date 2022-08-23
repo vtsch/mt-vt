@@ -124,8 +124,8 @@ def load_psa_and_deltatime_df(df):
     # day of psa level mesaurements: 80-85
     # pros_cancer label: 4
     df = df.iloc[:, [69, 70, 71, 72, 73, 74, 80, 81, 82, 83, 84, 85, 4]]
-    df.dropna(thresh=8, inplace=True)
-    df.fillna(0, inplace=True)
+    df.dropna(axis=0, thresh=8, inplace=True)
+    df.fillna(value=0, inplace=True)
     print(df.columns)
     #calculate deltatime between psa measurements
     df['psa_delta0'] = 0

@@ -49,62 +49,62 @@ if __name__ == '__main__':
         summary(model, input_size=(1, config.ts_length))
         trainer = Trainer(config=config, experiment=experiment, data=df_psa, net=model)
         trainer.run()
-        output, target = trainer.eval()
+        _, _, _, targets, output, _ = trainer.eval()
     
         kmeans_labels = run_kmeans(output, config, experiment)
-        run_umap(output, target, kmeans_labels, config.experiment_name, experiment)
-        calculate_clustering_scores(target.astype(int), kmeans_labels, experiment)
+        run_umap(output, targets, kmeans_labels, config.experiment_name, experiment)
+        calculate_clustering_scores(targets.astype(int), kmeans_labels, experiment)
         kmeans_labels[kmeans_labels >= 1] = 1
-        calculate_clustering_scores(target.astype(int), kmeans_labels, experiment)
+        calculate_clustering_scores(targets.astype(int), kmeans_labels, experiment)
 
     if config.MOD_DEEP_AC == True:
         model = DeepAutoencoder(config)
         summary(model, input_size=(1, config.ts_length))
         trainer = Trainer(config=config, experiment=experiment, data=df_psa, net=model)
         trainer.run()
-        output, target = trainer.eval()
+        _, _, _, targets, output, _ = trainer.eval()
         kmeans_labels = run_kmeans(output, config, experiment)
-        run_umap(output, target, kmeans_labels, config.experiment_name, experiment)
-        calculate_clustering_scores(target.astype(int), kmeans_labels, experiment)
+        run_umap(output, targets, kmeans_labels, config.experiment_name, experiment)
+        calculate_clustering_scores(targets.astype(int), kmeans_labels, experiment)
         kmeans_labels[kmeans_labels >= 1] = 1
-        calculate_clustering_scores(target.astype(int), kmeans_labels, experiment)
+        calculate_clustering_scores(targets.astype(int), kmeans_labels, experiment)
 
     if config.MOD_LSTM == True: 
         model = RNNModel(input_size=config.ts_length, hid_size=32, emb_size=config.emb_size, rnn_type='lstm', bidirectional=True)
         print(model)
         trainer = Trainer(config=config, experiment=experiment, data=df_psa, net=model)
         trainer.run()
-        output, target = trainer.eval()
+        _, _, _, targets, output, _ = trainer.eval()
 
         kmeans_labels = run_kmeans(output, config, experiment)
-        run_umap(output, target, kmeans_labels, config.experiment_name, experiment)
-        calculate_clustering_scores(target.astype(int), kmeans_labels, experiment)
+        run_umap(output, targets, kmeans_labels, config.experiment_name, experiment)
+        calculate_clustering_scores(targets.astype(int), kmeans_labels, experiment)
         kmeans_labels[kmeans_labels >= 1] = 1
-        calculate_clustering_scores(target.astype(int), kmeans_labels, experiment)
+        calculate_clustering_scores(targets.astype(int), kmeans_labels, experiment)
 
     if config.MOD_CNN == True:
-        model = CNN(emb_size=config.emb_size, hid_size=128)
+        model = CNN(input_size=config.ts_length, emb_size=config.emb_size, hid_size=128)
         summary(model, input_size=(1, config.ts_length))
         trainer = Trainer(config=config, experiment=experiment, data=df_psa, net=model)
         trainer.run()
-        output, target = trainer.eval()
+        _, _, _, targets, output, _ = trainer.eval()
 
         kmeans_labels = run_kmeans(output, config, experiment)
-        run_umap(output, target, kmeans_labels, config.experiment_name, experiment)
-        calculate_clustering_scores(target.astype(int), kmeans_labels, experiment)
+        run_umap(output, targets, kmeans_labels, config.experiment_name, experiment)
+        calculate_clustering_scores(targets.astype(int), kmeans_labels, experiment)
         kmeans_labels[kmeans_labels >= 1] = 1
-        calculate_clustering_scores(target.astype(int), kmeans_labels, experiment)
+        calculate_clustering_scores(targets.astype(int), kmeans_labels, experiment)
     
     if config.MOD_RNN_ATT == True: 
         model = RNNAttentionModel(input_size=1, hid_size=32, emb_size=config.emb_size, rnn_type='lstm', bidirectional=False)
         summary(model, input_size=(1, config.ts_length))
         trainer = Trainer(config=config, experiment=experiment, data=df_psa, net=model)
         trainer.run()
-        output, target = trainer.eval()
+        _, _, _, targets, output, _ = trainer.eval()
 
         kmeans_labels = run_kmeans(output, config, experiment)
-        run_umap(output, target, kmeans_labels, config.experiment_name, experiment)
-        calculate_clustering_scores(target.astype(int), kmeans_labels, experiment)
+        run_umap(output, targets, kmeans_labels, config.experiment_name, experiment)
+        calculate_clustering_scores(targets.astype(int), kmeans_labels, experiment)
     
 
     if config.MOD_TRANSFORMER == True: 

@@ -19,11 +19,6 @@ class SimpleAutoencoder(nn.Module):
 class DeepAutoencoder(nn.Module):
     def __init__(self, config):
         super(DeepAutoencoder, self).__init__()
-        #self.fc1 = nn.Linear(in_features=186, out_features=128)
-        #self.fc2 = nn.Linear(in_features=128, out_features=64)
-        #self.fc3 = nn.Linear(in_features=64, out_features=32)
-        #self.fc4 = nn.Linear(in_features=32, out_features=16)
-        #self.fc5 = nn.Linear(in_features=16, out_features=5)
         self.fc1 = nn.Linear(in_features=config.ts_length, out_features=12)
         self.fc2 = nn.Linear(in_features=12, out_features=8)
         self.fc3 = nn.Linear(in_features=8, out_features=6)
@@ -71,7 +66,7 @@ class ConvNormPool(nn.Module):
         self.normalization_2 = nn.BatchNorm1d(num_features=hidden_size)
         self.normalization_3 = nn.BatchNorm1d(num_features=hidden_size)
             
-        self.pool = nn.MaxPool1d(kernel_size=2)
+        self.pool = nn.MaxPool1d(kernel_size=1)
         
     def forward(self, input):
         conv1 = self.conv_1(input)
@@ -92,9 +87,8 @@ class ConvNormPool(nn.Module):
 
 class CNN(nn.Module):
     #def __init__(self, emb_size, input_size = 1, hid_size = 256, kernel_size = 5):
-    def __init__(self, emb_size, input_size = 1, hid_size = 256, kernel_size = 1):
+    def __init__(self, emb_size, input_size, hid_size = 32, kernel_size = 1):
         super().__init__()
-        #self.emb_size = emb_size
         self.conv1 = ConvNormPool(
             input_size=input_size,
             hidden_size=hid_size,
@@ -115,6 +109,8 @@ class CNN(nn.Module):
         self.fc = nn.Linear(in_features=hid_size//2, out_features=emb_size)
         
     def forward(self, input):
+        input = input.unsqueeze(2)
+        #print(input.shape)
         x = self.conv1(input)
         x = self.conv2(x)
         #x = self.conv3(x)
@@ -123,6 +119,7 @@ class CNN(nn.Module):
         x = x.view(-1, x.size(1) * x.size(2))
         #print("shape view", x.shape)
         x = F.softmax(self.fc(x), dim=1)
+        #print("shape fc", x.shape)
         return x
 
 
@@ -175,6 +172,12 @@ class RNNModel(nn.Module):
     ):
         super().__init__()
             
+        self.conv1 = ConvNormPool(
+            input_size=input_size,
+            hidden_size=hid_size,
+            kernel_size=1,
+        )
+
         self.rnn_layer = RNN(
             input_size=input_size, 
             hid_size=hid_size, #hid_size * 2 if bidirectional else hid_size,
@@ -185,9 +188,11 @@ class RNNModel(nn.Module):
         self.fc = nn.Linear(in_features=hid_size, out_features=emb_size)
 
     def forward(self, input):
+        input = input.unsqueeze(1)
         #x = self.conv1(input) # input shape: batch_size * num_features (1) * num_channels (186)
         x, _ = self.rnn_layer(input)
         x = self.avgpool(x)
+        #print(x.shape)
         x = x.view(-1, x.size(1) * x.size(2))
         x = F.softmax(self.fc(x), dim=1)#.squeeze(1)
         return x
