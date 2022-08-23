@@ -6,15 +6,8 @@ from sklearn import preprocessing
 
 import torch
 from torch.utils.data import Dataset, DataLoader
-import os
-
-from sklearn.preprocessing import MinMaxScaler
-from sklearn.utils import resample
-
 from preprocess import generate_split, normalize
 
-
-# ---- Dataloader ----
 
 class LoadPSADataset(Dataset):
     def __init__(self, config, data):
@@ -22,14 +15,17 @@ class LoadPSADataset(Dataset):
         self.df = data
         self.config = config
 
-        X = data[['psa_level0', 'psa_level1', 'psa_level2', 'psa_level3', 'psa_level4', 'psa_level5']]
+        X = data[['psa_level0', 'psa_level1', 'psa_level2',
+                  'psa_level3', 'psa_level4', 'psa_level5']]
         y = data['pros_cancer']
 
         if self.config.DELTATIMES:
-            ts = data[['psa_delta0', 'psa_delta1', 'psa_delta2', 'psa_delta3', 'psa_delta4', 'psa_delta5']]
+            ts = data[['psa_delta0', 'psa_delta1', 'psa_delta2',
+                       'psa_delta3', 'psa_delta4', 'psa_delta5']]
         else:
-            ts = data[['psa_days0', 'psa_days1', 'psa_days2', 'psa_days3', 'psa_days4', 'psa_days5']]
-        
+            ts = data[['psa_days0', 'psa_days1', 'psa_days2',
+                       'psa_days3', 'psa_days4', 'psa_days5']]
+
         if isinstance(X, np.ndarray):
             self.x_data = torch.from_numpy(X)
             self.ts_data = torch.from_numpy(ts)
@@ -59,6 +55,7 @@ class LoadPSADataset(Dataset):
     def __len__(self):
         return self.len
 
+
 def get_dataloader(config, data, phase: str) -> DataLoader:
     '''
     Parameters:
@@ -85,7 +82,8 @@ def get_dataloader(config, data, phase: str) -> DataLoader:
     dataset = LoadPSADataset(config, df)
     print(f'{phase} data shape: {dataset.df.shape}')
 
-    dataloader = DataLoader(dataset=dataset, batch_size=config.batch_size, num_workers=4)
+    dataloader = DataLoader(
+        dataset=dataset, batch_size=config.batch_size, num_workers=4)
     return dataloader
 
 
@@ -101,15 +99,11 @@ def data_generator(data, config):
     valid_dataset = LoadPSADataset(config, val_df)
     test_dataset = LoadPSADataset(config, test_df)
 
-    train_loader = torch.utils.data.DataLoader(dataset=train_dataset, batch_size=config.batch_size,
-                                               shuffle=True, drop_last=config.drop_last,
-                                               num_workers=0)
-    valid_loader = torch.utils.data.DataLoader(dataset=valid_dataset, batch_size=config.batch_size,
-                                               shuffle=False, drop_last=config.drop_last,
-                                               num_workers=0)
-
-    test_loader = torch.utils.data.DataLoader(dataset=test_dataset, batch_size=config.batch_size,
-                                              shuffle=False, drop_last=config.drop_last,
-                                              num_workers=0)
+    train_loader = DataLoader(dataset=train_dataset, batch_size=config.batch_size,
+                              shuffle=True, drop_last=True, num_workers=0)
+    valid_loader = DataLoader(dataset=valid_dataset, batch_size=config.batch_size,
+                              shuffle=False, drop_last=True, num_workers=0)
+    test_loader = DataLoader(dataset=test_dataset, batch_size=config.batch_size,
+                             shuffle=False, drop_last=False, num_workers=0)
 
     return train_loader, valid_loader, test_loader
