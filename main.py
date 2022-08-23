@@ -12,60 +12,7 @@ from utils import get_bunch_config_from_json, build_save_path, build_comet_logge
 from transformer import TransformerTimeSeries
 from models.model import base_Model
 import numpy as np
-
-class Config:
-    seed = 2021
-    device = 'cuda:0' if torch.cuda.is_available() else 'cpu'
-    metric = "dtw" #metric : {“euclidean”, “dtw”, “softdtw”} 
-    n_clusters = 5
-    n_clusters_real = 2
-    lr=0.001
-    batch_size = 24
-    n_epochs = 20
-    emb_size = 12 #needs to be = tslength if baselines
-    model_save_dir = "./saved_models"
-    sample_size = 10000
-
-    PSA_DATA = True
-    upsample = False
-    DELTATIMES = False
-    NOPOSENC = False
-
-    CHECK_FEATURES = False
-    MOD_RAW = False
-    MOD_SIMPLE_AC = False
-    MOD_DEEP_AC = False
-    MOD_LSTM = False
-    MOD_CNN = False
-    MOD_RNN_ATT = False
-    MOD_TRANSFORMER = True
-    MOD_TSTCC = False
-
-    #transformer config
-    dropout = 0.1
-    num_layers = 2
-    ts_length = 6
-    max_value = 3000
-    n_heads = 1
-    
-    #TSTCC
-    input_channels = 1
-    kernel_size = 2
-    stride = 1
-    final_out_channels = 16 #16 with k=2 #32 with k=8
-    hidden_dim = 100
-
-    num_classes = 2
-    dropout = 0.35
-    features_len = 6 #6 with k=2 #3 with k=8
-
-    # optimizer parameters
-    beta1 = 0.9
-    beta2 = 0.99
-
-    drop_last = True
-
-    experiment_name = "raw_model" if MOD_RAW else "loaded features" if CHECK_FEATURES else "simple_ac" if MOD_SIMPLE_AC else "deep_ac" if MOD_DEEP_AC else "lstm_model" if MOD_LSTM else "cnn_model" if MOD_CNN else "rnn_attmodel" if MOD_RNN_ATT else "transformer_model" if MOD_TRANSFORMER else "ts-tcc" if MOD_TSTCC else "notimplemented"
+from configs import Config
 
 
 if __name__ == '__main__':
@@ -93,14 +40,6 @@ if __name__ == '__main__':
         df_train_values = df_psa.values
         kmeans_labels = run_kmeans(df_train_values, config, experiment)
         run_umap(df_psa, y_real, kmeans_labels, config.experiment_name, experiment)
-        calculate_clustering_scores(y_real.astype(int), kmeans_labels, experiment)
-
-    if config.CHECK_FEATURES == True:
-        features = np.load('data/features_last.npy')
-        y_real = np.load('data/labels_last.npy')
-        kmeans_labels = run_kmeans_only(features, config.n_clusters, config.metric)
-        features = features.reshape(features.shape[0], -1)
-        run_umap(features, y_real, kmeans_labels, config.experiment_name, experiment)
         calculate_clustering_scores(y_real.astype(int), kmeans_labels, experiment)
 
 
