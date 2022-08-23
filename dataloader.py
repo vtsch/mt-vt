@@ -83,7 +83,7 @@ def get_dataloader(config, data, phase: str) -> DataLoader:
     print(f'{phase} data shape: {dataset.df.shape}')
 
     dataloader = DataLoader(
-        dataset=dataset, batch_size=config.batch_size, num_workers=4)
+        dataset=dataset, batch_size=config.batch_size, drop_last=True, num_workers=0)
     return dataloader
 
 
