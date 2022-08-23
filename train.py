@@ -15,7 +15,7 @@ class Trainer:
         self.net = net.to(config.device)
         self.config = config
         self.experiment = experiment
-        self.criterion = nn.CrossEntropyLoss()
+        self.criterion = config.loss_fn
         self.optimizer = Adam(self.net.parameters(), lr=config.lr, betas=(config.beta1, config.beta2), weight_decay=3e-4)
         self.scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(self.optimizer, 'min')
         self.best_loss = float('inf')
