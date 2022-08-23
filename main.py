@@ -95,17 +95,6 @@ if __name__ == '__main__':
         kmeans_labels[kmeans_labels >= 1] = 1
         calculate_clustering_scores(targets.astype(int), kmeans_labels, experiment)
     
-    if config.MOD_RNN_ATT == True: 
-        model = RNNAttentionModel(input_size=1, hid_size=32, emb_size=config.emb_size, rnn_type='lstm', bidirectional=False)
-        summary(model, input_size=(1, config.ts_length))
-        trainer = Trainer(config=config, experiment=experiment, data=df_psa, net=model)
-        trainer.run()
-        _, _, _, targets, output, _ = trainer.eval()
-
-        kmeans_labels = run_kmeans(output, config, experiment)
-        run_umap(output, targets, kmeans_labels, config.experiment_name, experiment)
-        calculate_clustering_scores(targets.astype(int), kmeans_labels, experiment)
-    
 
     if config.MOD_TRANSFORMER == True: 
         model = TransformerTimeSeries(config) 

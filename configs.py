@@ -19,24 +19,24 @@ class Config(object):
         self.ts_length = 6
 
         # models
+        self.loss_fn = torch.nn.CrossEntropyLoss() #torch.nn.MSELoss() 
         self.lr = 0.001
         self.batch_size = 24
         self.n_epochs = 5
-        self.emb_size = 12  # needs to be = tslength if baselines
+        self.emb_size = 6  # needs to be = tslength if baselines and tstcc
         self.beta1 = 0.9
         self.beta2 = 0.99
         self.dropout = 0.3
 
         # experiment
         self.MOD_RAW = False
-        self.MOD_SIMPLE_AC = True
+        self.MOD_SIMPLE_AC = False 
         self.MOD_DEEP_AC = False
-        self.MOD_LSTM = False
+        self.MOD_LSTM = True
         self.MOD_CNN = False
-        self.MOD_RNN_ATT = False
         self.MOD_TRANSFORMER = False
         self.MOD_TSTCC = False
-        self.experiment_name = "raw_model" if self.MOD_RAW else "simple_ac" if self.MOD_SIMPLE_AC else "deep_ac" if self.MOD_DEEP_AC else "lstm_model" if self.MOD_LSTM else "cnn_model" if self.MOD_CNN else "rnn_attmodel" if self.MOD_RNN_ATT else "transformer_model" if self.MOD_TRANSFORMER else "ts-tcc" if self.MOD_TSTCC else "notimplemented"
+        self.experiment_name = "raw_model" if self.MOD_RAW else "simple_ac" if self.MOD_SIMPLE_AC else "deep_ac" if self.MOD_DEEP_AC else "lstm_model" if self.MOD_LSTM else "cnn_model" if self.MOD_CNN else "transformer_model" if self.MOD_TRANSFORMER else "ts-tcc" if self.MOD_TSTCC else "notimplemented"
 
         # transformer
         self.num_layers = 1
