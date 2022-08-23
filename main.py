@@ -6,10 +6,10 @@ from preprocess import load_psa_data_to_pd
 from clustering_algorithms import run_kmeans, run_kmeans_only
 from metrics import calculate_clustering_scores
 from umapplot import run_umap
-from modules import CNN, RNNModel, RNNAttentionModel, SimpleAutoencoder, DeepAutoencoder
+from models.baseline_models import CNN, RNNModel, SimpleAutoencoder, DeepAutoencoder
 from train import Trainer
 from utils import get_bunch_config_from_json, build_save_path, build_comet_logger, set_requires_grad
-from transformer import TransformerTimeSeries
+from models.transformer import TransformerTimeSeries
 from models.model import base_Model
 import numpy as np
 from configs import Config
