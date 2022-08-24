@@ -59,7 +59,8 @@ def generate_split(data):
 
 # ---- for PSA data ----
 
-def load_psa_df(df):
+def load_psa_df(file_name):
+    df = pd.read_csv(file_name, header=0)
     # select columns with psa data, set threshold to have at least 5 measurements
     # psa_levels per year: 69-74
     # level from most recent test prior to diagnosis: 5

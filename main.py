@@ -2,7 +2,7 @@ import comet_ml
 import torch
 import os
 from torchsummary import summary
-from preprocess import load_psa_data_to_pd
+from preprocess import load_psa_data_to_pd, load_psa_df
 from clustering_algorithms import run_kmeans, run_kmeans_only
 from metrics import calculate_clustering_scores
 from umapplot import run_umap
@@ -35,6 +35,7 @@ if __name__ == '__main__':
     # run kmeans on raw data
 
     if config.MOD_RAW == True:
+        df_psa = load_psa_df(file_name)
         y_real = df_psa['pros_cancer']
         df_psa = df_psa.iloc[:,:-2]
         df_train_values = df_psa.values

@@ -7,7 +7,7 @@ class Config(object):
 
         # kmeans
         self.metric = "dtw"  # metric : {“euclidean”, “dtw”, “softdtw”}
-        self.n_clusters = 5
+        self.n_clusters = 3
         self.n_clusters_real = 2
 
         # data
@@ -29,10 +29,10 @@ class Config(object):
         self.dropout = 0.3
 
         # experiment
-        self.MOD_RAW = False
+        self.MOD_RAW = True
         self.MOD_SIMPLE_AC = False 
         self.MOD_DEEP_AC = False
-        self.MOD_LSTM = True
+        self.MOD_LSTM = False
         self.MOD_CNN = False
         self.MOD_TRANSFORMER = False
         self.MOD_TSTCC = False

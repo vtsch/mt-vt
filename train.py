@@ -7,7 +7,7 @@ import pandas as pd
 from metrics import Meter
 from dataloader import get_dataloader, data_generator
 import numpy as np
-from transformer import generate_square_subsequent_mask
+from models.transformer import generate_square_subsequent_mask
 from models.TC import TC
 
 class Trainer:
