@@ -1,8 +1,7 @@
 import numpy as np
 import pandas as pd
 
-from sklearn.model_selection import train_test_split
-from sklearn import preprocessing
+from models.TC import DataTransform
 
 import torch
 from torch.utils.data import Dataset, DataLoader
@@ -36,6 +35,12 @@ class LoadPSADataset(Dataset):
             self.y_data = y
 
         self.len = X.shape[0]
+    
+        if config.tstcc_training_mode == "self_supervised":  # no need to apply Augmentations in other modes
+            X = np.array(X)
+            X = X.reshape(X.shape[0], -1, 1) # make sure the Channels in second dim
+            x_d = torch.from_numpy(X)
+            self.aug1, self.aug2 = DataTransform(x_d, config)
 
     def __getitem__(self, index):
         target = np.array(self.y_data.loc[index])
@@ -46,9 +51,12 @@ class LoadPSADataset(Dataset):
         #print("target", target, "tsindex", tsindex, "signal", signal)
 
         if self.config.MOD_TSTCC:
-            if len(signal.shape) < 3:
-                signal = signal.reshape(1, signal.shape[0])
-            return signal, target, signal, signal
+            if self.config.tstcc_training_mode == "self_supervised":
+                aug1 = self.aug1[index].reshape(self.config.ts_length)
+                aug2 = self.aug2[index].reshape(self.config.ts_length)
+                return signal, target, aug1, aug2
+            else:
+                return signal, target, signal, signal
         else:
             return signal, target, tsindex
 
