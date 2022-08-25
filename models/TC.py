@@ -1,7 +1,53 @@
 import torch
 import torch.nn as nn
 import numpy as np
-from .attention import Seq_Transformer
+from models.attention import Seq_Transformer
+
+def DataTransform(sample, config):
+
+    weak_aug = scaling(sample, config.jitter_scale_ratio)
+    strong_aug = jitter(permutation(sample, max_segments=config.max_seg), config.jitter_ratio)
+
+    return weak_aug, strong_aug
+
+
+def jitter(x, sigma=0.8):
+    # https://arxiv.org/pdf/1706.00527.pdf
+    return x + np.random.normal(loc=0., scale=sigma, size=x.shape)
+
+
+def scaling(x, sigma=1.1):
+    # https://arxiv.org/pdf/1706.00527.pdf
+    factor = np.random.normal(loc=2., scale=sigma, size=(x.shape[0], x.shape[2]))
+    ai = []
+    for i in range(x.shape[1]):
+        xi = x[:, i, :]
+        ai.append(np.multiply(xi, factor[:, :])[:, np.newaxis, :])
+    return np.concatenate((ai), axis=1)
+
+
+def permutation(x, max_segments=3, seg_mode="random"):
+    orig_steps = np.arange(x.shape[2])
+
+    num_segs = np.random.randint(1, max_segments, size=(x.shape[0]))
+
+    ret = np.zeros_like(x)
+    for i, pat in enumerate(x):
+        if num_segs[i] > 1:
+            if seg_mode == "random":
+                split_points = np.random.choice(x.shape[2], num_segs[i], replace=True)
+                split_points.sort()
+                splits = np.split(orig_steps, split_points)
+            else:
+                splits = np.array_split(orig_steps, num_segs[i])
+            #print(f"splits: {splits}")
+            warp = np.concatenate(np.random.permutation(splits), dtype=np.float32).ravel()
+            ret[i] = pat[0,warp]
+        else:
+            ret[i] = pat
+    return torch.from_numpy(ret)
+
+
 
 
 
@@ -9,7 +55,7 @@ class TC(nn.Module):
     def __init__(self, config):
         super(TC, self).__init__()
         self.num_channels = config.final_out_channels
-        self.timestep = config.ts_length
+        self.timestep = 3
         self.Wk = nn.ModuleList([nn.Linear(config.hidden_dim, self.num_channels) for i in range(self.timestep)])
         self.lsoftmax = nn.LogSoftmax()
         self.device = config.device
