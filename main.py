@@ -149,7 +149,7 @@ if __name__ == '__main__':
         trainer.run()
 
         if config.tstcc_training_mode == "train_linear":
-            load_from = os.path.join(os.path.join(config.model_save_dir, config.experiment_name, f"22-08-25_15-52-20"))
+            load_from = os.path.join(os.path.join(config.model_save_dir, f"tstcc_self_supervised/22-08-25_16-05-45"))
             chkpoint = torch.load(os.path.join(load_from, "ckp_last.pt"), map_location=config.device)
             pretrained_dict = chkpoint["model_state_dict"]
             model_dict = model.state_dict()
@@ -183,7 +183,9 @@ if __name__ == '__main__':
             embeddings = embeddings.reshape(embeddings.shape[0], -1)
             run_umap(embeddings, true_labels, kmeans_labels, config.experiment_name+"kmeans", experiment)
             run_umap(embeddings, true_labels, pred_labels, config.experiment_name+"pred", experiment)
-            calculate_clustering_scores(true_labels.astype(int), kmeans_labels+"kmeans", experiment)
-            calculate_clustering_scores(true_labels.astype(int), pred_labels+"pred", experiment)
+            print("kmeans_labels")
+            calculate_clustering_scores(true_labels.astype(int), kmeans_labels.astype(int), experiment)
+            print("pred_labels")
+            calculate_clustering_scores(true_labels.astype(int), pred_labels.astype(int), experiment)
 
 
