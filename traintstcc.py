@@ -29,12 +29,12 @@ class TSTCCTrainer:
         self.config = config
         self.experiment = experiment
         self.criterion = config.loss_fn
-        self.optimizer = Adam(self.net.parameters(), lr=config.lr, betas=(config.beta1, config.beta2), weight_decay=3e-4)
+        self.optimizer = Adam(self.net.parameters(), lr=config.lr, betas=(0.9, 0.99), weight_decay=3e-4)
         self.scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(self.optimizer, 'min')
         self.best_loss = float('inf')
         self.attention_masks = generate_square_subsequent_mask(6)
         self.temporal_contr_model = TC(config).to(config.device)
-        self.temp_cont_optimizer = Adam(self.temporal_contr_model.parameters(), lr=config.lr, betas=(config.beta1, config.beta2), weight_decay=3e-4)
+        self.temp_cont_optimizer = Adam(self.temporal_contr_model.parameters(), lr=config.lr, betas=(0.9, 0.99), weight_decay=3e-4)
         self.tstcc_train_dl, self.tstcc_valid_dl, self.tstcc_test_dl = data_generator(data, config)
     
     def run(self):
@@ -101,8 +101,7 @@ class TSTCCTrainer:
             if self.config.tstcc_training_mode == "self_supervised":
                 lambda1 = 1
                 lambda2 = 0.7
-                nt_xent_criterion = NTXentLoss(self.config.device, self.config.batch_size, self.config.temperature,
-                                            self.config.use_cosine_similarity)
+                nt_xent_criterion = NTXentLoss(self.config.device, self.config.batch_size,use_cosine_similarity=True)
                 loss = (temp_cont_loss1 + temp_cont_loss2) * lambda1 +  nt_xent_criterion(zis, zjs) * lambda2
                 
             else: # supervised training or fine tuining

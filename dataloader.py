@@ -36,7 +36,7 @@ class LoadPSADataset(Dataset):
 
         self.len = X.shape[0]
     
-        if config.tstcc_training_mode == "self_supervised":  # no need to apply Augmentations in other modes
+        if self.config.tstcc_training_mode == "self_supervised":  # no need to apply Augmentations in other modes
             X = np.array(X)
             X = X.reshape(X.shape[0], -1, 1) # make sure the Channels in second dim
             x_d = torch.from_numpy(X)
@@ -50,7 +50,7 @@ class LoadPSADataset(Dataset):
         tsindex = tsindex.values
         #print("target", target, "tsindex", tsindex, "signal", signal)
 
-        if self.config.MOD_TSTCC:
+        if self.config.experiment_name == "ts-tcc":
             if self.config.tstcc_training_mode == "self_supervised":
                 aug1 = self.aug1[index].reshape(self.config.ts_length)
                 aug2 = self.aug2[index].reshape(self.config.ts_length)
