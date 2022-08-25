@@ -41,9 +41,10 @@ class TSTCCTrainer:
         # Start training
         for epoch in range(1, self.config.n_epochs + 1):
             # Train and validate
-            train_loss, train_acc, train_logs = self.model_train()
-            self.experiment.log_metrics(dic=train_logs, step=epoch)
+            train_loss, train_acc = self.model_train()
+            self.experiment.log_metrics(dic={'train_loss': train_loss, 'train_acc': train_acc}, step=epoch)
             valid_loss, valid_acc, _, _, _ = self.model_evaluate()
+            self.experiment.log_metrics(dic={'valid_loss': valid_loss, 'valid_acc': valid_acc}, step=epoch)
             if self.config.tstcc_training_mode != 'self_supervised':  # use scheduler in all other modes.
                 self.scheduler.step(valid_loss)
 
@@ -57,15 +58,14 @@ class TSTCCTrainer:
 
         if self.config.tstcc_training_mode != "self_supervised":  # no need to run the evaluation for self-supervised mode.
             # evaluate on the test set
-            test_loss, test_acc, _, _ , _ = self.model_evaluate()
+            test_loss, test_acc, _, _, _ = self.model_evaluate()
+            self.experiment.log_metrics(dic={'test_loss': test_loss, 'test_acc': test_acc}, step=epoch)
             print(f'Test loss      :{test_loss:0.4f}\t | Test Accuracy      : {test_acc:0.4f}')
 
 
     def model_train(self):
         total_loss = []
         total_acc = []
-        meter = Meter()
-        meter.init_metrics('train')
 
         self.net.train()
         self.temporal_contr_model.train()
@@ -109,16 +109,11 @@ class TSTCCTrainer:
                 predictions, features = output
                 loss = self.criterion(predictions, labels)
                 total_acc.append(labels.eq(predictions.detach().argmax(dim=1)).float().mean())
-                #meter.update(pred.detach().numpy(), labels, 'train', loss.item())
 
             total_loss.append(loss.item())
             loss.backward()
             self.optimizer.step()
             self.temp_cont_optimizer.step()
-
-        metrics = meter.get_metrics()
-        metrics = {k:v / batch_idx for k, v in metrics.items()}
-        df_logs = pd.DataFrame([metrics])
 
         total_loss = torch.tensor(total_loss).mean()
 
@@ -126,7 +121,7 @@ class TSTCCTrainer:
             total_acc = 0
         else:
             total_acc = torch.tensor(total_acc).mean()
-        return total_loss, total_acc, df_logs
+        return total_loss, total_acc
 
 
     def model_evaluate(self):
@@ -136,13 +131,10 @@ class TSTCCTrainer:
         total_loss = []
         total_acc = []
 
-        criterion = nn.CrossEntropyLoss()
+        eval_criterion = nn.CrossEntropyLoss()
         outs = np.array([])
         trgs = np.array([])
         embeddings = np.array([])
-
-        meter = Meter()
-        meter.init_metrics('val')
 
         with torch.no_grad():
             for batch_idx, (data, labels, _, _) in enumerate(self.tstcc_test_dl):
@@ -156,7 +148,7 @@ class TSTCCTrainer:
                 # compute loss
                 if self.config.tstcc_training_mode != "self_supervised":
                     predictions, features = output
-                    loss = self.criterion(predictions, labels)
+                    loss = eval_criterion(predictions, labels)
                     total_acc.append(labels.eq(predictions.detach().argmax(dim=1)).float().mean())
                     total_loss.append(loss.item())
 
@@ -165,20 +157,16 @@ class TSTCCTrainer:
                     outs = np.append(outs, pred.cpu().numpy())
                     trgs = np.append(trgs, labels.data.cpu().numpy())
                     embeddings = np.append(embeddings, features.detach().numpy())
-                
-                #meter.update(pred.detach().numpy(), labels, 'val', loss.item())
 
         if self.config.tstcc_training_mode != "self_supervised":
             total_loss = torch.tensor(total_loss).mean()  # average loss
-            metrics = meter.get_metrics()
-            metrics = {k:v / batch_idx for k, v in metrics.items()}
-            df_logs = pd.DataFrame([metrics])
             embeddings = embeddings.reshape(trgs.shape[0], -1, features.shape[2])
         else:
             total_loss = 0
+
         if self.config.tstcc_training_mode == "self_supervised":
             total_acc = 0
             return total_loss, total_acc, [], [], []
         else:
             total_acc = torch.tensor(total_acc).mean()  # average acc
-        return total_loss, total_acc, outs, trgs, embeddings
+            return total_loss, total_acc, outs, trgs, embeddings
