@@ -12,7 +12,7 @@ class Config(object):
         self.n_clusters_real = 2
 
         # data
-        self.sample_size = 10000
+        self.sample_size = 4000
         self.PSA_DATA = True
         self.upsample = True
         self.DELTATIMES = False
@@ -20,7 +20,7 @@ class Config(object):
         self.ts_length = 6
 
         # experiment
-        self.experiment_name = "ts-tcc" # "simple_ac", "deep_ac", "lstm", "cnn", "simple_transformer", "ts-tcc"
+        self.experiment_name = "lstm" # "simple_ac", "deep_ac", "lstm", "cnn", "simple_transformer", "ts-tcc"
         self.tstcc_training_mode = "supervised" # (random_init), supervised, self_supervised, fine_tune, train_linear
        
         # for training models

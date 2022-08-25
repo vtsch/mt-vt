@@ -37,7 +37,7 @@ class Trainer:
             #if config.NOPOSENC:
             #index = torch.zeros(index.shape) 
 
-            if self.config.MOD_TRANSFORMER == True:
+            if self.config.experiment_name == "simple_transformer":
                 data = data.squeeze(1)
                 index = index.squeeze(1)
                 pred, psu_class, transf_emb, transf_reconst = self.net(index, data, self.attention_masks)
@@ -92,7 +92,7 @@ class Trainer:
         with torch.no_grad():
             for i, (data, target, index) in enumerate(self.dataloaders['test']):
 
-                if self.config.MOD_TRANSFORMER == True:
+                if self.config.experiment_name == "simple_transformer":
                     data = data.squeeze(1)
                     index = index.squeeze(1)
                     pred, psu_class, transf_emb, transf_reconst = self.net(index, data, self.attention_masks)

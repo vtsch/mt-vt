@@ -51,7 +51,7 @@ if __name__ == '__main__':
         summary(model, input_size=(1, config.ts_length))
         trainer = Trainer(config=config, experiment=experiment, data=df_psa, net=model)
         trainer.run()
-        _, _, _, targets, output, _ = trainer.eval()
+        targets, output, _ = trainer.eval()
     
         kmeans_labels = run_kmeans(output, config, experiment)
         run_umap(output, targets, kmeans_labels, config.experiment_name, experiment)
@@ -64,7 +64,7 @@ if __name__ == '__main__':
         summary(model, input_size=(1, config.ts_length))
         trainer = Trainer(config=config, experiment=experiment, data=df_psa, net=model)
         trainer.run()
-        _, _, _, targets, output, _ = trainer.eval()
+        targets, output, _ = trainer.eval()
         kmeans_labels = run_kmeans(output, config, experiment)
         run_umap(output, targets, kmeans_labels, config.experiment_name, experiment)
         calculate_clustering_scores(targets.astype(int), kmeans_labels, experiment)
@@ -76,7 +76,7 @@ if __name__ == '__main__':
         print(model)
         trainer = Trainer(config=config, experiment=experiment, data=df_psa, net=model)
         trainer.run()
-        _, _, _, targets, output, _ = trainer.eval()
+        targets, output, _ = trainer.eval()
 
         kmeans_labels = run_kmeans(output, config, experiment)
         run_umap(output, targets, kmeans_labels, config.experiment_name, experiment)
@@ -89,7 +89,7 @@ if __name__ == '__main__':
         summary(model, input_size=(1, config.ts_length))
         trainer = Trainer(config=config, experiment=experiment, data=df_psa, net=model)
         trainer.run()
-        _, _, _, targets, output, _ = trainer.eval()
+        targets, output, _ = trainer.eval()
 
         kmeans_labels = run_kmeans(output, config, experiment)
         run_umap(output, targets, kmeans_labels, config.experiment_name, experiment)
@@ -103,7 +103,7 @@ if __name__ == '__main__':
         summary(model, input_size=(1, config.ts_length))
         trainer = Trainer(config=config, experiment=experiment, data=df_psa, net=model)
         trainer.run()
-        _, _, _, targets, predictions, _ = trainer.eval()
+        targets, predictions, _ = trainer.eval()
     
         kmeans_labels = run_kmeans(predictions, config, experiment)
         run_umap(predictions, targets, kmeans_labels, config.experiment_name, experiment)
