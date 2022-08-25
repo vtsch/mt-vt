@@ -8,7 +8,7 @@ from metrics import calculate_clustering_scores
 from umapplot import run_umap
 from models.baseline_models import CNN, RNNModel, SimpleAutoencoder, DeepAutoencoder
 from train import Trainer
-from utils import get_bunch_config_from_json, build_save_path, build_comet_logger, set_requires_grad, _calc_metrics, copy_Files
+from utils import get_bunch_config_from_json, build_save_path, build_comet_logger, set_requires_grad
 from models.transformer import TransformerTimeSeries
 from models.model import base_Model
 import numpy as np
@@ -166,16 +166,11 @@ if __name__ == '__main__':
             model_dict.update(pretrained_dict)
             model.load_state_dict(model_dict)
             set_requires_grad(model, pretrained_dict, requires_grad=False)  # Freeze everything except last layer.
-   
-    
-        #if config.tstcc_training_mode == "self_supervised":  # to do it only once
-        #    copy_Files(os.path.join(logs_save_dir, experiment_description, run_description))
 
         if config.tstcc_training_mode != "self_supervised":
             # Testing
             outs = trainer.model_evaluate()
             total_loss, total_acc, pred_labels, true_labels, embeddings = outs
-            _calc_metrics(pred_labels, true_labels, config.model_save_path)
         
             kmeans_labels = run_kmeans_only(embeddings, config.n_clusters, config.metric)
             embeddings = embeddings.reshape(embeddings.shape[0], -1)

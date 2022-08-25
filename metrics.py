@@ -20,7 +20,6 @@ def calculate_clustering_scores(y_true, y_pred, experiment):
     experiment.log_metrics(pd.DataFrame({'accuracy': [accuracy], 'ri': [ri], 'ari': [ari], 'mi': [mi], 'nmi': [nmi]}))
     experiment.log_confusion_matrix(y_true, y_pred, title = "Confusion Matrix")
 
-
 class Meter:
     def __init__(self):
         self.metrics = {}

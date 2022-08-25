@@ -14,20 +14,20 @@ class Config(object):
         # data
         self.sample_size = 4000
         self.PSA_DATA = True
-        self.upsample = True
+        self.upsample = False
         self.DELTATIMES = False
         self.NOPOSENC = False
         self.ts_length = 6
 
         # experiment
-        self.experiment_name = "lstm" # "simple_ac", "deep_ac", "lstm", "cnn", "simple_transformer", "ts-tcc"
-        self.tstcc_training_mode = "supervised" # (random_init), supervised, self_supervised, fine_tune, train_linear
+        self.experiment_name = "ts-tcc" # "simple_ac", "deep_ac", "lstm", "cnn", "simple_transformer", "ts-tcc"
+        self.tstcc_training_mode = "random_init" # random_init, supervised, self_supervised, fine_tune, train_linear
        
         # for training models
         self.loss_fn = torch.nn.CrossEntropyLoss() #torch.nn.MSELoss() 
         self.lr = 0.001
         self.batch_size = 24
-        self.n_epochs = 10
+        self.n_epochs = 100
         self.emb_size = 6  # needs to be = tslength if baselines and tstcc
         self.dropout = 0.3
 
