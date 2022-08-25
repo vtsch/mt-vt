@@ -8,11 +8,12 @@ from metrics import calculate_clustering_scores
 from umapplot import run_umap
 from models.baseline_models import CNN, RNNModel, SimpleAutoencoder, DeepAutoencoder
 from train import Trainer
-from utils import get_bunch_config_from_json, build_save_path, build_comet_logger, set_requires_grad
+from utils import get_bunch_config_from_json, build_save_path, build_comet_logger, set_requires_grad, _calc_metrics, copy_Files
 from models.transformer import TransformerTimeSeries
 from models.model import base_Model
 import numpy as np
 from configs import Config
+from traintstcc import TSTCCTrainer
 
 
 if __name__ == '__main__':
@@ -112,31 +113,77 @@ if __name__ == '__main__':
         calculate_clustering_scores(targets.astype(int), kmeans_labels, experiment)
     
     if config.MOD_TSTCC: 
-        # Load datasets
-        #train_dl, valid_dl, test_dl = data_generator(df_psa, config)
 
         # Load Model
         model = base_Model(config).to(config.device)
-        model_dict = model.state_dict()
 
-        # delete all the parameters except for logits
-        del_list = ['logits']
-        pretrained_dict_copy = model_dict.copy()
-        for i in pretrained_dict_copy.keys():
-            for j in del_list:
-                if j in i:
-                    del model_dict[i]
-        set_requires_grad(model, model_dict, requires_grad=False)  # Freeze everything except last layer.
+        if config.tstcc_training_mode == "random_init":
+            model_dict = model.state_dict()
+
+            # delete all the parameters except for logits
+            del_list = ['logits']
+            pretrained_dict_copy = model_dict.copy()
+            for i in pretrained_dict_copy.keys():
+                for j in del_list:
+                    if j in i:
+                        del model_dict[i]
+            set_requires_grad(model, model_dict, requires_grad=False)  # Freeze everything except last layer.
+
+        if config.tstcc_training_mode == "fine_tune":
+            # load saved model of this experiment
+            load_from = os.path.join(os.path.join(config.model_save_dir, config.experiment_name, f"self_supervised", "saved_models"))
+            chkpoint = torch.load(os.path.join(load_from, "ckp_last.pt"), map_location=config.device)
+            pretrained_dict = chkpoint["model_state_dict"]
+            model_dict = model.state_dict()
+            del_list = ['logits']
+            pretrained_dict_copy = pretrained_dict.copy()
+            for i in pretrained_dict_copy.keys():
+                for j in del_list:
+                    if j in i:
+                        del pretrained_dict[i]
+            model_dict.update(pretrained_dict)
+            model.load_state_dict(model_dict)
 
         # Trainer
-        trainer = Trainer(config=config, experiment=experiment, data=df_psa, net=model)
+        trainer = TSTCCTrainer(config=config, experiment=experiment, data=df_psa, net=model)
         trainer.run()
-        _, _, _, targets, embeddings, _ = trainer.eval()
 
-        kmeans_labels = run_kmeans_only(embeddings, config.n_clusters, config.metric)
-        embeddings = embeddings.reshape(embeddings.shape[0], -1)
-        run_umap(embeddings, targets, kmeans_labels, config.experiment_name, experiment)
-        calculate_clustering_scores(targets.astype(int), kmeans_labels, experiment)
-        kmeans_labels[kmeans_labels >= 1] = 1
-        calculate_clustering_scores(targets.astype(int), kmeans_labels, experiment)
+        if config.tstcc_training_mode == "train_linear":
+            load_from = os.path.join(os.path.join(config.model_save_dir, config.experiment_name, f"22-08-25_15-52-20"))
+            chkpoint = torch.load(os.path.join(load_from, "ckp_last.pt"), map_location=config.device)
+            pretrained_dict = chkpoint["model_state_dict"]
+            model_dict = model.state_dict()
+
+            # 1. filter out unnecessary keys
+            pretrained_dict = {k: v for k, v in pretrained_dict.items() if k in model_dict}
+
+            # delete these parameters (Ex: the linear layer at the end)
+            del_list = ['logits']
+            pretrained_dict_copy = pretrained_dict.copy()
+            for i in pretrained_dict_copy.keys():
+                for j in del_list:
+                    if j in i:
+                        del pretrained_dict[i]
+
+            model_dict.update(pretrained_dict)
+            model.load_state_dict(model_dict)
+            set_requires_grad(model, pretrained_dict, requires_grad=False)  # Freeze everything except last layer.
+   
+    
+        #if config.tstcc_training_mode == "self_supervised":  # to do it only once
+        #    copy_Files(os.path.join(logs_save_dir, experiment_description, run_description))
+
+        if config.tstcc_training_mode != "self_supervised":
+            # Testing
+            outs = trainer.model_evaluate()
+            total_loss, total_acc, pred_labels, true_labels, embeddings = outs
+            _calc_metrics(pred_labels, true_labels, config.model_save_path)
+        
+            kmeans_labels = run_kmeans_only(embeddings, config.n_clusters, config.metric)
+            embeddings = embeddings.reshape(embeddings.shape[0], -1)
+            run_umap(embeddings, true_labels, kmeans_labels, config.experiment_name+"kmeans", experiment)
+            run_umap(embeddings, true_labels, pred_labels, config.experiment_name+"pred", experiment)
+            calculate_clustering_scores(true_labels.astype(int), kmeans_labels+"kmeans", experiment)
+            calculate_clustering_scores(true_labels.astype(int), pred_labels+"pred", experiment)
+
 
