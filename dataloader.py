@@ -106,6 +106,9 @@ def data_generator(data, config):
     train_dataset = LoadPSADataset(config, train_df)
     valid_dataset = LoadPSADataset(config, val_df)
     test_dataset = LoadPSADataset(config, test_df)
+    print(f'train data shape: {train_dataset.df.shape}')
+    print(f'valid data shape: {valid_dataset.df.shape}')
+    print(f'test data shape: {test_dataset.df.shape}')
 
     train_loader = DataLoader(dataset=train_dataset, batch_size=config.batch_size,
                               shuffle=True, drop_last=True, num_workers=0)
