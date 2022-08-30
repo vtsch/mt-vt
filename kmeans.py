@@ -1,6 +1,15 @@
 from tslearn.clustering import TimeSeriesKMeans
 import matplotlib.pyplot as plt
 
+def plot_datapoints(data, labels, title, experiment):
+    #set colors for each cluster label
+    colors = ['#3cb44b', '#4363d8', '#ffe119', '#f58231', '#911eb4', '#f032e6']
+    for i in range(len(data)):
+        plt.plot(data[i], color=colors[labels[i]])
+    plt.title(title)
+    plt.legend(['%d' %i for i in range(colors)], loc='upper left', title="Embeddings")
+    experiment.log_figure(figure=plt, figure_name="datapoints_%s" %title)
+
 def plot_centroids(centroids, n_clusters, title, experiment):
     for i in range(n_clusters):
         plt.plot(centroids[i])
