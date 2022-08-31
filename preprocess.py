@@ -116,7 +116,7 @@ def load_psa_and_timesteps_df(df):
     # day of psa level mesaurements: 80-85
     # pros_cancer label: 4
     df = df.iloc[:, [69, 70, 71, 72, 73, 74, 80, 81, 82, 83, 84, 85, 4]]
-    df.dropna(thresh=8, inplace=True)
+    df = df.dropna(thresh=8)
     df.fillna(0, inplace=True)
     return df
 
