@@ -1,8 +1,20 @@
+from sklearn import cluster
 from tslearn.clustering import TimeSeriesKMeans
 import matplotlib.pyplot as plt
 import numpy as np
 
+def plot_datapoints_of_cluster(data, labels, cluster_id, label_color_map, title, experiment):
+    fig1 = plt.figure("%s cluster %d" %(title, cluster_id))
+    for i in range(len(data)):
+        #plot data points with label = cluster_id
+        if labels[i] == cluster_id:
+            plt.plot(data[i], c=label_color_map[cluster_id])
+    plt.title("%s datapoints of cluster %d" %(title, cluster_id))
+    plt.legend(labels=[cluster_id], loc='upper left', title="Clusters")
+    experiment.log_figure(figure=fig1, figure_name="datapoints_%s_cluster_%d" %(title, cluster_id))
+
 def plot_datapoints(data, labels, title, experiment):
+    fig0 = plt.figure("%s" %title)
     #set colors for each cluster label
     label_color_map = ['#3cb44b', '#4363d8', '#ffe119', '#f58231', '#911eb4']
     for i in range(len(data)):
@@ -10,17 +22,10 @@ def plot_datapoints(data, labels, title, experiment):
         plt.plot(data[i], c=label_color_map[labels[i]])
     plt.title(title)
     plt.legend(['%d' %i for i in range(np.unique(labels).shape[0])], loc='upper left', title="Clusters")
-    experiment.log_figure(figure=plt, figure_name="datapoints_%s" %title)
+    experiment.log_figure(figure=fig0, figure_name="datapoints_%s" %title)
 
-    #plot only datapoints with label 0
-    plt.plot(data[labels == 0], c='#3cb44b')
-    plt.title("%s datapoints with label 0" %title)
-    experiment.log_figure(figure=plt, figure_name="datapoints_%s_label_0" %title)
-
-    #plot only datapoints with label 1
-    plt.plot(data[labels == 1], c='#4363d8')
-    plt.title("%s datapoints with label 1" %title)
-    experiment.log_figure(figure=plt, figure_name="datapoints_%s_label_1" %title)
+    plot_datapoints_of_cluster(data, labels, 0, label_color_map, title, experiment)
+    plot_datapoints_of_cluster(data, labels, 1, label_color_map, title, experiment)
 
 def plot_centroids(centroids, n_clusters, title, experiment):
     for i in range(n_clusters):
@@ -43,7 +48,7 @@ def run_kmeans(output, config, experiment):
     return kmeans_labels
 
 def run_kmeans_only(data, config):
-    data.reshape(data.shape[0], data.shape[1], 1)
+    data = data.reshape(data.shape[0], data.shape[1], 1)
     kmeans = TimeSeriesKMeans(n_clusters=config.n_clusters, metric=config.metric, max_iter=20, random_state=0, n_init=5).fit(data)
     kmeans_labels = kmeans.predict(data)
     return kmeans_labels
