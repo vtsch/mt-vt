@@ -27,6 +27,7 @@ def scaling(x, sigma=1.1):
 
 
 def permutation(x, max_segments=3, seg_mode="random"):
+    x = x.reshape((x.shape[0], x.shape[2], x.shape[1]))
     orig_steps = np.arange(x.shape[2])
 
     num_segs = np.random.randint(1, max_segments, size=(x.shape[0]))
@@ -35,17 +36,17 @@ def permutation(x, max_segments=3, seg_mode="random"):
     for i, pat in enumerate(x):
         if num_segs[i] > 1:
             if seg_mode == "random":
-                split_points = np.random.choice(x.shape[2], num_segs[i], replace=True)
+                split_points = np.random.choice(6, num_segs[i], replace=True)
                 split_points.sort()
                 splits = np.split(orig_steps, split_points)
             else:
                 splits = np.array_split(orig_steps, num_segs[i])
-            #print(f"splits: {splits}")
-            warp = np.concatenate(np.random.permutation(splits), dtype=np.float32).ravel()
+            warp = np.concatenate(np.random.permutation(splits)).ravel()
+            #warp = np.hstack(x).ravel()
             ret[i] = pat[0,warp]
         else:
             ret[i] = pat
-    return torch.from_numpy(ret)
+    return ret
 
 
 
@@ -57,7 +58,7 @@ class TC(nn.Module):
         self.num_channels = config.final_out_channels
         self.timestep = 3
         self.Wk = nn.ModuleList([nn.Linear(config.hidden_dim, self.num_channels) for i in range(self.timestep)])
-        self.lsoftmax = nn.LogSoftmax()
+        self.lsoftmax = nn.LogSoftmax(dim=1)
         self.device = config.device
         
         self.projection_head = nn.Sequential(
