@@ -3,7 +3,7 @@ import torch
 import os
 from torchsummary import summary
 from preprocess import load_psa_data_to_pd, load_psa_df
-from clustering_algorithms import run_kmeans, run_kmeans_only
+from kmeans import run_kmeans, run_kmeans_only, plot_centroids, plot_datapoints
 from metrics import calculate_clustering_scores
 from umapplot import run_umap
 from models.baseline_models import CNN, RNNModel, SimpleAutoencoder, DeepAutoencoder
@@ -34,7 +34,6 @@ if __name__ == '__main__':
         df_psa = load_psa_data_to_pd(file_name, config)
         
     # run kmeans on raw data
-
     if config.experiment_name == "raw_data":
         df_psa = load_psa_df(file_name)
         y_real = df_psa['pros_cancer']
@@ -147,8 +146,7 @@ if __name__ == '__main__':
         trainer.run()
 
         if config.tstcc_training_mode == "train_linear":
-            load_from = os.path.join(os.path.join(config.model_save_dir, f"tstcc_self_supervised/22-08-25_16-05-45"))
-            chkpoint = torch.load(os.path.join(load_from, "ckp_last.pt"), map_location=config.device)
+            chkpoint = torch.load(os.path.join(config.tstcc_model_saved_dir, "ckp_last.pt"), map_location=config.device)
             pretrained_dict = chkpoint["model_state_dict"]
             model_dict = model.state_dict()
 
@@ -171,14 +169,14 @@ if __name__ == '__main__':
             # Testing
             outs = trainer.model_evaluate()
             total_loss, total_acc, pred_labels, true_labels, embeddings = outs
-        
-            kmeans_labels = run_kmeans_only(embeddings, config.n_clusters, config.metric)
-            embeddings = embeddings.reshape(embeddings.shape[0], -1)
+            #embeddings have shape (test set length,out size,emb_size)
+            embeddings = embeddings.reshape(embeddings.shape[0], -1) #reshape to (test set length,out size*emb_size, 1)
+            kmeans_labels = run_kmeans_only(embeddings, config)
+            plot_datapoints(embeddings, pred_labels.astype(int), config.experiment_name+"pred", experiment)
+            plot_datapoints(embeddings, kmeans_labels, config.experiment_name+"kmeans", experiment)
             run_umap(embeddings, true_labels, kmeans_labels, config.experiment_name+config.tstcc_training_mode+"kmeans", experiment)
             run_umap(embeddings, true_labels, pred_labels, config.experiment_name+config.tstcc_training_mode+"pred", experiment)
-            print("kmeans_labels")
             calculate_clustering_scores(true_labels.astype(int), kmeans_labels.astype(int), experiment)
-            print("pred_labels")
             calculate_clustering_scores(true_labels.astype(int), pred_labels.astype(int), experiment)
 
 
