@@ -50,7 +50,7 @@ class LoadPSADataset(Dataset):
         tsindex = tsindex.values
         #print("target", target, "tsindex", tsindex, "signal", signal)
 
-        if self.config.experiment_name == "ts-tcc":
+        if self.config.experiment_name == "ts_tcc":
             if self.config.tstcc_training_mode == "self_supervised":
                 aug1 = self.aug1[index].reshape(self.config.ts_length)
                 aug2 = self.aug2[index].reshape(self.config.ts_length)
