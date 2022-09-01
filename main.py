@@ -3,7 +3,7 @@ import torch
 import os
 from torchsummary import summary
 from preprocess import load_psa_data_to_pd, load_psa_df
-from kmeans import run_kmeans, run_kmeans_only, plot_centroids, plot_datapoints
+from kmeans import run_kmeans, run_kmeans_only, plot_datapoints, plot_datapoints_of_cluster
 from metrics import calculate_clustering_scores
 from umapplot import run_umap
 from models.baseline_models import CNN, RNNModel, SimpleAutoencoder, DeepAutoencoder
@@ -40,9 +40,13 @@ if __name__ == '__main__':
         df_psa = df_psa.iloc[:,:-2]
         df_train_values = df_psa.values
         kmeans_labels = run_kmeans(df_train_values, config, experiment)
+        print(df_psa)
+        df = df_psa.to_numpy()
+        print(df)
+        plot_datapoints(df, kmeans_labels, config.experiment_name, experiment)
         run_umap(df_psa, y_real, kmeans_labels, config.experiment_name, experiment)
         calculate_clustering_scores(y_real.astype(int), kmeans_labels, experiment)
-
+        print("done")
 
     # run embedding models and kmeans
     if config.experiment_name == "simple_ac":
@@ -111,7 +115,7 @@ if __name__ == '__main__':
         kmeans_labels[kmeans_labels >= 1] = 1
         calculate_clustering_scores(targets.astype(int), kmeans_labels, experiment)
     
-    if config.experiment_name == "ts-tcc":
+    if config.experiment_name == "ts_tcc":
         experiment.set_name(config.experiment_name+config.tstcc_training_mode)
         model = base_Model(config).to(config.device)
 
