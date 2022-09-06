@@ -21,14 +21,12 @@ class DeepAutoencoder(nn.Module):
         super(DeepAutoencoder, self).__init__()
         self.fc1 = nn.Linear(in_features=config.ts_length, out_features=12)
         self.fc2 = nn.Linear(in_features=12, out_features=8)
-        self.fc3 = nn.Linear(in_features=8, out_features=6)
-        self.fc4 = nn.Linear(in_features=6, out_features=config.emb_size)
+        self.fc4 = nn.Linear(in_features=8, out_features=config.emb_size)
 
     def forward(self, x):
         x = x.view(x.shape[0], -1)
         x = self.fc1(x)
         x = self.fc2(x)
-        x = self.fc3(x)
         x = self.fc4(x)
         #x = self.fc5(x)
         return x
@@ -197,3 +195,37 @@ class RNNModel(nn.Module):
         x = F.softmax(self.fc(x), dim=1)#.squeeze(1)
         return x
 
+
+class LSTMencoder(nn.Module):
+    ''' Encodes time-series sequence '''
+    def __init__(self, hidden_size, num_layers):
+        '''
+        : param input_size:     the number of features in the input X -> is 1 as 1d time series
+        : param hidden_size:    the number of features in the hidden state h
+        : param num_layers:     number of recurrent layers (i.e., 2 means there are
+        :                       2 stacked LSTMs)
+        '''
+        super(LSTMencoder, self).__init__()
+        # define LSTM layer
+        self.lstm = nn.LSTM(input_size = 1, hidden_size = hidden_size,
+                            num_layers = num_layers, batch_first = True)
+                            # dropout=dropout_p if num_rnn_layers>1 else 0, bidirectional=bidirectional,
+        self.avgpool = nn.AdaptiveAvgPool1d((hidden_size//2))
+        self.fc = nn.Linear(in_features=hidden_size//2, out_features=1)
+        
+
+    def forward(self, x_input):
+        '''
+        : param x_input:               input of the TS is (batch_size, seq_length), for LSTM must be (batch_size, seq_len, input_size) if batch_first = True, 
+        : return lstm_out, hidden:     lstm_out gives all the hidden states in the sequence; (batch_size, seq_len, hidden_size)
+        :                              hidden gives the hidden state and cell state for the last
+        :                              element in the sequence 
+        '''
+        x_input = x_input.reshape(x_input.shape[0], x_input.shape[1], 1)
+        lstm_out, self.hidden = self.lstm(x_input)
+        emb = self.avgpool(lstm_out)
+        emb = self.fc(emb)
+        emb = emb.squeeze(2)
+        
+        return emb     
+    

@@ -6,7 +6,7 @@ from preprocess import load_psa_data_to_pd, load_psa_df
 from kmeans import run_kmeans_and_plots, run_kmeans_only, plot_datapoints, run_sklearn_kmeans
 from metrics import calculate_clustering_scores
 from umapplot import run_umap
-from models.baseline_models import CNN, RNNModel, SimpleAutoencoder, DeepAutoencoder
+from models.baseline_models import CNN, LSTMencoder, RNNModel, SimpleAutoencoder, DeepAutoencoder
 from train import Trainer
 from utils import get_bunch_config_from_json, build_save_path, build_comet_logger, set_requires_grad
 from models.transformer import TransformerTimeSeries
@@ -72,7 +72,7 @@ if __name__ == '__main__':
         calculate_clustering_scores(targets.astype(int), kmeans_labels, experiment)
 
     if config.experiment_name == "lstm": 
-        model = RNNModel(input_size=config.ts_length, hid_size=32, emb_size=config.emb_size, rnn_type='lstm', bidirectional=True)
+        model = LSTMencoder(hidden_size=12, num_layers=1)
         print(model)
         trainer = Trainer(config=config, experiment=experiment, data=df_psa, net=model)
         trainer.run()
