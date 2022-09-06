@@ -7,7 +7,7 @@ def calculate_clustering_scores(y_true, y_pred, experiment):
     accuracy = accuracy_score(y_true, y_pred)
     ri = rand_score(y_true, y_pred)
     ari = adjusted_rand_score(y_true, y_pred)
-    f1 = f1_score(y_true, y_pred)
+    f1 = f1_score(y_true, y_pred, average="weighted")
     cm = confusion_matrix(y_true, y_pred)
     print('Clustering Accuracy: {:.3f}'.format(accuracy))
     print('Clustering RI: {:.3f}'.format(ri))

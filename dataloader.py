@@ -35,8 +35,8 @@ class LoadPSADataset(Dataset):
             self.y_data = y
 
         self.len = X.shape[0]
-    
-        if self.config.tstcc_training_mode == "self_supervised":  # no need to apply Augmentations in other modes
+
+        if self.config.experiment_name == "ts_tcc" and self.config.tstcc_training_mode == "self_supervised": # no need to apply Augmentations in other modes
             X = np.array(X)
             X = X.reshape(X.shape[0], -1, 1) # make sure the Channels in second dim
             x_d = torch.from_numpy(X)
@@ -89,6 +89,8 @@ def get_dataloader(config, data, phase: str) -> DataLoader:
 
     dataset = LoadPSADataset(config, df)
     print(f'{phase} data shape: {dataset.df.shape}')
+
+    print(df['pros_cancer'].value_counts())
 
     dataloader = DataLoader(
         dataset=dataset, batch_size=config.batch_size, drop_last=True, num_workers=0)

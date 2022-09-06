@@ -68,8 +68,6 @@ def load_psa_df(file_name):
     df = df.iloc[:, [69, 70, 71, 72, 73, 74, 5, 4]]
     df.dropna(thresh=4, inplace=True)
     df.fillna(0, inplace=True)
-    #print("nr of labels")
-    #print(df['pros_cancer'].value_counts())
     return df
 
 def create_gleas_df(df):
