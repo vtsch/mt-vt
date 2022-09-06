@@ -28,14 +28,11 @@ class Meter:
         self.metrics[phase + '_loss'] += loss
         self.metrics[phase + '_mse'] += mean_squared_error(x,y)
         self.metrics[phase + '_mae'] += mean_absolute_error(x,y)
-        self.metrics[phase + '_r2'] += r2_score(x,y)
     
     def init_metrics(self, phase):
         self.metrics[phase + '_loss'] = 0
         self.metrics[phase + '_mse'] = 0
         self.metrics[phase + '_mae'] = 0
-        self.metrics[phase + '_r2'] = 0
-        
         
     def get_metrics(self):
         return self.metrics
