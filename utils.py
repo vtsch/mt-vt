@@ -5,6 +5,11 @@ import json
 import os
 from datetime import datetime
 from bunch import Bunch
+from shutil import copy
+import numpy as np
+import torch
+from sklearn.metrics import classification_report, cohen_kappa_score, confusion_matrix, accuracy_score
+import pandas as pd
 
 def get_args() -> argparse.Namespace:
     argparser = argparse.ArgumentParser()
@@ -31,12 +36,16 @@ def get_bunch_config_from_json(json_file_path: str) -> Bunch:
         config_dict = json.load(config_file)
     return Bunch(config_dict)
 
+def set_requires_grad(model, dict_, requires_grad=True):
+    for param in model.named_parameters():
+        if param[0] in dict_:
+            param[1].requires_grad = requires_grad
 
 def build_save_path(config: Bunch) -> str:
     current_timestamp = datetime.now().strftime("%y-%m-%d_%H-%M-%S")
 
     return os.path.join(
-        config.model_save_directory, config.experiment_name, current_timestamp
+        config.model_save_dir, config.experiment_name, config.tstcc_training_mode, current_timestamp
     )
 
 def build_comet_logger(config: Bunch) -> Experiment:
