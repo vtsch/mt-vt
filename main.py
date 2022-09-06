@@ -3,7 +3,7 @@ import torch
 import os
 from torchsummary import summary
 from preprocess import load_psa_data_to_pd, load_psa_df
-from kmeans import run_kmeans, run_kmeans_only, plot_datapoints, plot_datapoints_of_cluster
+from kmeans import run_kmeans_and_plots, run_kmeans_only, plot_datapoints, run_sklearn_kmeans
 from metrics import calculate_clustering_scores
 from umapplot import run_umap
 from models.baseline_models import CNN, RNNModel, SimpleAutoencoder, DeepAutoencoder
@@ -39,14 +39,11 @@ if __name__ == '__main__':
         y_real = df_psa['pros_cancer']
         df_psa = df_psa.iloc[:,:-2]
         df_train_values = df_psa.values
-        kmeans_labels = run_kmeans(df_train_values, config, experiment)
-        print(df_psa)
+        kmeans_labels = run_kmeans_and_plots(df_train_values, config, experiment)
         df = df_psa.to_numpy()
-        print(df)
         plot_datapoints(df, kmeans_labels, config.experiment_name, experiment)
         run_umap(df_psa, y_real, kmeans_labels, config.experiment_name, experiment)
         calculate_clustering_scores(y_real.astype(int), kmeans_labels, experiment)
-        print("done")
 
     # run embedding models and kmeans
     if config.experiment_name == "simple_ac":
@@ -56,7 +53,7 @@ if __name__ == '__main__':
         trainer.run()
         targets, output, _ = trainer.eval()
     
-        kmeans_labels = run_kmeans(output, config, experiment)
+        kmeans_labels = run_kmeans_and_plots(output, config, experiment)
         run_umap(output, targets, kmeans_labels, config.experiment_name, experiment)
         calculate_clustering_scores(targets.astype(int), kmeans_labels, experiment)
         kmeans_labels[kmeans_labels >= 1] = 1
@@ -68,7 +65,7 @@ if __name__ == '__main__':
         trainer = Trainer(config=config, experiment=experiment, data=df_psa, net=model)
         trainer.run()
         targets, output, _ = trainer.eval()
-        kmeans_labels = run_kmeans(output, config, experiment)
+        kmeans_labels = run_kmeans_and_plots(output, config, experiment)
         run_umap(output, targets, kmeans_labels, config.experiment_name, experiment)
         calculate_clustering_scores(targets.astype(int), kmeans_labels, experiment)
         kmeans_labels[kmeans_labels >= 1] = 1
@@ -81,7 +78,7 @@ if __name__ == '__main__':
         trainer.run()
         targets, output, _ = trainer.eval()
 
-        kmeans_labels = run_kmeans(output, config, experiment)
+        kmeans_labels = run_kmeans_and_plots(output, config, experiment)
         run_umap(output, targets, kmeans_labels, config.experiment_name, experiment)
         calculate_clustering_scores(targets.astype(int), kmeans_labels, experiment)
         kmeans_labels[kmeans_labels >= 1] = 1
@@ -94,7 +91,7 @@ if __name__ == '__main__':
         trainer.run()
         targets, output, _ = trainer.eval()
 
-        kmeans_labels = run_kmeans(output, config, experiment)
+        kmeans_labels = run_kmeans_and_plots(output, config, experiment)
         run_umap(output, targets, kmeans_labels, config.experiment_name, experiment)
         calculate_clustering_scores(targets.astype(int), kmeans_labels, experiment)
         kmeans_labels[kmeans_labels >= 1] = 1
@@ -108,7 +105,7 @@ if __name__ == '__main__':
         trainer.run()
         targets, predictions, _ = trainer.eval()
     
-        kmeans_labels = run_kmeans(predictions, config, experiment)
+        kmeans_labels = run_kmeans_and_plots(predictions, config, experiment)
         run_umap(predictions, targets, kmeans_labels, config.experiment_name, experiment)
         calculate_clustering_scores(targets.astype(int), kmeans_labels, experiment)
         #if n_clusters > 2: summarize all >1 to 1 for clustering metrics
