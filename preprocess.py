@@ -93,7 +93,7 @@ def create_context_df(df):
     # pros_exitage: age at exit for first cancer diagnosis or age at trial exit otherwise: 38
     # race: 120
     # pros_cancer: 4
-    df = df.iloc[:, [44, 142, 143, 144, 149, 170, 190, 39, 201, 205, 206, 38, 120, 4]]
+    df = df.iloc[:, [144, 149, 205, 120, 44]]
     return df
 
 def load_timesteps_df(df):
@@ -104,7 +104,7 @@ def load_timesteps_df(df):
     # mortality_exitdays: days until mortality, last day known to be alive: 174
     # day of psa level mesaurements: 80-85
     # pros_cancer label: 4
-    df = df.iloc[:, [80, 81, 82, 83, 84, 85, 4]]
+    df = df.iloc[:, [44, 80, 81, 82, 83, 84, 85, 4]]
     df.dropna(thresh=4, inplace=True)
     df.fillna(0, inplace=True)
     return df
@@ -113,7 +113,7 @@ def load_psa_and_timesteps_df(df):
     # psa_levels per year: 69-74
     # day of psa level mesaurements: 80-85
     # pros_cancer label: 4
-    df = df.iloc[:, [69, 70, 71, 72, 73, 74, 80, 81, 82, 83, 84, 85, 4]]
+    df = df.iloc[:, [69, 70, 71, 72, 73, 74, 80, 81, 82, 83, 84, 85, 4, 44]]
     df = df.dropna(thresh=8)
     df.fillna(0, inplace=True)
     return df
@@ -157,5 +157,31 @@ def load_psa_data_to_pd(file_name: str, config: dict) -> pd.DataFrame:
         df = upsample_data(df, config)
 
     return df
+
+def load_psa_data_and_context_to_pd(file_name: str, config: dict) -> pd.DataFrame:
+    '''
+    Parameters:
+        file_name: str
+        config:dictionary with configuration parameters
+    Returns:
+        df_psa_ts: pd.DataFrame with psa values and timestep index and labels
+    '''
+    df_raw = pd.read_csv(file_name, header=0)
+
+    df_psa = load_psa_and_timesteps_df(df_raw)
+    df_context = create_context_df(df_raw)
+
+    #merge psa and context dataframes
+    df = pd.merge(df_psa, df_context, on='plco_id', how='inner')
+
+    if config.upsample:
+        df = upsample_data(df, config)
+    
+    #delete plco_id column
+    df.drop(['plco_id'], axis=1, inplace=True)
+    df.fillna(value=-1, inplace=True)
+
+    return df
+    
 
 
