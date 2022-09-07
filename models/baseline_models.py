@@ -221,8 +221,8 @@ class LSTMencoder(nn.Module):
         :                              hidden gives the hidden state and cell state for the last
         :                              element in the sequence 
         '''
-        x_input = x_input.reshape(x_input.shape[0], x_input.shape[1], 1)
-        lstm_out, self.hidden = self.lstm(x_input)
+        x = x_input.reshape(x_input.shape[0], x_input.shape[1], 1)
+        lstm_out, self.hidden = self.lstm(x)
         emb = self.avgpool(lstm_out)
         emb = self.fc(emb)
         emb = emb.squeeze(2)
