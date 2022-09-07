@@ -4,11 +4,9 @@ from torch.optim import Adam
 import torch.nn.functional as F
 import pandas as pd
 from metrics import Meter
-from dataloader import get_dataloader, data_generator
+from dataloader import get_dataloader
 import numpy as np
 from models.transformer import generate_square_subsequent_mask
-from models.TC import TC
-from models.loss import NTXentLoss
 
 class Trainer:
     def __init__(self, config, experiment, data, net):
