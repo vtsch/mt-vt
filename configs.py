@@ -8,7 +8,7 @@ class Config(object):
 
         # kmeans
         self.metric = "dtw"  # metric : {“euclidean”, “dtw”, “softdtw”}
-        self.n_clusters = 2
+        self.n_clusters = 4
         self.n_clusters_real = 2
 
         # data
@@ -18,13 +18,13 @@ class Config(object):
         self.ts_length = 6
 
         # additional info
-        self.DELTATIMES = False
+        self.deltatimes = True
         self.use_pos_enc = False
         self.context = False
 
         # experiment
-        self.experiment_name = "simple_transformer" # "raw_data", "simple_ac", "deep_ac", "lstm", "cnn", "simple_transformer", "ts_tcc"
-        self.tstcc_training_mode = "simple_ac" # random_init, supervised, self_supervised, fine_tune, train_linear
+        self.experiment_name = "ts_tcc" # "raw_data", "simple_ac", "deep_ac", "lstm", "cnn", "simple_transformer", "ts_tcc"
+        self.tstcc_training_mode = "random_init" # random_init, supervised, self_supervised, fine_tune, train_linear
        
         # for training models
         self.loss_fn = torch.nn.CrossEntropyLoss()  #torch.nn.CrossEntropyLoss() #MSELoss for LSTM
