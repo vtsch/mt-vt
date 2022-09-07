@@ -122,7 +122,7 @@ def load_psa_and_deltatime_df(df):
     # psa_levels per year: 69-74
     # day of psa level mesaurements: 80-85
     # pros_cancer label: 4
-    df = df.iloc[:, [69, 70, 71, 72, 73, 74, 80, 81, 82, 83, 84, 85, 4]]
+    df = df.iloc[:, [69, 70, 71, 72, 73, 74, 80, 81, 82, 83, 84, 85, 4, 44]]
     df.dropna(axis=0, thresh=8, inplace=True)
     df.fillna(value=0, inplace=True)
     print(df.columns)
@@ -135,8 +135,6 @@ def load_psa_and_deltatime_df(df):
     df['psa_delta5'] = df['psa_days5'] - df['psa_days4']
 
     df.drop(['psa_days0', 'psa_days1', 'psa_days2', 'psa_days3', 'psa_days4', 'psa_days5'], axis=1, inplace=True)
-    df[df < 0] = 0
-    print(df)
     return df
 
 def load_psa_data_to_pd(file_name: str, config: dict) -> pd.DataFrame:
@@ -148,7 +146,7 @@ def load_psa_data_to_pd(file_name: str, config: dict) -> pd.DataFrame:
         df_psa_ts: pd.DataFrame with psa values and timestep index and labels
     '''
     df_raw = pd.read_csv(file_name, header=0)
-    if config.DELTATIMES:
+    if config.deltatimes:
         df = load_psa_and_deltatime_df(df_raw)
     else:
         df = load_psa_and_timesteps_df(df_raw)
@@ -157,6 +155,7 @@ def load_psa_data_to_pd(file_name: str, config: dict) -> pd.DataFrame:
         df = upsample_data(df, config)
     
     df.drop(['plco_id'], axis=1, inplace=True)
+    df[df < 0] = 0
 
     return df
 
