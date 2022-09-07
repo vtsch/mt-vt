@@ -23,7 +23,7 @@ class Trainer:
         self.dataloaders = {
             phase: get_dataloader(config, data, phase) for phase in self.phases
         }
-        self.attention_masks = generate_square_subsequent_mask(6)
+        self.attention_masks = generate_square_subsequent_mask(self.config)
     
     def _train_epoch(self, phase):
 
@@ -31,24 +31,25 @@ class Trainer:
         meter = Meter()
         meter.init_metrics(phase)
 
-        for i, (data, target, index, context) in enumerate(self.dataloaders[phase]):
+        for i, (psa_data, target, index, context) in enumerate(self.dataloaders[phase]):
             #data = data.to(config.device)
             #target = target.to(config.device)
             #if config.NOPOSENC:
             #index = torch.zeros(index.shape) 
 
             if self.config.context:
-                data = torch.cat((data, context), dim=1)
+                data = torch.cat((psa_data, context), dim=1)
+            else:
+                data = psa_data
 
             if self.config.experiment_name == "simple_transformer":
+                pred = self.net(index, data, context, self.attention_masks)
+                pred = pred.reshape(pred.shape[0], -1)
                 data = data.squeeze(1)
-                index = index.squeeze(1)
-                pred, psu_class, transf_emb, transf_reconst = self.net(index, data, self.attention_masks)
-                pred = pred.squeeze(1)
             else: 
                 pred = self.net(data)
                 data = data.squeeze(1)
-            
+                
             loss = self.criterion(pred, data)
 
             if phase == 'train':
@@ -93,12 +94,17 @@ class Trainer:
         embeddings = np.array([])
 
         with torch.no_grad():
-            for i, (data, target, index, context) in enumerate(self.dataloaders['test']):
+            for i, (psa_data, target, index, context) in enumerate(self.dataloaders['test']):
+
+                if self.config.context:
+                    data = torch.cat((psa_data, context), dim=1)
+                else:
+                    data = psa_data
 
                 if self.config.experiment_name == "simple_transformer":
                     data = data.squeeze(1)
                     index = index.squeeze(1)
-                    pred, psu_class, transf_emb, transf_reconst = self.net(index, data, self.attention_masks)
+                    pred = self.net(index, data, context, self.attention_masks)
                 else:
                     pred = self.net(data)
                 
