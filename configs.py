@@ -17,8 +17,13 @@ class Config(object):
         self.upsample = True
         self.ts_length = 6
 
+        # additional info
+        self.DELTATIMES = False
+        self.use_pos_enc = False
+        self.context = False
+
         # experiment
-        self.experiment_name = "lstm" # "raw_data", "simple_ac", "deep_ac", "lstm", "cnn", "simple_transformer", "ts_tcc"
+        self.experiment_name = "simple_transformer" # "raw_data", "simple_ac", "deep_ac", "lstm", "cnn", "simple_transformer", "ts_tcc"
         self.tstcc_training_mode = "simple_ac" # random_init, supervised, self_supervised, fine_tune, train_linear
        
         # for training models
@@ -32,9 +37,10 @@ class Config(object):
         # transformer
         self.num_layers = 1
         self.max_value = 3000
-        self.n_heads = 1
-        self.DELTATIMES = False
-        self.NOPOSENC = False
+        self.n_heads = 2
+        self.feat_dim = 1 # dimensionality of data features
+        self.d_model = 6 # dimensionality of the model, = nr of features in data
+        self.dim_feedforward = 128
 
         # ts-tcc
         self.tstcc_model_saved_dir = "saved_models/ts_tcc/self_supervised/22-09-01_14-31-45u"
