@@ -18,7 +18,7 @@ class LoadPSADataset(Dataset):
                   'psa_level3', 'psa_level4', 'psa_level5']]
         y = data['pros_cancer']
 
-        if self.config.DELTATIMES:
+        if self.config.deltatimes:
             ts = data[['psa_delta0', 'psa_delta1', 'psa_delta2',
                        'psa_delta3', 'psa_delta4', 'psa_delta5']]
         else:
@@ -107,7 +107,7 @@ def get_dataloader(config, data, phase: str) -> DataLoader:
 
 
 # TS-TCC
-def data_generator(data, config):
+def data_generator_tstcc(data, config):
 
     data = normalize(data)
 

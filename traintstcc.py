@@ -13,14 +13,12 @@ import torch
 from torch.optim import Adam
 import torch.nn.functional as F
 from metrics import Meter
-from dataloader import get_dataloader, data_generator
+from dataloader import get_dataloader, data_generator_tstcc
 import numpy as np
 from models.transformer import generate_square_subsequent_mask
 from models.TC import TC
 from models.loss import NTXentLoss
 import pandas as pd
-
-
 
 
 class TSTCCTrainer:
@@ -32,10 +30,10 @@ class TSTCCTrainer:
         self.optimizer = Adam(self.net.parameters(), lr=config.lr, betas=(0.9, 0.99), weight_decay=3e-4)
         self.scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(self.optimizer, 'min')
         self.best_loss = float('inf')
-        self.attention_masks = generate_square_subsequent_mask(6)
+        self.attention_masks = generate_square_subsequent_mask(self.config)
         self.temporal_contr_model = TC(config).to(config.device)
         self.temp_cont_optimizer = Adam(self.temporal_contr_model.parameters(), lr=config.lr, betas=(0.9, 0.99), weight_decay=3e-4)
-        self.tstcc_train_dl, self.tstcc_valid_dl, self.tstcc_test_dl = data_generator(data, config)
+        self.tstcc_train_dl, self.tstcc_valid_dl, self.tstcc_test_dl = data_generator_tstcc(data, config)
     
     def run(self):
         # Start training
