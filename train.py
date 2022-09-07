@@ -31,11 +31,14 @@ class Trainer:
         meter = Meter()
         meter.init_metrics(phase)
 
-        for i, (data, target, index) in enumerate(self.dataloaders[phase]):
+        for i, (data, target, index, context) in enumerate(self.dataloaders[phase]):
             #data = data.to(config.device)
             #target = target.to(config.device)
             #if config.NOPOSENC:
             #index = torch.zeros(index.shape) 
+
+            if self.config.context:
+                data = torch.cat((data, context), dim=1)
 
             if self.config.experiment_name == "simple_transformer":
                 data = data.squeeze(1)
@@ -90,7 +93,7 @@ class Trainer:
         embeddings = np.array([])
 
         with torch.no_grad():
-            for i, (data, target, index) in enumerate(self.dataloaders['test']):
+            for i, (data, target, index, context) in enumerate(self.dataloaders['test']):
 
                 if self.config.experiment_name == "simple_transformer":
                     data = data.squeeze(1)
