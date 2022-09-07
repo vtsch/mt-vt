@@ -6,10 +6,10 @@ from preprocess import load_psa_data_to_pd, load_psa_df, load_psa_data_and_conte
 from kmeans import run_kmeans_and_plots, run_kmeans_only, plot_datapoints, run_sklearn_kmeans
 from metrics import calculate_clustering_scores
 from umapplot import run_umap
-from models.baseline_models import CNN, LSTMencoder, RNNModel, SimpleAutoencoder, DeepAutoencoder
+from models.baseline_models import CNN, LSTMencoder, SimpleAutoencoder, DeepAutoencoder
 from train import Trainer
 from utils import get_bunch_config_from_json, build_save_path, build_comet_logger, set_requires_grad
-from models.transformer import TransformerTimeSeries
+from models.transformer import TSTransformerEncoder
 from models.model import base_Model
 import numpy as np
 from configs import Config
@@ -103,7 +103,7 @@ if __name__ == '__main__':
     
 
     if config.experiment_name == "simple_transformer": 
-        model = TransformerTimeSeries(config) 
+        model = TSTransformerEncoder(config) 
         summary(model, input_size=(1, config.ts_length))
         trainer = Trainer(config=config, experiment=experiment, data=df_psa, net=model)
         trainer.run()
