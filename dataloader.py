@@ -24,15 +24,22 @@ class LoadPSADataset(Dataset):
         else:
             ts = data[['psa_days0', 'psa_days1', 'psa_days2',
                        'psa_days3', 'psa_days4', 'psa_days5']]
+        
+        if self.config.context:
+            context = data[['bmi_curr', 'height_f', 'age', 'race7']]
+        else: 
+            context = data[[]]
 
         if isinstance(X, np.ndarray):
             self.x_data = torch.from_numpy(X)
             self.ts_data = torch.from_numpy(ts)
             self.y_data = torch.from_numpy(y).long()
+            self.context_data = torch.from_numpy(context)
         else:
             self.x_data = X
             self.ts_data = ts
             self.y_data = y
+            self.context_data = context
 
         self.len = X.shape[0]
 
@@ -48,7 +55,9 @@ class LoadPSADataset(Dataset):
         signal = signal.values
         tsindex = self.ts_data.loc[index].astype('float32')
         tsindex = tsindex.values
-        #print("target", target, "tsindex", tsindex, "signal", signal)
+        context = self.context_data.loc[index].astype('float32')
+        context = context.values
+        #print("target", target, "tsindex", tsindex, "signal", signal, "context", context)
 
         if self.config.experiment_name == "ts_tcc":
             if self.config.tstcc_training_mode == "self_supervised":
@@ -58,7 +67,7 @@ class LoadPSADataset(Dataset):
             else:
                 return signal, target, signal, signal
         else:
-            return signal, target, tsindex
+            return signal, target, tsindex, context
 
     def __len__(self):
         return self.len

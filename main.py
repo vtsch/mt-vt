@@ -2,7 +2,7 @@ import comet_ml
 import torch
 import os
 from torchsummary import summary
-from preprocess import load_psa_data_to_pd, load_psa_df
+from preprocess import load_psa_data_to_pd, load_psa_df, load_psa_data_and_context_to_pd
 from kmeans import run_kmeans_and_plots, run_kmeans_only, plot_datapoints, run_sklearn_kmeans
 from metrics import calculate_clustering_scores
 from umapplot import run_umap
@@ -29,9 +29,13 @@ if __name__ == '__main__':
     experiment.log_asset_folder(folder=cwd, step=None, log_file_name=True, recursive=False)
 
     # load and preprocess PSA or ECG data 
-    if config.PSA_DATA == True:
-        file_name = "data/pros_data_mar22_d032222.csv"
+    file_name = "data/pros_data_mar22_d032222.csv"
+
+    if config.context:
+        df_psa = load_psa_data_and_context_to_pd(file_name, config)
+    else:
         df_psa = load_psa_data_to_pd(file_name, config)
+
         
     # run kmeans on raw data
     if config.experiment_name == "raw_data":
