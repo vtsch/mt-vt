@@ -155,6 +155,8 @@ def load_psa_data_to_pd(file_name: str, config: dict) -> pd.DataFrame:
 
     if config.upsample:
         df = upsample_data(df, config)
+    
+    df.drop(['plco_id'], axis=1, inplace=True)
 
     return df
 
