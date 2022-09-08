@@ -8,22 +8,22 @@ class Config(object):
 
         # kmeans
         self.metric = "dtw"  # metric : {“euclidean”, “dtw”, “softdtw”}
-        self.n_clusters = 4
+        self.n_clusters = 2
         self.n_clusters_real = 2
 
         # data
         self.sample_size = 10000
         self.PSA_DATA = True
         self.upsample = True
-        self.ts_length = 6
+        self.ts_length = 10 #6, 10 if context
 
         # additional info
         self.deltatimes = True
-        self.use_pos_enc = False
-        self.context = False
+        self.use_pos_enc = True
+        self.context = True
 
         # experiment
-        self.experiment_name = "ts_tcc" # "raw_data", "simple_ac", "deep_ac", "lstm", "cnn", "simple_transformer", "ts_tcc"
+        self.experiment_name = "simple_transformer" # "raw_data", "simple_ac", "deep_ac", "lstm", "cnn", "simple_transformer", "ts_tcc"
         self.tstcc_training_mode = "random_init" # random_init, supervised, self_supervised, fine_tune, train_linear
        
         # for training models
@@ -39,7 +39,6 @@ class Config(object):
         self.max_value = 3000
         self.n_heads = 2
         self.feat_dim = 1 # dimensionality of data features
-        self.d_model = 6 # dimensionality of the model, = nr of features in data
         self.dim_feedforward = 128
 
         # ts-tcc
