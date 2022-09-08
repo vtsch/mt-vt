@@ -2,8 +2,8 @@ import comet_ml
 import torch
 import os
 from torchsummary import summary
-from preprocess import load_psa_data_to_pd, load_psa_df, load_psa_data_and_context_to_pd
-from kmeans import run_kmeans_and_plots, run_kmeans_only, plot_datapoints, run_sklearn_kmeans
+from preprocess import load_psa_data_to_pd, load_psa_df
+from kmeans import run_kmeans_and_plots, run_kmeans_only, plot_datapoints
 from metrics import calculate_clustering_scores
 from umapplot import run_umap
 from models.baseline_models import CNN, LSTMencoder, SimpleAutoencoder, DeepAutoencoder
@@ -30,11 +30,7 @@ if __name__ == '__main__':
 
     # load and preprocess PSA or ECG data 
     file_name = "data/pros_data_mar22_d032222.csv"
-
-    if config.context:
-        df_psa = load_psa_data_and_context_to_pd(file_name, config)
-    else:
-        df_psa = load_psa_data_to_pd(file_name, config)
+    df_psa = load_psa_data_to_pd(file_name, config)
 
         
     # run kmeans on raw data
