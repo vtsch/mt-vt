@@ -146,43 +146,26 @@ def load_psa_data_to_pd(file_name: str, config: dict) -> pd.DataFrame:
         df_psa_ts: pd.DataFrame with psa values and timestep index and labels
     '''
     df_raw = pd.read_csv(file_name, header=0)
+
     if config.deltatimes:
+        print("here")
         df = load_psa_and_deltatime_df(df_raw)
     else:
         df = load_psa_and_timesteps_df(df_raw)
+    
+    if config.context:
+        df_context = create_context_df(df_raw)
+        df = pd.merge(df, df_context, on='plco_id', how='inner')
 
     if config.upsample:
         df = upsample_data(df, config)
     
     df.drop(['plco_id'], axis=1, inplace=True)
+    df.fillna(value=0, inplace=True)
     df[df < 0] = 0
 
     return df
 
-def load_psa_data_and_context_to_pd(file_name: str, config: dict) -> pd.DataFrame:
-    '''
-    Parameters:
-        file_name: str
-        config:dictionary with configuration parameters
-    Returns:
-        df_psa_ts: pd.DataFrame with psa values and timestep index and labels
-    '''
-    df_raw = pd.read_csv(file_name, header=0)
-
-    df_psa = load_psa_and_timesteps_df(df_raw)
-    df_context = create_context_df(df_raw)
-
-    #merge psa and context dataframes
-    df = pd.merge(df_psa, df_context, on='plco_id', how='inner')
-
-    if config.upsample:
-        df = upsample_data(df, config)
-    
-    #delete plco_id column
-    df.drop(['plco_id'], axis=1, inplace=True)
-    df.fillna(value=-1, inplace=True)
-
-    return df
     
 
 
