@@ -26,9 +26,9 @@ class LoadPSADataset(Dataset):
                        'psa_days3', 'psa_days4', 'psa_days5']]
         
         if self.config.context:
-            context = data[['bmi_curr', 'height_f', 'age', 'race7']]
-            #add 4 columns with zeros to ts
-            ts = pd.concat([ts, pd.DataFrame(np.zeros((ts.shape[0], 4)))], axis=1)
+            context = data[['bmi_curr', 'center', 'age', 'race7']]
+            #add 4 columns with zeros to ts if context is used
+            #ts = pd.concat([ts, pd.DataFrame(np.zeros((ts.shape[0], 4)))], axis=1)
 
         else: 
             context = data[[]]
