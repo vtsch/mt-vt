@@ -21,9 +21,10 @@ def generate_square_subsequent_mask(config):
     for i in range(t0,ts_length):
         mask[i,i+1:] = 1
     mask = mask.int().masked_fill(mask == 1, float(0.0))#.masked_fill(mask == 1, float('-inf'))
-    if config.context:
-        mask = torch.cat((mask, torch.ones(config.batch_size, 4)), 1)
-        mask = mask.int()
+    # OLD
+    #if config.context:
+    #    mask = torch.cat((mask, torch.ones(config.batch_size, 4)), 1)
+    #    mask = mask.int()
     return mask
 
 # from https://github.com/gzerveas/mvts_transformer 
@@ -167,14 +168,13 @@ class TSTransformerEncoder(nn.Module):
             output: (batch_size, seq_length, feat_dim)
         """
         #if self.config.context data is now (batch_size, seq_length + context_length, feat_dim)
+        if not self.config.context:
+            data = data.unsqueeze(2)
 
-        data = data.unsqueeze(2)
         indices = indices.unsqueeze(2)
         # permute because pytorch convention for transformers is [seq_length, batch_size, feat_dim]. padding_masks [batch_size, feat_dim]
         inp = data.permute(1, 0, 2)
         indices = indices.permute(1, 0, 2)
-        print("inp shape", inp.shape)
-        print("indices shape", indices.shape)
 
         inp = self.project_inp(inp) * math.sqrt(self.config.d_model)  # [seq_length, batch_size, d_model] project input vectors to d_model dimensional space
         if self.config.use_pos_enc:

@@ -14,13 +14,13 @@ class Config(object):
         # data
         self.sample_size = 500
         self.PSA_DATA = True
-        self.upsample = True
+        self.upsample = False
         self.ts_length = 10 #6, 10 if context
 
         # additional info
-        self.deltatimes = False
         self.use_pos_enc = False
         self.context = True
+        self.deltatimes = False
 
         # experiment
         self.experiment_name = "simple_transformer" # "raw_data", "simple_ac", "deep_ac", "lstm", "cnn", "simple_transformer", "ts_tcc"
@@ -30,7 +30,7 @@ class Config(object):
         self.loss_fn = torch.nn.CrossEntropyLoss()  #torch.nn.CrossEntropyLoss() #MSELoss for LSTM
         self.lr = 0.001
         self.batch_size = 8
-        self.n_epochs = 30
+        self.n_epochs = 20
         self.emb_size = 6  # only change for simple transformer, else = 6
         self.dropout = 0.1
 
@@ -38,9 +38,9 @@ class Config(object):
         self.num_layers = 1
         self.max_value = 3000
         self.n_heads = 2
-        self.feat_dim = 1 # dimensionality of data features
+        self.feat_dim = 1 if self.context == False else 5
         self.dim_feedforward = 128
-        self.d_model = 6 # dimensionality of the model
+        self.d_model = 6 # dimensionality of the model, must be divisible by n_heads
 
         # ts-tcc
         self.tstcc_model_saved_dir = "saved_models/ts_tcc/self_supervised/22-09-09_16-52-38"
