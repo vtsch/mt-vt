@@ -12,19 +12,19 @@ class Config(object):
         self.n_clusters_real = 2
 
         # data
-        self.sample_size = 10000
+        self.sample_size = 500
         self.PSA_DATA = True
         self.upsample = True
         self.ts_length = 10 #6, 10 if context
 
         # additional info
-        self.deltatimes = True
-        self.use_pos_enc = True
+        self.deltatimes = False
+        self.use_pos_enc = False
         self.context = True
 
         # experiment
         self.experiment_name = "simple_transformer" # "raw_data", "simple_ac", "deep_ac", "lstm", "cnn", "simple_transformer", "ts_tcc"
-        self.tstcc_training_mode = "random_init" # random_init, supervised, self_supervised, fine_tune, train_linear
+        self.tstcc_training_mode = "fine_tune" # random_init, supervised, self_supervised, fine_tune, train_linear
        
         # for training models
         self.loss_fn = torch.nn.CrossEntropyLoss()  #torch.nn.CrossEntropyLoss() #MSELoss for LSTM
@@ -40,9 +40,10 @@ class Config(object):
         self.n_heads = 2
         self.feat_dim = 1 # dimensionality of data features
         self.dim_feedforward = 128
+        self.d_model = 6 # dimensionality of the model
 
         # ts-tcc
-        self.tstcc_model_saved_dir = "saved_models/ts_tcc/self_supervised/22-09-01_14-31-45u"
+        self.tstcc_model_saved_dir = "saved_models/ts_tcc/self_supervised/22-09-09_16-52-38"
         self.input_channels = 1
         self.final_out_channels = 16  # 16 with k=2 #32             with k=8
         self.hidden_dim = 100
