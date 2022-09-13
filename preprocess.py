@@ -93,7 +93,8 @@ def create_context_df(df):
     # pros_exitage: age at exit for first cancer diagnosis or age at trial exit otherwise: 38
     # race: 120
     # pros_cancer: 4
-    df = df.iloc[:, [144, 201, 205, 120, 44]]
+    df = df.iloc[:, [144, 201, 205, 120, 44]] #bmicurr, center, age, race
+    #df = df.iloc[:, [144, 44]] #bmicurr
     return df
 
 def load_timesteps_df(df):
