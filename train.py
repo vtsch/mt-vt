@@ -49,12 +49,13 @@ class Trainer:
 
             if self.config.experiment_name == "simple_transformer":
                 pred = self.net(index, data, context, self.attention_masks)
-                pred = pred.reshape(pred.shape[0], -1)
-                data = data.reshape(data.shape[0], -1)
+                pred = pred.reshape(pred.shape[0], -1)   
             else: 
                 pred = self.net(data)
-                data = data.squeeze(1)
-                
+ 
+            data = data.reshape(data.shape[0], -1)
+            #print("data shape for loss: ", data.shape)
+            #print("pred shape for loss: ", pred.shape)   
             loss = self.criterion(pred, data)
 
             if phase == 'train':
