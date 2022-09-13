@@ -14,31 +14,33 @@ class Config(object):
         # data
         self.sample_size = 500
         self.PSA_DATA = True
-        self.upsample = False
-        self.ts_length = 10 #6, 10 if context
+        self.upsample = True
+        self.ts_length = 6 #6, 10 if context
 
         # additional info
         self.use_pos_enc = False
-        self.context = True
+        self.context = False
         self.deltatimes = False
+        self.feat_dim = 1 if self.context == False else 5
+        self.emb_size = self.feat_dim*self.ts_length
 
         # experiment
-        self.experiment_name = "simple_transformer" # "raw_data", "simple_ac", "deep_ac", "lstm", "cnn", "simple_transformer", "ts_tcc"
-        self.tstcc_training_mode = "fine_tune" # random_init, supervised, self_supervised, fine_tune, train_linear
+        self.experiment_name = "simple_ac" # "raw_data", "simple_ac", "deep_ac", "lstm", "cnn", "simple_transformer", "ts_tcc"
+        self.tstcc_training_mode = "supervised" # random_init, supervised, self_supervised, fine_tune, train_linear
        
         # for training models
         self.loss_fn = torch.nn.CrossEntropyLoss()  #torch.nn.CrossEntropyLoss() #MSELoss for LSTM
         self.lr = 0.001
         self.batch_size = 8
-        self.n_epochs = 20
-        self.emb_size = 6  # only change for simple transformer, else = 6
+        self.n_epochs = 5
         self.dropout = 0.1
-
-        # transformer
+        self.bl_hidden_size = 12
         self.num_layers = 1
+        self.kernel_size = 1
+
+        #transformer
         self.max_value = 3000
         self.n_heads = 2
-        self.feat_dim = 1 if self.context == False else 5
         self.dim_feedforward = 128
         self.d_model = 6 # dimensionality of the model, must be divisible by n_heads
 
