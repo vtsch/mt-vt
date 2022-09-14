@@ -66,14 +66,37 @@ class FixedPositionalEncoding(nn.Module):
             x: [sequence length, batch size, embed dim]
             output: [sequence length, batch size, embed dim]
         """
-        pe = torch.zeros(self.max_len, self.d_model)  # positional encoding
-        position = torch.arange(0, self.max_len, dtype=torch.float).unsqueeze(1)
+        pe = torch.zeros(10, self.d_model)  # positional encoding
+        position = torch.arange(0, 10, dtype=torch.float).unsqueeze(1)
         div_term = torch.exp(torch.arange(0, self.d_model, 2).float() * (-math.log(10000.0) / self.d_model))
         pe[:, 0::2] = torch.sin(position * div_term)
         pe[:, 1::2] = torch.cos(position * div_term)
         pe = pe.unsqueeze(0).transpose(0, 1)
 
         x = x + pe[:x.size(0), :]
+        return self.dropout(x)
+
+class LearnablePositionalEncoding(nn.Module):
+
+    def __init__(self, config):
+        super(LearnablePositionalEncoding, self).__init__()
+        self.config = config
+        self.dropout = nn.Dropout(p=config.dropout)
+        # Each position gets its own embedding
+        # Since indices are always 0 ... max_len, we don't have to do a look-up
+        self.pe = nn.Parameter(torch.empty(10, 1, config.d_model))  # requires_grad automatically set to True
+        nn.init.uniform_(self.pe, -0.02, 0.02)
+
+    def forward(self, x):
+        r"""Inputs of forward function
+        Args:
+            x: the sequence fed to the positional encoder model (required).
+        Shape:
+            x: [sequence length, batch size, embed dim]
+            output: [sequence length, batch size, embed dim]
+        """
+
+        x = x + self.pe[:x.size(0), :]
         return self.dropout(x)
 
 
@@ -142,7 +165,7 @@ class TSTransformerEncoder(nn.Module):
         self.config = config
 
         self.project_inp = nn.Linear(self.config.feat_dim, self.config.d_model)
-        self.pos_enc = FixedPositionalEncoding(self.config.d_model, self.config.dropout, max_len=self.config.d_model)
+        self.pos_enc = LearnablePositionalEncoding(config)
 
         if norm == 'LayerNorm':
             encoder_layer = TransformerEncoderLayer(self.config.d_model, self.config.n_heads, self.config.dim_feedforward, dropout=self.config.dropout, activation=activation)
@@ -177,7 +200,7 @@ class TSTransformerEncoder(nn.Module):
         indices = indices.permute(1, 0, 2)
 
         inp = self.project_inp(inp) * math.sqrt(self.config.d_model)  # [seq_length, batch_size, d_model] project input vectors to d_model dimensional space
-        if self.config.use_pos_enc:
+        if self.config.learnable_pos_enc:
             inp = self.pos_enc(inp)
         else:
             inp = inp + indices
