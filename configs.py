@@ -56,9 +56,5 @@ class Config(object):
         self.final_out_channels = 16  # 16 with k=2 #32             with k=8
         self.hidden_dim = 100
 
-        self.jitter_scale_ratio = 0.001
-        self.jitter_ratio = 0.001
         self.max_seg = 5
-
-        self.temperature = 0.2
         self.use_cosine_similarity = True

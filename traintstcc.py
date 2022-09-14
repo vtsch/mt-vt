@@ -7,18 +7,11 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-
-from models.loss import NTXentLoss
-import torch
 from torch.optim import Adam
-import torch.nn.functional as F
-from metrics import Meter
-from dataloader import get_dataloader, data_generator_tstcc
-import numpy as np
+from dataloader import data_generator_tstcc
 from models.transformer import generate_square_subsequent_mask
-from models.TC import TC
-from models.loss import NTXentLoss
-import pandas as pd
+from models.tstcc_TC import TC
+from models.tstcc_loss import NTXentLoss
 
 
 class TSTCCTrainer:

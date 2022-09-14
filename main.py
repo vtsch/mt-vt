@@ -1,19 +1,19 @@
 import comet_ml
 import torch
 import os
+import numpy as np
 from torchsummary import summary
+from configs import Config
 from preprocess import load_psa_data_to_pd, load_psa_df
 from kmeans import run_kmeans_and_plots, run_kmeans_only, plot_datapoints
 from metrics import calculate_clustering_scores
-from umapplot import run_umap
-from models.baseline_models import CNN, LSTMencoder, SimpleAutoencoder, DeepAutoencoder
-from train import Trainer
 from utils import get_bunch_config_from_json, build_save_path, build_comet_logger, set_requires_grad
-from models.transformer import TSTransformerEncoder
-from models.model import base_Model
-import numpy as np
-from configs import Config
+from umapplot import run_umap
+from train import Trainer
 from traintstcc import TSTCCTrainer
+from models.baseline_models import CNN, LSTMencoder, SimpleAutoencoder, DeepAutoencoder
+from models.transformer import TSTransformerEncoder
+from models.tstcc_basemodel import base_Model
 
 
 if __name__ == '__main__':
