@@ -14,25 +14,31 @@ class Config(object):
         # data
         self.sample_size = 500
         self.PSA_DATA = True
-        self.upsample = True
+        self.upsample = False
         self.ts_length = 6 #6, 10 if context
 
-        # additional info
-        self.use_pos_enc = False
-        self.context = False
-        self.deltatimes = False
-        self.feat_dim = 1 if self.context == False else 5
-        self.emb_size = self.feat_dim*self.ts_length
-
         # experiment
-        self.experiment_name = "simple_ac" # "raw_data", "simple_ac", "deep_ac", "lstm", "cnn", "simple_transformer", "ts_tcc"
+        self.experiment_name = "simple_transformer" # "raw_data", "simple_ac", "deep_ac", "lstm", "cnn", "simple_transformer", "ts_tcc"
         self.tstcc_training_mode = "supervised" # random_init, supervised, self_supervised, fine_tune, train_linear
        
+        # additional info
+        self.context = True
+        self.deltatimes = True
+        self.learnable_pos_enc = False
+        self.feat_dim = 1 if self.context == False else 5 #TODO change according to nr. of context vectors used
+        self.emb_size = self.feat_dim*self.ts_length if self.experiment_name != "simple_transformer" else 6
+
+        # contexts
+        self.context_bmi = True
+        self.context_age = True
+        self.context_center = True
+        self.context_race = True
+
         # for training models
         self.loss_fn = torch.nn.CrossEntropyLoss()  #torch.nn.CrossEntropyLoss() #MSELoss for LSTM
         self.lr = 0.001
         self.batch_size = 8
-        self.n_epochs = 5
+        self.n_epochs = 30
         self.dropout = 0.1
         self.bl_hidden_size = 12
         self.num_layers = 1
