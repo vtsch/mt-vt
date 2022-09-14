@@ -79,7 +79,7 @@ def create_gleas_df(df):
     df.dropna(inplace=True)
     return df
 
-def create_context_df(df):
+def create_context_df(df, config):
     # select columns with demographic data
     # pclo_id: 44
     # bmi20, bmi50, bmicurr, height: 142, 143, 144, 149
@@ -93,8 +93,16 @@ def create_context_df(df):
     # pros_exitage: age at exit for first cancer diagnosis or age at trial exit otherwise: 38
     # race: 120
     # pros_cancer: 4
-    df = df.iloc[:, [144, 201, 205, 120, 44]] #bmicurr, center, age, race
-    #df = df.iloc[:, [144, 44]] #bmicurr
+    # CHOOSE WHICH CONTEXT TO ADD:
+
+    #df = df.iloc[:, [144, 201, 205, 120, 44]] #bmicurr, center, age, race
+    context_b = 144 if config.context_bmi else None
+    context_c = 201 if config.context_center else None
+    context_a = 205 if config.context_age else None
+    context_r = 120 if config.context_race else None
+    indices = [context_b, context_c, context_a, context_r, 44]
+    indices = [i for i in indices if i is not None]
+    df = df.iloc[:, indices]
     return df
 
 def load_timesteps_df(df):
@@ -155,7 +163,7 @@ def load_psa_data_to_pd(file_name: str, config: dict) -> pd.DataFrame:
         df = load_psa_and_timesteps_df(df_raw)
     
     if config.context:
-        df_context = create_context_df(df_raw)
+        df_context = create_context_df(df_raw, config)
         df = pd.merge(df, df_context, on='plco_id', how='inner')
 
     if config.upsample:

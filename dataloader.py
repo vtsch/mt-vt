@@ -26,8 +26,15 @@ class LoadPSADataset(Dataset):
                        'psa_days3', 'psa_days4', 'psa_days5']]
         
         if self.config.context:
-            context = data[['bmi_curr', 'center', 'age', 'race7']]
-            #add 4 columns with zeros to ts if context is used
+            #context = data[['bmi_curr', 'center', 'age', 'race7']]
+            context_b = 'bmi_curr' if self.config.context_bmi else None
+            context_c = 'center' if self.config.context_center else None
+            context_a = 'age' if self.config.context_age else None
+            context_r = 'race7' if self.config.context_race else None
+            context_indices = [context_b, context_c, context_a, context_r]
+            context_indices = [i for i in context_indices if i is not None]
+            context = data[context_indices]
+            #add 4 columns with zeros to ts if context is used with concat / OLD VERSION
             #ts = pd.concat([ts, pd.DataFrame(np.zeros((ts.shape[0], 4)))], axis=1)
 
         else: 
