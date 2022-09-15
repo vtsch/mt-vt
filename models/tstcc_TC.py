@@ -173,17 +173,17 @@ def permutation(x, max_segments=3, seg_mode="random"):
 class TC(nn.Module):
     def __init__(self, config):
         super(TC, self).__init__()
-        self.num_channels = config.final_out_channels
+        self.num_channels = config.emb_size
         self.timestep = 3
         self.Wk = nn.ModuleList([nn.Linear(config.hidden_dim, self.num_channels) for i in range(self.timestep)])
         self.lsoftmax = nn.LogSoftmax(dim=1)
         self.device = config.device
         
         self.projection_head = nn.Sequential(
-            nn.Linear(config.hidden_dim, config.final_out_channels // 2),
-            nn.BatchNorm1d(config.final_out_channels // 2),
+            nn.Linear(config.hidden_dim, config.emb_size // 2),
+            nn.BatchNorm1d(config.emb_size // 2),
             nn.ReLU(inplace=True),
-            nn.Linear(config.final_out_channels // 2, config.final_out_channels // 4),
+            nn.Linear(config.emb_size // 2, config.emb_size // 4),
         )
 
         self.seq_transformer = Seq_Transformer(patch_size=self.num_channels, dim=config.hidden_dim, depth=4, heads=4, mlp_dim=64)

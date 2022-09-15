@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 
-from models.TC import DataTransform
+from models.tstcc_TC import DataTransform
 
 import torch
 from torch.utils.data import Dataset, DataLoader
@@ -73,9 +73,9 @@ class LoadPSADataset(Dataset):
             if self.config.tstcc_training_mode == "self_supervised":
                 aug1 = self.aug1[index].reshape(self.config.ts_length)
                 aug2 = self.aug2[index].reshape(self.config.ts_length)
-                return signal, target, aug1, aug2
+                return signal, target, aug1, aug2, context
             else:
-                return signal, target, signal, signal
+                return signal, target, signal, signal, context
         else:
             return signal, target, tsindex, context
 

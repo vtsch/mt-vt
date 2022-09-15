@@ -15,15 +15,15 @@ class Config(object):
         self.sample_size = 500
         self.PSA_DATA = True
         self.upsample = False
-        self.ts_length = 6 #6, 10 if context
+        self.ts_length = 6 #6, 10 if context - OLD
 
         # experiment
-        self.experiment_name = "simple_transformer" # "raw_data", "simple_ac", "deep_ac", "lstm", "cnn", "simple_transformer", "ts_tcc"
-        self.tstcc_training_mode = "supervised" # random_init, supervised, self_supervised, fine_tune, train_linear
-       
+        self.experiment_name = "ts_tcc" # "raw_data", "simple_ac", "deep_ac", "lstm", "cnn", "simple_transformer", "ts_tcc"
+        self.tstcc_training_mode = "train_linear" # random_init, supervised, self_supervised, fine_tune, train_linear
+
         # additional info
         self.context = True
-        self.deltatimes = True
+        self.deltatimes = False
         self.learnable_pos_enc = False
         self.feat_dim = 1 if self.context == False else 5 #TODO change according to nr. of context vectors used
         self.emb_size = self.feat_dim*self.ts_length if self.experiment_name != "simple_transformer" else 6
@@ -51,10 +51,8 @@ class Config(object):
         self.d_model = 6 # dimensionality of the model, must be divisible by n_heads
 
         # ts-tcc
-        self.tstcc_model_saved_dir = "saved_models/ts_tcc/self_supervised/22-09-09_16-52-38"
-        self.input_channels = 1
-        self.final_out_channels = 16  # 16 with k=2 #32             with k=8
+        self.tstcc_model_saved_dir = "saved_models/ts_tcc/self_supervised/22-09-15_15-14-27"
         self.hidden_dim = 100
+        self.tstcc_aug = False
 
         self.max_seg = 5
-        self.use_cosine_similarity = True
