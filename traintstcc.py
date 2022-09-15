@@ -61,16 +61,28 @@ class TSTCCTrainer:
         self.net.train()
         self.temporal_contr_model.train()
 
-        for batch_idx, (data, labels, aug1, aug2) in enumerate(self.tstcc_train_dl):
+        for batch_idx, (psa_data, labels, aug1, aug2, context) in enumerate(self.tstcc_train_dl):
             # send to device
-            data, labels = data.float().to(self.config.device), labels.long().to(self.config.device)
-            aug1, aug2 = aug1.float().to(self.config.device), aug2.float().to(self.config.device)
-
+            #psa_data, labels = psa_data.float().to(self.config.device), labels.long().to(self.config.device)
+            #aug1, aug2 = aug1.float().to(self.config.device), aug2.float().to(self.config.device)
             # optimizer
             self.optimizer.zero_grad()
             self.temp_cont_optimizer.zero_grad()
 
+            if self.config.context:
+                #create tensor, repeat each column same as length of psa_data 
+                contexta = torch.repeat_interleave(context, psa_data.shape[1], dim=1)
+                #reshape to match psa_data
+                contexta = contexta.reshape(psa_data.shape[0], context.shape[1], psa_data.shape[1]) #bs, context, seq_len
+                contexta = contexta.permute(0, 2, 1) #bs, seq_len, context
+                psa_data = psa_data.unsqueeze(2)
+                data = torch.cat((psa_data, contexta), dim=2) #bs, seq_len, psa_data + context = n_features
+            else:
+                data = psa_data
+
             if self.config.tstcc_training_mode == "self_supervised":
+                self.config.tstcc_aug = True
+
                 predictions1, features1 = self.net(aug1)
                 predictions2, features2 = self.net(aug2)
 
@@ -83,7 +95,9 @@ class TSTCCTrainer:
 
                 # normalize projection feature vectors
                 zis = temp_cont_lstm_feat1 
-                zjs = temp_cont_lstm_feat2 
+                zjs = temp_cont_lstm_feat2      
+
+                self.config.tsstcc_aug = False          
 
             else:
                 output = self.net(data)
@@ -92,12 +106,13 @@ class TSTCCTrainer:
             if self.config.tstcc_training_mode == "self_supervised":
                 lambda1 = 1
                 lambda2 = 0.7
-                nt_xent_criterion = NTXentLoss(self.config.device, self.config.batch_size,use_cosine_similarity=True)
+                nt_xent_criterion = NTXentLoss(self.config.device, self.config.batch_size, use_cosine_similarity=True)
                 loss = (temp_cont_loss1 + temp_cont_loss2) * lambda1 +  nt_xent_criterion(zis, zjs) * lambda2
                 
             else: # supervised training or fine tuining
                 predictions, features = output
-                loss = self.criterion(predictions, labels)
+                predictions = torch.tensor(predictions, dtype=torch.float64, requires_grad=True)
+                loss = self.criterion(predictions, labels.long())
                 total_acc.append(labels.eq(predictions.detach().argmax(dim=1)).float().mean())
 
             total_loss.append(loss.item())
@@ -127,8 +142,19 @@ class TSTCCTrainer:
         embeddings = np.array([])
 
         with torch.no_grad():
-            for batch_idx, (data, labels, _, _) in enumerate(self.tstcc_test_dl):
-                data, labels = data.float().to(self.config.device), labels.long().to(self.config.device)
+            for batch_idx, (psa_data, labels, _, _, context) in enumerate(self.tstcc_test_dl):
+                psa_data, labels, context = psa_data.float().to(self.config.device), labels.long().to(self.config.device), context.float().to(self.config.device)
+
+                if self.config.context:
+                    #create tensor, repeat each column same as length of psa_data 
+                    contexta = torch.repeat_interleave(context, psa_data.shape[1], dim=1)
+                    #reshape to match psa_data
+                    contexta = contexta.reshape(psa_data.shape[0], context.shape[1], psa_data.shape[1]) #bs, context, seq_len
+                    contexta = contexta.permute(0, 2, 1) #bs, seq_len, context
+                    psa_data = psa_data.unsqueeze(2)
+                    data = torch.cat((psa_data, contexta), dim=2) #bs, seq_len, psa_data + context = n_features
+                else:
+                    data = psa_data
 
                 if self.config.tstcc_training_mode == "self_supervised":
                     pass
@@ -138,7 +164,8 @@ class TSTCCTrainer:
                 # compute loss
                 if self.config.tstcc_training_mode != "self_supervised":
                     predictions, features = output
-                    loss = eval_criterion(predictions, labels)
+                    predictions = torch.tensor(predictions, dtype=torch.float64, requires_grad=True)
+                    loss = eval_criterion(predictions, labels.long())
                     total_acc.append(labels.eq(predictions.detach().argmax(dim=1)).float().mean())
                     total_loss.append(loss.item())
 
