@@ -21,10 +21,9 @@ def generate_square_subsequent_mask(config):
     for i in range(t0,ts_length):
         mask[i,i+1:] = 1
     mask = mask.int().masked_fill(mask == 1, float(0.0))#.masked_fill(mask == 1, float('-inf'))
-    # OLD
-    #if config.context:
-    #    mask = torch.cat((mask, torch.ones(config.batch_size, 4)), 1)
-    #    mask = mask.int()
+    if config.context:
+        mask = torch.cat((mask, torch.ones(config.batch_size, config.context_count)), 1)
+        mask = mask.int()
     return mask
 
 # from https://github.com/gzerveas/mvts_transformer 
@@ -164,7 +163,7 @@ class TSTransformerEncoder(nn.Module):
 
         self.config = config
 
-        self.project_inp = nn.Linear(self.config.feat_dim, self.config.d_model)
+        self.project_inp = nn.Linear(1, self.config.d_model)
         self.pos_enc = LearnablePositionalEncoding(config)
 
         if norm == 'LayerNorm':
@@ -174,11 +173,12 @@ class TSTransformerEncoder(nn.Module):
 
         self.transformer_encoder = nn.TransformerEncoder(encoder_layer, self.config.num_layers)
 
-        self.output_layer = nn.Linear(self.config.d_model, self.config.feat_dim)
+        self.output_layer = nn.Linear(self.config.d_model, 1)
 
         self.act = _get_activation_fn(activation)
 
         self.dropout = nn.Dropout(self.config.dropout)
+        self.max_pool = nn.MaxPool1d(kernel_size=self.config.ts_length)
 
         self.feat_dim = self.config.feat_dim
 
@@ -190,12 +190,9 @@ class TSTransformerEncoder(nn.Module):
         Returns:
             output: (batch_size, seq_length, feat_dim)
         """
-        #if self.config.context data is now (batch_size, seq_length + context_length, feat_dim)
-        if not self.config.context:
-            data = data.unsqueeze(2)
-
+        data = data.unsqueeze(2)
         indices = indices.unsqueeze(2)
-        # permute because pytorch convention for transformers is [seq_length, batch_size, feat_dim]. padding_masks [batch_size, feat_dim]
+        # permute because pytorch convention for transformers is [seq_length, batch_size, feat_dim]
         inp = data.permute(1, 0, 2)
         indices = indices.permute(1, 0, 2)
 
@@ -203,7 +200,10 @@ class TSTransformerEncoder(nn.Module):
         if self.config.learnable_pos_enc:
             inp = self.pos_enc(inp)
         else:
+            #print("inp", inp)
+            #print("indices", indices) 
             inp = inp + indices
+            print("inp after add", inp)
             inp = self.dropout(inp)
         
         # NOTE: logic for padding masks is reversed to comply with definition in MultiHeadAttention, TransformerEncoderLayer
@@ -211,8 +211,9 @@ class TSTransformerEncoder(nn.Module):
         output = self.act(output)  # the output transformer encoder/decoder embeddings don't include non-linearity
         output = output.permute(1, 0, 2)  # (batch_size, seq_length, d_model)
         output = self.dropout(output)
-        # Most probably defining a Linear(d_model,feat_dim) vectorizes the operation over (seq_length, batch_size).
-        output = self.output_layer(output)  # (batch_size, seq_length, feat_dim)
+        # linear(d_model,feat_dim) vectorizes the operation over (seq_length, batch_size).
+        output = self.output_layer(output)  # (batch_size, seq_length, emb_size)
+        #output = self.max_pool(output)
 
         return output
 
