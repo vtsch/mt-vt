@@ -34,8 +34,8 @@ class LoadPSADataset(Dataset):
             context_indices = [context_b, context_c, context_a, context_r]
             context_indices = [i for i in context_indices if i is not None]
             context = data[context_indices]
-            #add 4 columns with zeros to ts if context is used with concat / OLD VERSION
-            #ts = pd.concat([ts, pd.DataFrame(np.zeros((ts.shape[0], 4)))], axis=1)
+            #add 4 columns with zeros to ts if context is used with concat 
+            ts = pd.concat([ts, pd.DataFrame(np.zeros((ts.shape[0], self.config.context_count)))], axis=1)
 
         else: 
             context = data[[]]
