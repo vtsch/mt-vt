@@ -51,7 +51,7 @@ class Trainer:
                 data = psa_data
 
             if self.config.experiment_name == "simple_transformer":
-                pred = self.net(index, data, context, self.attention_masks)
+                pred = self.net(index, data, self.attention_masks)
                 pred = pred.reshape(pred.shape[0], -1)   
             else: 
                 pred = self.net(data)
@@ -112,7 +112,7 @@ class Trainer:
                 if self.config.experiment_name == "simple_transformer":
                     data = data.squeeze(1)
                     index = index.squeeze(1)
-                    pred = self.net(index, data, context, self.attention_masks)
+                    pred = self.net(index, data, self.attention_masks)
                 else:
                     pred = self.net(data)
                 
