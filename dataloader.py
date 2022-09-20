@@ -18,9 +18,12 @@ class LoadPSADataset(Dataset):
                   'psa_level3', 'psa_level4', 'psa_level5']]
         y = data['pros_cancer']
 
-        if self.config.deltatimes:
+        if self.config.pos_enc == "delta_days":
             ts = data[['psa_delta0', 'psa_delta1', 'psa_delta2',
                        'psa_delta3', 'psa_delta4', 'psa_delta5']]
+        elif self.config.pos_enc == "age_pos_enc":
+            ts = data[['psa_age0', 'psa_age1', 'psa_age2',
+                       'psa_age3', 'psa_age4', 'psa_age5']]
         else:
             ts = data[['psa_days0', 'psa_days1', 'psa_days2',
                        'psa_days3', 'psa_days4', 'psa_days5']]

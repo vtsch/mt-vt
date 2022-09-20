@@ -114,8 +114,6 @@ def load_timesteps_df(df):
     # day of psa level mesaurements: 80-85
     # pros_cancer label: 4
     df = df.iloc[:, [44, 80, 81, 82, 83, 84, 85, 4]]
-    df.dropna(thresh=4, inplace=True)
-    df.fillna(0, inplace=True)
     return df
 
 def load_psa_and_timesteps_df(df):
@@ -123,8 +121,6 @@ def load_psa_and_timesteps_df(df):
     # day of psa level mesaurements: 80-85
     # pros_cancer label: 4
     df = df.iloc[:, [69, 70, 71, 72, 73, 74, 80, 81, 82, 83, 84, 85, 4, 44]]
-    df = df.dropna(thresh=8)
-    df.fillna(0, inplace=True)
     return df
 
 def load_psa_and_deltatime_df(df):
@@ -132,9 +128,6 @@ def load_psa_and_deltatime_df(df):
     # day of psa level mesaurements: 80-85
     # pros_cancer label: 4
     df = df.iloc[:, [69, 70, 71, 72, 73, 74, 80, 81, 82, 83, 84, 85, 4, 44]]
-    df.dropna(axis=0, thresh=8, inplace=True)
-    df.fillna(value=0, inplace=True)
-    print(df.columns)
     #calculate deltatime between psa measurements
     df['psa_delta0'] = 0
     df['psa_delta1'] = df['psa_days1'] - df['psa_days0']
@@ -144,6 +137,22 @@ def load_psa_and_deltatime_df(df):
     df['psa_delta5'] = df['psa_days5'] - df['psa_days4']
 
     df.drop(['psa_days0', 'psa_days1', 'psa_days2', 'psa_days3', 'psa_days4', 'psa_days5'], axis=1, inplace=True)
+    return df
+
+def load_psa_and_age_df(df):
+    # psa_levels per year: 69-74
+    # age at trial entry: 205
+    # pros_cancer label: 4
+    df = df.iloc[:, [69, 70, 71, 72, 73, 74, 205, 4, 44]]
+    # calculate age at psa measurement
+    df['psa_age0'] = df['age']
+    df['psa_age1'] = df['age'] + 1
+    df['psa_age2'] = df['age'] + 2
+    df['psa_age3'] = df['age'] + 3
+    df['psa_age4'] = df['age'] + 4
+    df['psa_age5'] = df['age'] + 5
+    
+    df.drop(['age'], axis=1, inplace=True)
     return df
 
 def load_psa_data_to_pd(file_name: str, config: dict) -> pd.DataFrame:
@@ -156,9 +165,10 @@ def load_psa_data_to_pd(file_name: str, config: dict) -> pd.DataFrame:
     '''
     df_raw = pd.read_csv(file_name, header=0)
 
-    if config.deltatimes:
-        print("here")
+    if config.pos_enc == "delta_days":
         df = load_psa_and_deltatime_df(df_raw)
+    elif config.pos_enc == "age_pos_enc":
+        df = load_psa_and_age_df(df_raw)
     else:
         df = load_psa_and_timesteps_df(df_raw)
     
@@ -168,9 +178,9 @@ def load_psa_data_to_pd(file_name: str, config: dict) -> pd.DataFrame:
 
     if config.upsample:
         df = upsample_data(df, config)
-    
+
     df.drop(['plco_id'], axis=1, inplace=True)
-    df.fillna(value=0, inplace=True)
+    df.dropna(axis=0, inplace=True)
     df[df < 0] = 0
 
     return df
