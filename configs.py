@@ -18,8 +18,8 @@ class Config(object):
         self.ts_length = 6 
 
         # experiment
-        self.experiment_name = "raw_data" # "raw_data", "simple_ac", "deep_ac", "lstm", "cnn", "simple_transformer", "ts_tcc"
-        self.tstcc_training_mode = "train_linear" # random_init, supervised, self_supervised, fine_tune, train_linear
+        self.experiment_name = "ts_tcc" # "raw_data", "simple_ac", "deep_ac", "lstm", "cnn", "simple_transformer", "ts_tcc"
+        self.tstcc_training_mode = "supervised" # random_init, supervised, self_supervised, fine_tune, train_linear
 
         # contexts
         self.context = True
@@ -30,8 +30,7 @@ class Config(object):
         self.context_count = 4 if self.context_bmi and self.context_age and self.context_center and self.context_race else 1
 
         # additional info
-        self.deltatimes = False
-        self.learnable_pos_enc = True
+        self.pos_enc = "age_pos_enc" # "absolute_days", "delta_days", "learnable_pos_enc", "age_pos_enc", "rotary_pos_enc"
         self.feat_dim = 1 if self.context == False else 6+self.context_count
         self.emb_size = 10 if self.experiment_name != "simple_transformer" else 6
 
