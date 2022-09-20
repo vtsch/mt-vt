@@ -7,20 +7,11 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-
-from models.loss import NTXentLoss
-import torch
 from torch.optim import Adam
-import torch.nn.functional as F
-from metrics import Meter
-from dataloader import get_dataloader, data_generator
-import numpy as np
+from dataloader import data_generator_tstcc
 from models.transformer import generate_square_subsequent_mask
-from models.TC import TC
-from models.loss import NTXentLoss
-import pandas as pd
-
-
+from models.tstcc_TC import TC
+from models.tstcc_loss import NTXentLoss
 
 
 class TSTCCTrainer:
@@ -32,10 +23,10 @@ class TSTCCTrainer:
         self.optimizer = Adam(self.net.parameters(), lr=config.lr, betas=(0.9, 0.99), weight_decay=3e-4)
         self.scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(self.optimizer, 'min')
         self.best_loss = float('inf')
-        self.attention_masks = generate_square_subsequent_mask(6)
+        self.attention_masks = generate_square_subsequent_mask(self.config)
         self.temporal_contr_model = TC(config).to(config.device)
         self.temp_cont_optimizer = Adam(self.temporal_contr_model.parameters(), lr=config.lr, betas=(0.9, 0.99), weight_decay=3e-4)
-        self.tstcc_train_dl, self.tstcc_valid_dl, self.tstcc_test_dl = data_generator(data, config)
+        self.tstcc_train_dl, self.tstcc_valid_dl, self.tstcc_test_dl = data_generator_tstcc(data, config)
     
     def run(self):
         # Start training
@@ -70,16 +61,25 @@ class TSTCCTrainer:
         self.net.train()
         self.temporal_contr_model.train()
 
-        for batch_idx, (data, labels, aug1, aug2) in enumerate(self.tstcc_train_dl):
+        for batch_idx, (psa_data, labels, aug1, aug2, context) in enumerate(self.tstcc_train_dl):
             # send to device
-            data, labels = data.float().to(self.config.device), labels.long().to(self.config.device)
-            aug1, aug2 = aug1.float().to(self.config.device), aug2.float().to(self.config.device)
-
+            #psa_data, labels = psa_data.float().to(self.config.device), labels.long().to(self.config.device)
+            #aug1, aug2 = aug1.float().to(self.config.device), aug2.float().to(self.config.device)
             # optimizer
             self.optimizer.zero_grad()
             self.temp_cont_optimizer.zero_grad()
 
+            if self.config.context:
+                data = torch.cat((psa_data, context), dim=1) # --> if want to squeeze to (bs, 10, 1)
+                context = context.unsqueeze(1) #unsqueeze for TS-TCC and concat with psa_data
+                aug1 = torch.cat((aug1, context), dim=2)
+                aug2 = torch.cat((aug2, context), dim=2)
+            else:
+                data = psa_data
+
             if self.config.tstcc_training_mode == "self_supervised":
+                self.config.tstcc_aug = True
+
                 predictions1, features1 = self.net(aug1)
                 predictions2, features2 = self.net(aug2)
 
@@ -92,7 +92,9 @@ class TSTCCTrainer:
 
                 # normalize projection feature vectors
                 zis = temp_cont_lstm_feat1 
-                zjs = temp_cont_lstm_feat2 
+                zjs = temp_cont_lstm_feat2      
+
+                self.config.tsstcc_aug = False          
 
             else:
                 output = self.net(data)
@@ -101,12 +103,12 @@ class TSTCCTrainer:
             if self.config.tstcc_training_mode == "self_supervised":
                 lambda1 = 1
                 lambda2 = 0.7
-                nt_xent_criterion = NTXentLoss(self.config.device, self.config.batch_size,use_cosine_similarity=True)
+                nt_xent_criterion = NTXentLoss(self.config.device, self.config.batch_size, use_cosine_similarity=True)
                 loss = (temp_cont_loss1 + temp_cont_loss2) * lambda1 +  nt_xent_criterion(zis, zjs) * lambda2
                 
             else: # supervised training or fine tuining
                 predictions, features = output
-                loss = self.criterion(predictions, labels)
+                loss = self.criterion(predictions, labels.long())
                 total_acc.append(labels.eq(predictions.detach().argmax(dim=1)).float().mean())
 
             total_loss.append(loss.item())
@@ -136,8 +138,13 @@ class TSTCCTrainer:
         embeddings = np.array([])
 
         with torch.no_grad():
-            for batch_idx, (data, labels, _, _) in enumerate(self.tstcc_test_dl):
-                data, labels = data.float().to(self.config.device), labels.long().to(self.config.device)
+            for batch_idx, (psa_data, labels, _, _, context) in enumerate(self.tstcc_test_dl):
+                psa_data, labels, context = psa_data.float().to(self.config.device), labels.long().to(self.config.device), context.float().to(self.config.device)
+
+                if self.config.context:
+                    data = torch.cat((psa_data, context), dim=1)
+                else:
+                    data = psa_data
 
                 if self.config.tstcc_training_mode == "self_supervised":
                     pass
@@ -147,7 +154,7 @@ class TSTCCTrainer:
                 # compute loss
                 if self.config.tstcc_training_mode != "self_supervised":
                     predictions, features = output
-                    loss = eval_criterion(predictions, labels)
+                    loss = eval_criterion(predictions, labels.long())
                     total_acc.append(labels.eq(predictions.detach().argmax(dim=1)).float().mean())
                     total_loss.append(loss.item())
 

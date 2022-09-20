@@ -4,11 +4,9 @@ from torch.optim import Adam
 import torch.nn.functional as F
 import pandas as pd
 from metrics import Meter
-from dataloader import get_dataloader, data_generator
+from dataloader import get_dataloader
 import numpy as np
 from models.transformer import generate_square_subsequent_mask
-from models.TC import TC
-from models.loss import NTXentLoss
 
 class Trainer:
     def __init__(self, config, experiment, data, net):
@@ -23,7 +21,7 @@ class Trainer:
         self.dataloaders = {
             phase: get_dataloader(config, data, phase) for phase in self.phases
         }
-        self.attention_masks = generate_square_subsequent_mask(6)
+        self.attention_masks = generate_square_subsequent_mask(self.config)
     
     def _train_epoch(self, phase):
 
@@ -31,21 +29,35 @@ class Trainer:
         meter = Meter()
         meter.init_metrics(phase)
 
-        for i, (data, target, index) in enumerate(self.dataloaders[phase]):
+        for i, (psa_data, target, index, context) in enumerate(self.dataloaders[phase]):
             #data = data.to(config.device)
             #target = target.to(config.device)
             #if config.NOPOSENC:
             #index = torch.zeros(index.shape) 
 
+            if self.config.context:
+                # create context vector, add to psa_data as another feature after 1d TS, #(bs, n_features + context)
+                data = torch.cat((psa_data, context), dim=1) # --> if want to squeeze to (bs, 10, 1) --> OLD
+                """
+                #create tensor, repeat each column same as length of psa_data --> wrong, old
+                contexta = torch.repeat_interleave(context, psa_data.shape[1], dim=1)
+                #reshape to match psa_data
+                contexta = contexta.reshape(psa_data.shape[0], context.shape[1], psa_data.shape[1]) #bs, context, seq_len
+                contexta = contexta.permute(0, 2, 1) #bs, seq_len, context
+                psa_data = psa_data.unsqueeze(2)
+                data = torch.cat((psa_data, contexta), dim=2) #bs, seq_len, psa_data + context = n_features
+                """
+            else:
+                data = psa_data
+
             if self.config.experiment_name == "simple_transformer":
-                data = data.squeeze(1)
-                index = index.squeeze(1)
-                pred, psu_class, transf_emb, transf_reconst = self.net(index, data, self.attention_masks)
-                pred = pred.squeeze(1)
+                pred = self.net(index, data, context, self.attention_masks)
+                pred = pred.reshape(pred.shape[0], -1)   
             else: 
                 pred = self.net(data)
-                data = data.squeeze(1)
-            
+ 
+            #print("data shape for loss: ", data.shape)
+            #print("pred shape for loss: ", pred.shape)   
             loss = self.criterion(pred, data)
 
             if phase == 'train':
@@ -90,12 +102,17 @@ class Trainer:
         embeddings = np.array([])
 
         with torch.no_grad():
-            for i, (data, target, index) in enumerate(self.dataloaders['test']):
+            for i, (psa_data, target, index, context) in enumerate(self.dataloaders['test']):
+
+                if self.config.context:
+                    data = torch.cat((psa_data, context), dim=1) 
+                else:
+                    data = psa_data
 
                 if self.config.experiment_name == "simple_transformer":
                     data = data.squeeze(1)
                     index = index.squeeze(1)
-                    pred, psu_class, transf_emb, transf_reconst = self.net(index, data, self.attention_masks)
+                    pred = self.net(index, data, context, self.attention_masks)
                 else:
                     pred = self.net(data)
                 
