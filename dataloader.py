@@ -53,11 +53,11 @@ class LoadPSADataset(Dataset):
 
         self.len = X.shape[0]
 
-        if self.config.experiment_name == "ts_tcc" and self.config.tstcc_training_mode == "self_supervised": # no need to apply Augmentations in other modes
-            X = np.array(X)
-            X = X.reshape(X.shape[0], -1, 1) # make sure the Channels in second dim
-            x_d = torch.from_numpy(X)
-            self.aug1, self.aug2 = DataTransform(x_d, config)
+        if self.config.experiment_name == "ts_tcc": 
+            X_np = np.array(X)
+            X_np = X_np.reshape(X_np.shape[0], 1, X_np.shape[1]) # make sure the Channels in second dim
+            X_np = torch.from_numpy(X_np)
+            self.aug1, self.aug2 = DataTransform(X_np, config)
 
     def __getitem__(self, index):
         target = np.array(self.y_data.loc[index])
@@ -70,12 +70,9 @@ class LoadPSADataset(Dataset):
         #print("target", target, "tsindex", tsindex, "signal", signal, "context", context)
 
         if self.config.experiment_name == "ts_tcc":
-            if self.config.tstcc_training_mode == "self_supervised":
-                aug1 = self.aug1[index].reshape(self.config.ts_length)
-                aug2 = self.aug2[index].reshape(self.config.ts_length)
-                return signal, target, aug1, aug2, context
-            else:
-                return signal, target, signal, signal, context
+            aug1 = self.aug1[index]
+            aug2 = self.aug2[index]
+            return signal, target, aug1, aug2, context
         else:
             return signal, target, tsindex, context
 
@@ -136,6 +133,6 @@ def data_generator_tstcc(data, config):
     valid_loader = DataLoader(dataset=valid_dataset, batch_size=config.batch_size,
                               shuffle=False, drop_last=True, num_workers=0)
     test_loader = DataLoader(dataset=test_dataset, batch_size=config.batch_size,
-                             shuffle=False, drop_last=False, num_workers=0)
+                             shuffle=False, drop_last=True, num_workers=0)
 
     return train_loader, valid_loader, test_loader

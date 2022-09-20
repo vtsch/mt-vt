@@ -70,13 +70,10 @@ class TSTCCTrainer:
             self.temp_cont_optimizer.zero_grad()
 
             if self.config.context:
-                #create tensor, repeat each column same as length of psa_data 
-                contexta = torch.repeat_interleave(context, psa_data.shape[1], dim=1)
-                #reshape to match psa_data
-                contexta = contexta.reshape(psa_data.shape[0], context.shape[1], psa_data.shape[1]) #bs, context, seq_len
-                contexta = contexta.permute(0, 2, 1) #bs, seq_len, context
-                psa_data = psa_data.unsqueeze(2)
-                data = torch.cat((psa_data, contexta), dim=2) #bs, seq_len, psa_data + context = n_features
+                data = torch.cat((psa_data, context), dim=1) # --> if want to squeeze to (bs, 10, 1)
+                context = context.unsqueeze(1) #unsqueeze for TS-TCC and concat with psa_data
+                aug1 = torch.cat((aug1, context), dim=2)
+                aug2 = torch.cat((aug2, context), dim=2)
             else:
                 data = psa_data
 
@@ -111,7 +108,6 @@ class TSTCCTrainer:
                 
             else: # supervised training or fine tuining
                 predictions, features = output
-                predictions = torch.tensor(predictions, dtype=torch.float64, requires_grad=True)
                 loss = self.criterion(predictions, labels.long())
                 total_acc.append(labels.eq(predictions.detach().argmax(dim=1)).float().mean())
 
@@ -146,13 +142,7 @@ class TSTCCTrainer:
                 psa_data, labels, context = psa_data.float().to(self.config.device), labels.long().to(self.config.device), context.float().to(self.config.device)
 
                 if self.config.context:
-                    #create tensor, repeat each column same as length of psa_data 
-                    contexta = torch.repeat_interleave(context, psa_data.shape[1], dim=1)
-                    #reshape to match psa_data
-                    contexta = contexta.reshape(psa_data.shape[0], context.shape[1], psa_data.shape[1]) #bs, context, seq_len
-                    contexta = contexta.permute(0, 2, 1) #bs, seq_len, context
-                    psa_data = psa_data.unsqueeze(2)
-                    data = torch.cat((psa_data, contexta), dim=2) #bs, seq_len, psa_data + context = n_features
+                    data = torch.cat((psa_data, context), dim=1)
                 else:
                     data = psa_data
 
@@ -164,7 +154,6 @@ class TSTCCTrainer:
                 # compute loss
                 if self.config.tstcc_training_mode != "self_supervised":
                     predictions, features = output
-                    predictions = torch.tensor(predictions, dtype=torch.float64, requires_grad=True)
                     loss = eval_criterion(predictions, labels.long())
                     total_acc.append(labels.eq(predictions.detach().argmax(dim=1)).float().mean())
                     total_loss.append(loss.item())

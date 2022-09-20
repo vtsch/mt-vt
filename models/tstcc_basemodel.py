@@ -38,14 +38,10 @@ class base_Model(nn.Module):
         self.logits = nn.Linear(model_output_dim * config.emb_size, config.n_clusters)
 
     def forward(self, x_in):
-        # x_in shape: (batch_size, time_steps, n_features) should be (batch_size, n_features, time_steps) for conv
+        # x_in shape: (batch_size, feat_dim) should be (batch_size, n_features, feat_dim) for conv
         x_in = x_in.float()
-        if self.config.tstcc_aug:
-            x_in = x_in.reshape(self.config.batch_size, 1, self.config.ts_length)
-            x = self.conv_block_aug(x_in)
-        else:
-            x_in = x_in.permute(0, 2, 1)
-            x = self.conv_block1(x_in)
+        x_in = x_in.reshape(self.config.batch_size, 1, self.config.feat_dim)
+        x = self.conv_block_aug(x_in)
 
         x = self.conv_block2(x)
         x = self.conv_block3(x) # (batch_size, emb_size, ts_length)

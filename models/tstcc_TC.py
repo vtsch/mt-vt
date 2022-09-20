@@ -145,7 +145,6 @@ def scaling(x, sigma=1.1):
 
 
 def permutation(x, max_segments=3, seg_mode="random"):
-    x = x.reshape((x.shape[0], x.shape[2], x.shape[1]))
     orig_steps = np.arange(x.shape[2])
 
     num_segs = np.random.randint(1, max_segments, size=(x.shape[0]))
@@ -174,7 +173,7 @@ class TC(nn.Module):
     def __init__(self, config):
         super(TC, self).__init__()
         self.num_channels = config.emb_size
-        self.timestep = 3
+        self.timestep = 3 #config.ts_length --> want to split max. 3 times here
         self.Wk = nn.ModuleList([nn.Linear(config.hidden_dim, self.num_channels) for i in range(self.timestep)])
         self.lsoftmax = nn.LogSoftmax(dim=1)
         self.device = config.device
@@ -189,7 +188,7 @@ class TC(nn.Module):
         self.seq_transformer = Seq_Transformer(patch_size=self.num_channels, dim=config.hidden_dim, depth=4, heads=4, mlp_dim=64)
 
     def forward(self, features_aug1, features_aug2):
-        z_aug1 = features_aug1  # features are (batch_size, #channels, seq_len)
+        z_aug1 = features_aug1  # features are (batch_size, emb_size, seq_len)
         seq_len = z_aug1.shape[2]
         z_aug1 = z_aug1.transpose(1, 2)
 
