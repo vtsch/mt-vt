@@ -18,8 +18,8 @@ class Config(object):
         self.ts_length = 6 
 
         # experiment
-        self.experiment_name = "ts_tcc" # "raw_data", "simple_ac", "deep_ac", "lstm", "cnn", "simple_transformer", "ts_tcc"
-        self.tstcc_training_mode = "supervised" # random_init, supervised, self_supervised, fine_tune, train_linear
+        self.experiment_name = "simple_transformer" # "raw_data", "simple_ac", "deep_ac", "lstm", "cnn", "simple_transformer", "ts_tcc"
+        self.tstcc_training_mode = "self_supervised" # random_init, supervised, self_supervised, fine_tune, train_linear
 
         # contexts
         self.context = True
@@ -33,7 +33,7 @@ class Config(object):
         # additional info
         self.pos_enc = "none" # "absolute_days", "delta_days", "learnable_pos_enc", "age_pos_enc", "rotary_pos_enc", "none"
         self.feat_dim = 1 if self.context == False else 6+self.context_count
-        self.emb_size = 10 if self.experiment_name != "simple_transformer" else 6
+        self.emb_size = 10 #if self.experiment_name != "simple_transformer" else 6
 
         # for training models
         self.loss_fn = torch.nn.CrossEntropyLoss()  #torch.nn.CrossEntropyLoss() #MSELoss for LSTM

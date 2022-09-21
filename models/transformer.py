@@ -126,19 +126,16 @@ class TSTransformerEncoder(nn.Module):
         indices = indices.permute(1, 0, 2)
 
         inp = self.project_inp(inp) * math.sqrt(self.config.emb_size)  # [seq_length, batch_size, d_model] project input vectors to d_model dimensional space
-        pos_enc_inp = positional_encoding(self.config, inp, indices)  # add positional encoding
+        #add positional encoding
+        pos_enc_inp = positional_encoding(self.config, inp, indices)  # # (seq_length, batch_size, d_model)
 
-        print('pos_enc_inp', pos_enc_inp.shape) # (seq_length, batch_size, d_model)
         if self.config.context:
             # add context to forward_seq
             context = context.unsqueeze(1)
-            context = context.permute(1, 0, 2)
-            print('context', context.shape)
-            #repeat context to match the shape of pos_enc_inp in dim 0
-            context = context.repeat(pos_enc_inp.shape[0], 1, 1)
-            print('context', context.shape)
-            pos_enc_inp = torch.cat((pos_enc_inp, context), dim=1) # (emb_size + context_size, batch_size, d_model )
-            print('pos_enc_inp', pos_enc_inp.shape)
+            context = context.permute(2, 0, 1)
+            #repeat context to match the shape of pos_enc_inp in dim 2
+            context = context.repeat(1, 1, pos_enc_inp.shape[2])
+            pos_enc_inp = torch.cat((pos_enc_inp, context), dim=0) # (emb_size + context_size, batch_size, emb_size) )
         
         # NOTE: logic for padding masks is reversed to comply with definition in MultiHeadAttention, TransformerEncoderLayer
         output = self.transformer_encoder(pos_enc_inp, src_key_padding_mask=~attention_masks)  # (seq_length, batch_size, d_model)

@@ -47,15 +47,18 @@ class Trainer:
                 pred = self.net(data)
  
             #print("data shape for loss: ", data.shape)
-            #print("pred shape for loss: ", pred.shape)   
-            loss = self.criterion(pred, data)
+            #print("pred shape for loss: ", pred.shape) 
+            #concat data and context for loss calculation
+            data_c = torch.cat((data, context), dim=1)
+            #print("data_c shape for loss: ", data_c.shape)
+            loss = self.criterion(pred, data_c)
 
             if phase == 'train':
                 self.optimizer.zero_grad()
                 loss.backward()
                 self.optimizer.step()
 
-            meter.update(pred.detach().numpy(), data, phase, loss.item())
+            meter.update(pred.detach().numpy(), data_c, phase, loss.item())
 
         metrics = meter.get_metrics()
         metrics = {k:v / i for k, v in metrics.items()}
