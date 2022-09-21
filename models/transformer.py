@@ -98,20 +98,20 @@ class TSTransformerEncoder(nn.Module):
 
         self.config = config
 
-        self.project_inp = nn.Linear(1, self.config.d_model)
+        self.project_inp = nn.Linear(1, self.config.emb_size)
 
-        encoder_layer = TransformerBatchNormEncoderLayer(self.config.d_model, self.config.n_heads, self.config.dim_feedforward, dropout=self.config.dropout, activation=activation) #use batch normalization
+        encoder_layer = TransformerBatchNormEncoderLayer(self.config.emb_size, self.config.n_heads, self.config.dim_feedforward, dropout=self.config.dropout, activation=activation) #use batch normalization
 
         self.transformer_encoder = nn.TransformerEncoder(encoder_layer, self.config.num_layers)
 
-        self.output_layer = nn.Linear(self.config.d_model, 1)
+        self.output_layer = nn.Linear(self.config.emb_size, 1)
 
         self.act = _get_activation_fn(activation)
 
         self.dropout = nn.Dropout(self.config.dropout)
         self.max_pool = nn.MaxPool1d(kernel_size=self.config.ts_length)
 
-    def forward(self, indices, data, attention_masks):
+    def forward(self, indices, data, context, attention_masks):
         """
         Args:
             X: (batch_size, seq_length, feat_dim) torch tensor of masked features (input)
@@ -125,8 +125,20 @@ class TSTransformerEncoder(nn.Module):
         inp = data.permute(1, 0, 2)
         indices = indices.permute(1, 0, 2)
 
-        inp = self.project_inp(inp) * math.sqrt(self.config.d_model)  # [seq_length, batch_size, d_model] project input vectors to d_model dimensional space
+        inp = self.project_inp(inp) * math.sqrt(self.config.emb_size)  # [seq_length, batch_size, d_model] project input vectors to d_model dimensional space
         pos_enc_inp = positional_encoding(self.config, inp, indices)  # add positional encoding
+
+        print('pos_enc_inp', pos_enc_inp.shape) # (seq_length, batch_size, d_model)
+        if self.config.context:
+            # add context to forward_seq
+            context = context.unsqueeze(1)
+            context = context.permute(1, 0, 2)
+            print('context', context.shape)
+            #repeat context to match the shape of pos_enc_inp in dim 0
+            context = context.repeat(pos_enc_inp.shape[0], 1, 1)
+            print('context', context.shape)
+            pos_enc_inp = torch.cat((pos_enc_inp, context), dim=1) # (emb_size + context_size, batch_size, d_model )
+            print('pos_enc_inp', pos_enc_inp.shape)
         
         # NOTE: logic for padding masks is reversed to comply with definition in MultiHeadAttention, TransformerEncoderLayer
         output = self.transformer_encoder(pos_enc_inp, src_key_padding_mask=~attention_masks)  # (seq_length, batch_size, d_model)
