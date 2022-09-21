@@ -19,7 +19,7 @@ class Config(object):
 
         # experiment
         self.experiment_name = "ts_tcc" # "raw_data", "simple_ac", "deep_ac", "lstm", "cnn", "simple_transformer", "ts_tcc"
-        self.tstcc_training_mode = "random_init" # random_init, supervised, self_supervised, fine_tune, train_linear
+        self.tstcc_training_mode = "supervised" # random_init, supervised, self_supervised, fine_tune, train_linear
 
         # contexts
         self.context = True
@@ -31,7 +31,7 @@ class Config(object):
         self.context_count_size = self.context_count if self.context else 0 
 
         # additional info
-        self.pos_enc = "age_pos_enc" # "absolute_days", "delta_days", "learnable_pos_enc", "age_pos_enc", "rotary_pos_enc"
+        self.pos_enc = "none" # "absolute_days", "delta_days", "learnable_pos_enc", "age_pos_enc", "rotary_pos_enc", "none"
         self.feat_dim = 1 if self.context == False else 6+self.context_count
         self.emb_size = 10 if self.experiment_name != "simple_transformer" else 6
 
@@ -49,7 +49,6 @@ class Config(object):
         self.max_value = 3000
         self.n_heads = 2
         self.dim_feedforward = 128
-        self.d_model = 6 # dimensionality of the model, must be divisible by n_heads
 
         # ts-tcc
         self.tstcc_model_saved_dir = "saved_models/ts_tcc/self_supervised/22-09-20_12-22-38"

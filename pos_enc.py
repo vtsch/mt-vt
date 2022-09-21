@@ -8,24 +8,16 @@ import math
 from torch import long, nn, Tensor
 from rotary_embedding_torch import RotaryEmbedding, apply_rotary_emb
 
-class PositionalEncoding(nn.Module):
-    def __init__(self, config):
-        super(PositionalEncoding, self).__init__()
-        self.config = config
-        self.dropout = nn.Dropout(p=config.dropout)
-
-        # Each position gets its own embedding
-        # Since indices are always 0 ... max_len, we don't have to do a look-up
-        self.lpe = nn.Parameter(torch.empty(10, 1, config.d_model))  # requires_grad automatically set to True
-        nn.init.uniform_(self.lpe, -0.02, 0.02)
-
 def positional_encoding(config, inp, indices):
     dropout = nn.Dropout(p=config.dropout)
-    lpe = nn.Parameter(torch.empty(10, 1, config.d_model))  # requires_grad automatically set to True
+    lpe = nn.Parameter(torch.empty(10, 1, config.emb_size))  # requires_grad automatically set to True
     nn.init.uniform_(lpe, -0.02, 0.02)
     rope = RotaryEmbedding(dim=config.ts_length)
     #print("indices.shape", indices.shape)
     #print("inp.shape", inp.shape)
+
+    if config.pos_enc == 'none':
+        out = inp
     
     if config.pos_enc == "absolute_days" or "delta_days" or "age":
         inp = inp + indices
