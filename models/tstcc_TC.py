@@ -5,8 +5,61 @@ import torch.nn.functional as F
 from einops import rearrange, repeat
 
 
+######################
+# Data Augmentations
+######################
+
+
+def DataTransform(sample, config):
+
+    jitter_scale_ratio = 0.001
+    jitter_ratio = 0.001
+    weak_aug = scaling(sample, jitter_scale_ratio)
+    strong_aug = jitter(permutation(sample, max_segments=config.max_seg), jitter_ratio)
+
+    return weak_aug, strong_aug
+
+
+def jitter(x, sigma=0.8):
+    # https://arxiv.org/pdf/1706.00527.pdf
+    return x + np.random.normal(loc=0., scale=sigma, size=x.shape)
+
+
+def scaling(x, sigma=1.1):
+    # https://arxiv.org/pdf/1706.00527.pdf
+    factor = np.random.normal(loc=2., scale=sigma, size=(x.shape[0], x.shape[2]))
+    ai = []
+    for i in range(x.shape[1]):
+        xi = x[:, i, :]
+        ai.append(np.multiply(xi, factor[:, :])[:, np.newaxis, :])
+    return np.concatenate((ai), axis=1)
+
+
+def permutation(x, max_segments=3, seg_mode="random"):
+    orig_steps = np.arange(x.shape[2])
+
+    num_segs = np.random.randint(1, max_segments, size=(x.shape[0]))
+
+    ret = np.zeros_like(x)
+    for i, pat in enumerate(x):
+        if num_segs[i] > 1:
+            if seg_mode == "random":
+                split_points = np.random.choice(6, num_segs[i], replace=True)
+                split_points.sort()
+                splits = np.split(orig_steps, split_points)
+            else:
+                splits = np.array_split(orig_steps, num_segs[i])
+            warp = np.concatenate(np.random.permutation(splits)).ravel()
+            #warp = np.hstack(x).ravel()
+            ret[i] = pat[0,warp]
+        else:
+            ret[i] = pat
+    return ret
+
+
+
 ########################################################################################
-# Attention Layers and Transformer for Temporal Contrasting
+# Transformer Layers
 ########################################################################################
 
 class Residual(nn.Module):
@@ -119,59 +172,10 @@ class Seq_Transformer(nn.Module):
 ########################################################################################
 
 
-def DataTransform(sample, config):
-
-    jitter_scale_ratio = 0.001
-    jitter_ratio = 0.001
-    weak_aug = scaling(sample, jitter_scale_ratio)
-    strong_aug = jitter(permutation(sample, max_segments=config.max_seg), jitter_ratio)
-
-    return weak_aug, strong_aug
-
-
-def jitter(x, sigma=0.8):
-    # https://arxiv.org/pdf/1706.00527.pdf
-    return x + np.random.normal(loc=0., scale=sigma, size=x.shape)
-
-
-def scaling(x, sigma=1.1):
-    # https://arxiv.org/pdf/1706.00527.pdf
-    factor = np.random.normal(loc=2., scale=sigma, size=(x.shape[0], x.shape[2]))
-    ai = []
-    for i in range(x.shape[1]):
-        xi = x[:, i, :]
-        ai.append(np.multiply(xi, factor[:, :])[:, np.newaxis, :])
-    return np.concatenate((ai), axis=1)
-
-
-def permutation(x, max_segments=3, seg_mode="random"):
-    orig_steps = np.arange(x.shape[2])
-
-    num_segs = np.random.randint(1, max_segments, size=(x.shape[0]))
-
-    ret = np.zeros_like(x)
-    for i, pat in enumerate(x):
-        if num_segs[i] > 1:
-            if seg_mode == "random":
-                split_points = np.random.choice(6, num_segs[i], replace=True)
-                split_points.sort()
-                splits = np.split(orig_steps, split_points)
-            else:
-                splits = np.array_split(orig_steps, num_segs[i])
-            warp = np.concatenate(np.random.permutation(splits)).ravel()
-            #warp = np.hstack(x).ravel()
-            ret[i] = pat[0,warp]
-        else:
-            ret[i] = pat
-    return ret
-
-
-
-
-
 class TC(nn.Module):
     def __init__(self, config):
         super(TC, self).__init__()
+        self.config = config
         self.num_channels = config.emb_size
         self.timestep = 3 #config.ts_length --> want to split max. 3 times here
         self.Wk = nn.ModuleList([nn.Linear(config.hidden_dim, self.num_channels) for i in range(self.timestep)])
@@ -185,9 +189,9 @@ class TC(nn.Module):
             nn.Linear(config.emb_size // 2, config.emb_size // 4),
         )
 
-        self.seq_transformer = Seq_Transformer(patch_size=self.num_channels, dim=config.hidden_dim, depth=4, heads=4, mlp_dim=64)
+        self.seq_transformer = Seq_Transformer(patch_size=self.num_channels+config.context_count_size, dim=config.hidden_dim, depth=4, heads=4, mlp_dim=64)
 
-    def forward(self, features_aug1, features_aug2):
+    def forward(self, features_aug1, features_aug2, context):
         z_aug1 = features_aug1  # features are (batch_size, emb_size, seq_len)
         seq_len = z_aug1.shape[2]
         z_aug1 = z_aug1.transpose(1, 2)
@@ -205,6 +209,14 @@ class TC(nn.Module):
             encode_samples[i - 1] = z_aug2[:, t_samples + i, :].view(batch, self.num_channels)
         forward_seq = z_aug1[:, :t_samples + 1, :]
 
+        if self.config.context:
+            # add context to forward_seq
+            context = context.unsqueeze(1)
+            #repeat context to match the shape of forward_seq in dim 1
+            context = context.repeat(1, forward_seq.shape[1], 1)
+            forward_seq = torch.cat((forward_seq, context), dim=2) # (batch_size, 1, emb_size + context_size)
+
+        # apply transformer
         c_t = self.seq_transformer(forward_seq)
 
         pred = torch.empty((self.timestep, batch, self.num_channels)).float().to(self.device)
