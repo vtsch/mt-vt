@@ -36,7 +36,7 @@ class base_Model(nn.Module):
 
         model_output_dim = config.ts_length
 
-        self.logits = nn.Linear(model_output_dim * config.emb_size + config.context_count_size, config.n_clusters)
+        self.logits = nn.Linear((model_output_dim * config.emb_size + config.context_count_size), config.n_clusters)
 
 
     def forward(self, x_in, context):
@@ -49,13 +49,10 @@ class base_Model(nn.Module):
         x = self.conv_block3(x) # (batch_size, emb_size, ts_length)
 
         x_flat = x.reshape(x.shape[0], -1) # (batch_size, emb_size * ts_length)
-
-        # add context here
-        if self.config.context and self.config.tstcc_training_mode != "self_supervised":
-            x_flat = torch.cat((x_flat, context), dim=1)
+        x_flat_con = torch.cat((x_flat, context), dim=1)
 
         # classifier of encoded signals
-        logits = self.logits(x_flat)
+        logits = self.logits(x_flat_con)
         return logits, x
         #logits shape: (batch_size, n_clusters)
         #x shape: (batch_size, emb_size, ts_length)
