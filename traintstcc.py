@@ -12,6 +12,7 @@ from dataloader import data_generator_tstcc
 from models.transformer import generate_square_subsequent_mask
 from models.tstcc_TC import TC
 from models.tstcc_loss import NTXentLoss
+from pos_enc import positional_encoding
 
 
 class TSTCCTrainer:
@@ -61,7 +62,7 @@ class TSTCCTrainer:
         self.net.train()
         self.temporal_contr_model.train()
 
-        for batch_idx, (psa_data, labels, aug1, aug2, context) in enumerate(self.tstcc_train_dl):
+        for batch_idx, (psa_data, labels, aug1, aug2, tsindex, context) in enumerate(self.tstcc_train_dl):
             # send to device
             #psa_data, labels = psa_data.float().to(self.config.device), labels.long().to(self.config.device)
             #aug1, aug2 = aug1.float().to(self.config.device), aug2.float().to(self.config.device)
@@ -69,35 +70,27 @@ class TSTCCTrainer:
             self.optimizer.zero_grad()
             self.temp_cont_optimizer.zero_grad()
 
-            if self.config.context:
-                data = torch.cat((psa_data, context), dim=1) # --> if want to squeeze to (bs, 10, 1)
-                context = context.unsqueeze(1) #unsqueeze for TS-TCC and concat with psa_data
-                aug1 = torch.cat((aug1, context), dim=2)
-                aug2 = torch.cat((aug2, context), dim=2)
-            else:
-                data = psa_data
+            #apply positional encoding
+            data_pos_enc = positional_encoding(self.config, psa_data, tsindex)
 
             if self.config.tstcc_training_mode == "self_supervised":
-                self.config.tstcc_aug = True
-
-                predictions1, features1 = self.net(aug1)
-                predictions2, features2 = self.net(aug2)
+                #encode augmented data
+                predictions1, features1 = self.net(aug1, context)
+                predictions2, features2 = self.net(aug2, context)
 
                 # normalize projection feature vectors
                 features1 = F.normalize(features1, dim=1)
                 features2 = F.normalize(features2, dim=1)
 
-                temp_cont_loss1, temp_cont_lstm_feat1 = self.temporal_contr_model(features1, features2)
-                temp_cont_loss2, temp_cont_lstm_feat2 = self.temporal_contr_model(features2, features1)
+                # temporal contrasting model and add context
+                temp_cont_loss1, temp_cont_lstm_feat1 = self.temporal_contr_model(features1, features2, context)
+                temp_cont_loss2, temp_cont_lstm_feat2 = self.temporal_contr_model(features2, features1, context)
 
                 # normalize projection feature vectors
                 zis = temp_cont_lstm_feat1 
-                zjs = temp_cont_lstm_feat2      
-
-                self.config.tsstcc_aug = False          
-
+                zjs = temp_cont_lstm_feat2          
             else:
-                output = self.net(data)
+                output = self.net(data_pos_enc, context)
 
             # compute loss
             if self.config.tstcc_training_mode == "self_supervised":
@@ -138,18 +131,16 @@ class TSTCCTrainer:
         embeddings = np.array([])
 
         with torch.no_grad():
-            for batch_idx, (psa_data, labels, _, _, context) in enumerate(self.tstcc_test_dl):
+            for batch_idx, (psa_data, labels, _, _, tsindex, context) in enumerate(self.tstcc_test_dl):
                 psa_data, labels, context = psa_data.float().to(self.config.device), labels.long().to(self.config.device), context.float().to(self.config.device)
 
-                if self.config.context:
-                    data = torch.cat((psa_data, context), dim=1)
-                else:
-                    data = psa_data
+                #apply positional encoding
+                data_pos_enc = positional_encoding(self.config, psa_data, tsindex)
 
                 if self.config.tstcc_training_mode == "self_supervised":
                     pass
                 else:
-                    output = self.net(data)
+                    output = self.net(data_pos_enc, context)
 
                 # compute loss
                 if self.config.tstcc_training_mode != "self_supervised":

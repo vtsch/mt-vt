@@ -35,21 +35,28 @@ class base_Model(nn.Module):
         )
 
         model_output_dim = config.ts_length
-        self.logits = nn.Linear(model_output_dim * config.emb_size, config.n_clusters)
 
-    def forward(self, x_in):
-        # x_in shape: (batch_size, feat_dim) should be (batch_size, n_features, feat_dim) for conv
-        x_in = x_in.float()
-        x_in = x_in.reshape(self.config.batch_size, 1, self.config.feat_dim)
+        self.logits = nn.Linear(model_output_dim * config.emb_size + config.context_count_size, config.n_clusters)
+
+
+    def forward(self, x_in, context):
+        # x_in shape: (batch_size, feat_dim) should be (batch_size, n_features, feat_dim) for conv, if augment before is already correct
+        x_in = x_in.float()   
+        if self.config.tstcc_training_mode != "self_supervised":
+            x_in = x_in.reshape(self.config.batch_size, 1, self.config.ts_length)
         x = self.conv_block_aug(x_in)
-
         x = self.conv_block2(x)
         x = self.conv_block3(x) # (batch_size, emb_size, ts_length)
 
-        x_flat = x.reshape(x.shape[0], -1)
+        x_flat = x.reshape(x.shape[0], -1) # (batch_size, emb_size * ts_length)
+
+        # add context here
+        if self.config.context and self.config.tstcc_training_mode != "self_supervised":
+            x_flat = torch.cat((x_flat, context), dim=1)
+
+        # classifier of encoded signals
         logits = self.logits(x_flat)
         return logits, x
-
         #logits shape: (batch_size, n_clusters)
         #x shape: (batch_size, emb_size, ts_length)
 
