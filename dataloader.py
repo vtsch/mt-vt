@@ -38,7 +38,7 @@ class LoadPSADataset(Dataset):
             context_indices = [i for i in context_indices if i is not None]
             context = data[context_indices]
             #add 4 columns with zeros to ts if context is used with concat 
-            ts = pd.concat([ts, pd.DataFrame(np.zeros((ts.shape[0], self.config.context_count)))], axis=1)
+            #ts = pd.concat([ts, pd.DataFrame(np.zeros((ts.shape[0], self.config.context_count)))], axis=1)
 
         else: 
             context = data[[]]
@@ -75,7 +75,7 @@ class LoadPSADataset(Dataset):
         if self.config.experiment_name == "ts_tcc":
             aug1 = self.aug1[index]
             aug2 = self.aug2[index]
-            return signal, target, aug1, aug2, context
+            return signal, target, aug1, aug2, tsindex, context
         else:
             return signal, target, tsindex, context
 

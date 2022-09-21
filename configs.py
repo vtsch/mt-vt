@@ -19,7 +19,7 @@ class Config(object):
 
         # experiment
         self.experiment_name = "ts_tcc" # "raw_data", "simple_ac", "deep_ac", "lstm", "cnn", "simple_transformer", "ts_tcc"
-        self.tstcc_training_mode = "supervised" # random_init, supervised, self_supervised, fine_tune, train_linear
+        self.tstcc_training_mode = "random_init" # random_init, supervised, self_supervised, fine_tune, train_linear
 
         # contexts
         self.context = True
@@ -28,6 +28,7 @@ class Config(object):
         self.context_center = True
         self.context_race = True
         self.context_count = 4 if self.context_bmi and self.context_age and self.context_center and self.context_race else 1
+        self.context_count_size = self.context_count if self.context else 0 
 
         # additional info
         self.pos_enc = "age_pos_enc" # "absolute_days", "delta_days", "learnable_pos_enc", "age_pos_enc", "rotary_pos_enc"

@@ -24,6 +24,8 @@ def positional_encoding(config, inp, indices):
     lpe = nn.Parameter(torch.empty(10, 1, config.d_model))  # requires_grad automatically set to True
     nn.init.uniform_(lpe, -0.02, 0.02)
     rope = RotaryEmbedding(dim=config.ts_length)
+    #print("indices.shape", indices.shape)
+    #print("inp.shape", inp.shape)
     
     if config.pos_enc == "absolute_days" or "delta_days" or "age":
         inp = inp + indices
