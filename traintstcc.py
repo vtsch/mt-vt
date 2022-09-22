@@ -75,8 +75,8 @@ class TSTCCTrainer:
 
             if self.config.tstcc_training_mode == "self_supervised":
                 #encode augmented data
-                predictions1, features1 = self.net(aug1, context)
-                predictions2, features2 = self.net(aug2, context)
+                predictions1, features1 = self.net(aug1)
+                predictions2, features2 = self.net(aug2)
 
                 # normalize projection feature vectors
                 features1 = F.normalize(features1, dim=1)
@@ -90,7 +90,9 @@ class TSTCCTrainer:
                 zis = temp_cont_lstm_feat1 
                 zjs = temp_cont_lstm_feat2          
             else:
-                output = self.net(data_pos_enc, context)
+                if self.config.context:
+                    data_pos_enc = torch.cat((data_pos_enc, context), dim=1) # (batch_size, ts_length + context_dim)
+                output = self.net(data_pos_enc)
 
             # compute loss
             if self.config.tstcc_training_mode == "self_supervised":
@@ -140,7 +142,9 @@ class TSTCCTrainer:
                 if self.config.tstcc_training_mode == "self_supervised":
                     pass
                 else:
-                    output = self.net(data_pos_enc, context)
+                    if self.config.context:
+                        data_pos_enc = torch.cat((data_pos_enc, context), dim=1) # (batch_size, ts_length + context_dim)
+                    output = self.net(data_pos_enc)
 
                 # compute loss
                 if self.config.tstcc_training_mode != "self_supervised":

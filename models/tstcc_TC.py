@@ -148,6 +148,13 @@ class Transformer(nn.Module):
 
 
 class Seq_Transformer(nn.Module):
+    # add token c to input whose state acts as a reprentative context vector in the output
+    # apply features z to linear projection that maps features into hidden dimension
+    # output is sent to transformer
+    # attach context vector into the features vector such thtat the input features are now (c, z)
+    # pass this trhough transformer layers, Attention and MLP 
+    # finally, re-attach context vector from final output 
+    #patch_size=self.num_channels+config.context_count_size, dim=config.hidden_dim
     def __init__(self, *, patch_size, dim, depth, heads, mlp_dim, channels=1, dropout=0.1):
         super().__init__()
         patch_dim = channels * patch_size
@@ -161,7 +168,7 @@ class Seq_Transformer(nn.Module):
         x = self.patch_to_embedding(forward_seq)
         b, n, _ = x.shape
         c_tokens = repeat(self.c_token, '() n d -> b n d', b=b)
-        x = torch.cat((c_tokens, x), dim=1)
+        x = torch.cat((c_tokens, x), dim=1) # (bs, forward_Seq, hidden_dim)
         x = self.transformer(x)
         c_t = self.to_c_token(x[:, 0])
         return c_t
@@ -189,18 +196,28 @@ class TC(nn.Module):
             nn.Linear(config.emb_size // 2, config.emb_size // 4),
         )
 
-        self.seq_transformer = Seq_Transformer(patch_size=self.num_channels+config.context_count_size, dim=config.hidden_dim, depth=4, heads=4, mlp_dim=64)
+        #self.seq_transformer = Seq_Transformer(patch_size=self.num_channels+config.context_count_size, dim=config.hidden_dim, depth=4, heads=4, mlp_dim=64)
+        self.seq_transformer = Seq_Transformer(patch_size=self.num_channels, dim=config.hidden_dim, depth=4, heads=4, mlp_dim=64)
 
     def forward(self, features_aug1, features_aug2, context):
-        z_aug1 = features_aug1  # features are (batch_size, emb_size, seq_len)
-        seq_len = z_aug1.shape[2]
-        z_aug1 = z_aug1.transpose(1, 2)
 
+        #print("features_aug1", features_aug1.shape)
+
+        if self.config.context:
+            context = context.unsqueeze(1)
+            context = context.repeat(1, features_aug1.shape[1], 1)
+            #print("context", context.shape)
+            features_aug1 = torch.cat((features_aug1, context), dim=2) # (batch_size, emb_size, seq_length + context_size)
+            features_aug2 = torch.cat((features_aug2, context), dim=2) # (batch_size, emb_size, seq_length + context_size)
+            #print("features_aug1 w c", features_aug1.shape)
+
+        z_aug1 = features_aug1  # features are (batch_size, emb_size, seq_len)
+        z_aug1 = z_aug1.transpose(1, 2) # (batch_size, seq_len, emb_size)
         z_aug2 = features_aug2
         z_aug2 = z_aug2.transpose(1, 2)
 
         batch = z_aug1.shape[0]
-        t_samples = torch.randint(seq_len - self.timestep, size=(1,)).long().to(self.device)  # randomly pick time stamps
+        t_samples = torch.randint(self.config.ts_length - self.timestep, size=(1,)).long().to(self.device)  # randomly pick time stamps
 
         nce = 0  # average over timestep and batch
         encode_samples = torch.empty((self.timestep, batch, self.num_channels)).float().to(self.device)
@@ -208,14 +225,7 @@ class TC(nn.Module):
         for i in np.arange(1, self.timestep + 1):
             encode_samples[i - 1] = z_aug2[:, t_samples + i, :].view(batch, self.num_channels)
         forward_seq = z_aug1[:, :t_samples + 1, :]
-
-        if self.config.context:
-            # add context to forward_seq
-            context = context.unsqueeze(1)
-            #repeat context to match the shape of forward_seq in dim 1
-            context = context.repeat(1, forward_seq.shape[1], 1)
-            forward_seq = torch.cat((forward_seq, context), dim=2) # (batch_size, 1, emb_size + context_size)
-
+        
         # apply transformer
         c_t = self.seq_transformer(forward_seq)
 
@@ -227,4 +237,6 @@ class TC(nn.Module):
             total = torch.mm(encode_samples[i], torch.transpose(pred[i], 0, 1))
             nce += torch.sum(torch.diag(self.lsoftmax(total)))
         nce /= -1. * batch * self.timestep
+
+        # contextual contrasting
         return nce, self.projection_head(c_t)
