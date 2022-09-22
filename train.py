@@ -42,23 +42,22 @@ class Trainer:
 
             if self.config.experiment_name == "simple_transformer":
                 pred = self.net(tsindex, data, context, self.attention_masks)
-                pred = pred.reshape(pred.shape[0], -1)   
+                if self.config.context:
+                    data = torch.cat((data, context), dim=1)
             else: 
                 pred = self.net(data)
+            
  
-            #print("data shape for loss: ", data.shape)
             #print("pred shape for loss: ", pred.shape) 
-            #concat data and context for loss calculation
-            data_c = torch.cat((data, context), dim=1)
-            #print("data_c shape for loss: ", data_c.shape)
-            loss = self.criterion(pred, data_c)
+            #print("data shape for loss: ", data.shape)
+            loss = self.criterion(pred, data)
 
             if phase == 'train':
                 self.optimizer.zero_grad()
                 loss.backward()
                 self.optimizer.step()
 
-            meter.update(pred.detach().numpy(), data_c, phase, loss.item())
+            meter.update(pred.detach().numpy(), data, phase, loss.item())
 
         metrics = meter.get_metrics()
         metrics = {k:v / i for k, v in metrics.items()}
@@ -96,7 +95,7 @@ class Trainer:
 
         with torch.no_grad():
             for i, (data, target, tsindex, context) in enumerate(self.dataloaders['test']):
-
+                
                 if self.config.experiment_name != "simple_transformer":
                     data = positional_encoding(self.config, data, tsindex)
                     if self.config.context:
@@ -104,10 +103,11 @@ class Trainer:
 
                 if self.config.experiment_name == "simple_transformer":
                     pred = self.net(tsindex, data, context, self.attention_masks)
-                    pred = pred.reshape(pred.shape[0], -1)   
+                    if self.config.context:
+                        data = torch.cat((data, context), dim=1)
                 else: 
                     pred = self.net(data)
-
+ 
                 embeddings = np.append(embeddings, pred.detach().numpy() )
                 targets = np.append(targets, target.detach().numpy())  #always +bs
         
