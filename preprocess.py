@@ -179,9 +179,11 @@ def load_psa_data_to_pd(file_name: str, config: dict) -> pd.DataFrame:
     if config.upsample:
         df = upsample_data(df, config)
 
+    print("class distribution: \n", df['pros_cancer'].value_counts())
+
     df.drop(['plco_id'], axis=1, inplace=True)
     df.dropna(axis=0, inplace=True)
-    df[df < 0] = 0
+    #df[df < 0] = 0
 
     return df
 
