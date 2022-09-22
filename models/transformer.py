@@ -144,8 +144,7 @@ class TSTransformerEncoder(nn.Module):
         output = self.dropout(output)
         # linear(d_model,feat_dim) vectorizes the operation over (seq_length, batch_size).
         output = self.output_layer(output)  # (batch_size, seq_length, emb_size)
-        #output = self.max_pool(output)
-
+        output = output.reshape([output.shape[0], -1])  # (batch_size, seq_length * emb_size)
         return output
 
 
