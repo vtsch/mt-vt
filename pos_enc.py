@@ -24,6 +24,11 @@ def positional_encoding(config, inp, indices):
         out = dropout(inp)
     
     if config.pos_enc == "learnable_pos_enc":
+        """Inputs of forward function # TODO: handle 2d case 
+        Args:
+            inp: the sequence fed to the positional encoder model (required). [sequence length, batch size, embed dim]
+            output: [sequence length, batch size, embed dim]
+        """
         inp = inp + lpe[:inp.size(0), :]
         out = dropout(inp)
 

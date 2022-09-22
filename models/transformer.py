@@ -114,37 +114,36 @@ class TSTransformerEncoder(nn.Module):
     def forward(self, indices, data, context, attention_masks):
         """
         Args:
-            X: (batch_size, seq_length, feat_dim) torch tensor of masked features (input)
+            X: (batch_size, seq_length, 1) torch tensor of masked features (input)
             padding_masks: (batch_size, seq_length) boolean tensor, 1 means keep vector at this position, 0 means padding
         Returns:
-            output: (batch_size, seq_length, feat_dim)
+            output: (batch_size, ts_length + context_dim)
         """
-        data = data.unsqueeze(2)
-        indices = indices.unsqueeze(2)
-        # permute because pytorch convention for transformers is [seq_length, batch_size, feat_dim]
-        inp = data.permute(1, 0, 2)
-        indices = indices.permute(1, 0, 2)
 
-        inp = self.project_inp(inp) * math.sqrt(self.config.emb_size)  # [seq_length, batch_size, d_model] project input vectors to d_model dimensional space
+        data = data.unsqueeze(1)
+        indices = indices.unsqueeze(1)
+
         #add positional encoding
-        pos_enc_inp = positional_encoding(self.config, inp, indices)  # # (seq_length, batch_size, d_model)
+        inp = positional_encoding(self.config, data, indices)  # # (ts_length, batch_size, d_model)
 
         if self.config.context:
-            # add context to forward_seq
-            context = context.unsqueeze(1)
-            context = context.permute(2, 0, 1)
             #repeat context to match the shape of pos_enc_inp in dim 2
-            context = context.repeat(1, 1, pos_enc_inp.shape[2])
-            pos_enc_inp = torch.cat((pos_enc_inp, context), dim=0) # (emb_size + context_size, batch_size, emb_size) )
+            context = context.unsqueeze(1)
+            inp = torch.cat((inp, context), dim=2) # (bs, 1, ts_length + context_dim)
+        
+        # permute because pytorch convention for transformers is [ts_length, batch_size, feat_dim=1]
+        inp = inp.permute(2, 0, 1)
+
+        inp = self.project_inp(inp) * math.sqrt(self.config.emb_size)  # [ts_length, batch_size, d_model] project input vectors to d_model dimensional space
         
         # NOTE: logic for padding masks is reversed to comply with definition in MultiHeadAttention, TransformerEncoderLayer
-        output = self.transformer_encoder(pos_enc_inp, src_key_padding_mask=~attention_masks)  # (seq_length, batch_size, d_model)
-        output = self.act(output)  # the output transformer encoder/decoder embeddings don't include non-linearity
-        output = output.permute(1, 0, 2)  # (batch_size, seq_length, d_model)
+        output = self.transformer_encoder(inp, src_key_padding_mask=~attention_masks)  # (seq_length, batch_size, d_model)
+        output = self.act(output)  # the output transformer encoder/decoder embeddings don't include non-linearity  # (seq_length, batch_size, emb_size)
+        output = output.permute(1, 0, 2)  # (batch_size, ts_length, d_model)
         output = self.dropout(output)
-        # linear(d_model,feat_dim) vectorizes the operation over (seq_length, batch_size).
-        output = self.output_layer(output)  # (batch_size, seq_length, emb_size)
-        output = output.reshape([output.shape[0], -1])  # (batch_size, seq_length * emb_size)
+        # linear(d_model,feat_dim) vectorizes the operation over (ts_length, batch_size).
+        output = self.output_layer(output)  # (batch_size, ts_length, 1)
+        output = output.reshape([output.shape[0], -1])  # (batch_size, ts_length + context_dim)
         return output
 
 
