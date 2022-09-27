@@ -46,7 +46,6 @@ class Trainer:
                     data = torch.cat((data, context), dim=1)
             else: 
                 pred = self.net(data)
-            
  
             #print("pred shape for loss: ", pred.shape) 
             #print("data shape for loss: ", data.shape)
@@ -57,7 +56,7 @@ class Trainer:
                 loss.backward()
                 self.optimizer.step()
 
-            meter.update(pred.detach().numpy(), data, phase, loss.item())
+            meter.update(pred, data, phase, loss.item())
 
         metrics = meter.get_metrics()
         metrics = {k:v / i for k, v in metrics.items()}

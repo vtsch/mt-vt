@@ -23,8 +23,8 @@ class Meter:
         self.metrics = {}
 
     def update(self, x, y, phase, loss):
-        #x = np.argmax(x.detach().cpu().numpy(), axis=1)
-        #y = y.detach().cpu().numpy()
+        x = x.detach().cpu().numpy()
+        y = y.detach().cpu().numpy()
         self.metrics[phase + '_loss'] += loss
         self.metrics[phase + '_mse'] += mean_squared_error(x,y)
         self.metrics[phase + '_mae'] += mean_absolute_error(x,y)
