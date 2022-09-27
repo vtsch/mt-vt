@@ -20,6 +20,8 @@ if __name__ == '__main__':
 
     config = Config()
 
+    file_name = "data/pros_data_mar22_d032222.csv"
+
     save_path = build_save_path(config)
     os.makedirs(save_path)
     config.model_save_path = save_path
@@ -27,23 +29,21 @@ if __name__ == '__main__':
     experiment = build_comet_logger(config)
     cwd = os.getcwd()
     experiment.log_asset_folder(folder=cwd, step=None, log_file_name=True, recursive=False)
-
-    # load and preprocess PSA or ECG data 
-    file_name = "data/pros_data_mar22_d032222.csv"
-    df_psa = load_psa_data_to_pd(file_name, config)
-
         
     # run kmeans on raw data
     if config.experiment_name == "raw_data":
         df_psa = load_psa_df(file_name)
         y_real = df_psa['pros_cancer']
-        df_psa = df_psa.iloc[:,:-2]
+        df_psa = df_psa.iloc[:,:-1]
         df_train_values = df_psa.values
         kmeans_labels = run_kmeans_and_plots(df_train_values, config, experiment)
         df = df_psa.to_numpy()
         plot_datapoints(df, kmeans_labels, config.experiment_name, experiment)
         run_umap(df_psa, y_real, kmeans_labels, config.experiment_name, experiment)
         calculate_clustering_scores(y_real.astype(int), kmeans_labels, experiment)
+
+    # load and preprocess data 
+    df_psa = load_psa_data_to_pd(file_name, config)
 
     # run embedding models and kmeans
     if config.experiment_name == "simple_ac":
@@ -146,10 +146,6 @@ if __name__ == '__main__':
             model_dict.update(pretrained_dict)
             model.load_state_dict(model_dict)
 
-        # Trainer
-        trainer = TSTCCTrainer(config=config, experiment=experiment, data=df_psa, net=model)
-        trainer.run()
-
         if config.tstcc_training_mode == "train_linear":
             chkpoint = torch.load(os.path.join(config.tstcc_model_saved_dir, "ckp_last.pt"), map_location=config.device)
             pretrained_dict = chkpoint["model_state_dict"]
@@ -169,6 +165,10 @@ if __name__ == '__main__':
             model_dict.update(pretrained_dict)
             model.load_state_dict(model_dict)
             set_requires_grad(model, pretrained_dict, requires_grad=False)  # Freeze everything except last layer.
+        
+        # Trainer
+        trainer = TSTCCTrainer(config=config, experiment=experiment, data=df_psa, net=model)
+        trainer.run()
 
         if config.tstcc_training_mode != "self_supervised":
             # Testing
@@ -183,5 +183,9 @@ if __name__ == '__main__':
             run_umap(embeddings, true_labels, pred_labels, config.experiment_name+config.tstcc_training_mode+"pred", experiment)
             calculate_clustering_scores(true_labels.astype(int), kmeans_labels.astype(int), experiment)
             calculate_clustering_scores(true_labels.astype(int), pred_labels.astype(int), experiment)
+            if config.n_clusters > 2:
+                kmeans_labels[kmeans_labels >= 1] = 1
+                calculate_clustering_scores(true_labels.astype(int), kmeans_labels, experiment)
+
 
 
