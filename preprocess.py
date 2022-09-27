@@ -63,11 +63,14 @@ def load_psa_df(file_name):
     df = pd.read_csv(file_name, header=0)
     # select columns with psa data, set threshold to have at least 5 measurements
     # psa_levels per year: 69-74
-    # level from most recent test prior to diagnosis: 5
     # pros_cancer label: 4
-    df = df.iloc[:, [69, 70, 71, 72, 73, 74, 5, 4]]
-    df.dropna(thresh=4, inplace=True)
-    df.fillna(0, inplace=True)
+    df = df.iloc[:, [69, 70, 71, 72, 73, 74, 4]]
+    #df.dropna(thresh=4, inplace=True)
+    if df.iloc[:, :6].isnull().values.any():
+        df.dropna(axis=0, inplace=True)
+    
+    print("class distribution: \n", df['pros_cancer'].value_counts())
+    #df.fillna(0, inplace=True)
     return df
 
 def create_gleas_df(df):
@@ -99,8 +102,7 @@ def create_context_df(df, config):
     context_b = 144 if config.context_bmi else None
     context_c = 201 if config.context_center else None
     context_a = 205 if config.context_age else None
-    context_r = 120 if config.context_race else None
-    indices = [context_b, context_c, context_a, context_r, 44]
+    indices = [context_b, context_c, context_a, 44]
     indices = [i for i in indices if i is not None]
     df = df.iloc[:, indices]
     return df
@@ -178,11 +180,16 @@ def load_psa_data_to_pd(file_name: str, config: dict) -> pd.DataFrame:
 
     if config.upsample:
         df = upsample_data(df, config)
+    
+    # drop rows that have nan in psa levels
+    if df.iloc[:, :6].isnull().values.any():
+        df.dropna(axis=0, inplace=True)
 
     print("class distribution: \n", df['pros_cancer'].value_counts())
 
     df.drop(['plco_id'], axis=1, inplace=True)
-    df.dropna(axis=0, inplace=True)
+    #fill nan values with -1
+    df.fillna(-1, inplace=True)
     #df[df < 0] = 0
 
     return df
