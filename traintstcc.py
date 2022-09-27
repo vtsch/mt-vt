@@ -75,8 +75,8 @@ class TSTCCTrainer:
 
             if self.config.tstcc_training_mode == "self_supervised":
                 #encode augmented data
-                predictions1, features1 = self.net(aug1)
-                predictions2, features2 = self.net(aug2)
+                logits1, features1 = self.net(aug1)
+                logits2, features2 = self.net(aug2)
 
                 # normalize projection feature vectors
                 features1 = F.normalize(features1, dim=1)
@@ -92,19 +92,17 @@ class TSTCCTrainer:
             else:
                 if self.config.context:
                     data_pos_enc = torch.cat((data_pos_enc, context), dim=1) # (batch_size, ts_length + context_dim)
-                output = self.net(data_pos_enc)
+                logits, features = self.net(data_pos_enc)
 
             # compute loss
             if self.config.tstcc_training_mode == "self_supervised":
                 lambda1 = 1
                 lambda2 = 0.7
                 nt_xent_criterion = NTXentLoss(self.config.device, self.config.batch_size, use_cosine_similarity=True)
-                loss = (temp_cont_loss1 + temp_cont_loss2) * lambda1 +  nt_xent_criterion(zis, zjs) * lambda2
-                
-            else: # supervised training or fine tuining
-                predictions, features = output
-                loss = self.criterion(predictions, labels.long())
-                total_acc.append(labels.eq(predictions.detach().argmax(dim=1)).float().mean())
+                loss = (temp_cont_loss1 + temp_cont_loss2) * lambda1 +  nt_xent_criterion(zis, zjs) * lambda2    
+            else:
+                loss = self.criterion(logits, labels.long())
+                total_acc.append(labels.eq(logits.detach().argmax(dim=1)).float().mean())
 
             total_loss.append(loss.item())
             loss.backward()
@@ -148,13 +146,13 @@ class TSTCCTrainer:
 
                 # compute loss
                 if self.config.tstcc_training_mode != "self_supervised":
-                    predictions, features = output
-                    loss = eval_criterion(predictions, labels.long())
-                    total_acc.append(labels.eq(predictions.detach().argmax(dim=1)).float().mean())
+                    logits, features = output
+                    loss = eval_criterion(logits, labels.long())
+                    total_acc.append(labels.eq(logits.detach().argmax(dim=1)).float().mean())
                     total_loss.append(loss.item())
 
                 if self.config.tstcc_training_mode != "self_supervised":
-                    pred = predictions.max(1, keepdim=True)[1]  # get the index of the max log-probability
+                    pred = logits.max(1, keepdim=True)[1]  # get the index of the max log-probability
                     outs = np.append(outs, pred.cpu().numpy())
                     trgs = np.append(trgs, labels.data.cpu().numpy())
                     embeddings = np.append(embeddings, features.detach().numpy())
