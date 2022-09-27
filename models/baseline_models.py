@@ -119,6 +119,7 @@ class LSTMencoder(nn.Module):
                             # dropout=dropout_p if num_rnn_layers>1 else 0, bidirectional=bidirectional,
         self.avgpool = nn.AdaptiveAvgPool1d((config.bl_hidden_size//2))
         self.fc = nn.Linear(in_features=config.bl_hidden_size//2, out_features=1)
+        self.logits = nn.Linear(1, config.n_clusters)
         
 
     def forward(self, x):
@@ -133,5 +134,6 @@ class LSTMencoder(nn.Module):
         emb = self.avgpool(lstm_out)
         emb = self.fc(emb)
         emb = emb.reshape(emb.shape[0], -1)
-        return emb     
+        logits = self.logits(emb)
+        return emb
     
