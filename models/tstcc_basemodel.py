@@ -29,7 +29,6 @@ class base_Model(nn.Module):
 
         model_output_dim = config.ts_length
 
-        #self.logits = nn.Linear((model_output_dim * config.emb_size + config.context_count_size), config.n_clusters)
         self.logits = nn.Linear(model_output_dim * config.emb_size, config.n_clusters)
 
     def forward(self, x_in):
@@ -37,6 +36,7 @@ class base_Model(nn.Module):
         x_in = x_in.float()   
         if self.config.tstcc_training_mode != "self_supervised":
             x_in = x_in.reshape(self.config.batch_size, 1, self.config.ts_length+self.config.context_count_size)
+
         x = self.conv_block1(x_in)
         x = self.conv_block2(x)
         x = self.conv_block3(x) # (batch_size, emb_size, ts_length)
