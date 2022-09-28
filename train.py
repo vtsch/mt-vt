@@ -31,7 +31,7 @@ class Trainer:
         meter = Meter()
         meter.init_metrics(phase)
 
-        for i, (data, target, tsindex, context) in enumerate(self.dataloaders[phase]):
+        for i, (data, _, tsindex, context) in enumerate(self.dataloaders[phase]):
             #data = data.to(config.device)
             #target = target.to(config.device)
 
@@ -89,11 +89,11 @@ class Trainer:
 
     def eval(self):
         self.net.eval()
-        targets = np.array([])
+        labels = np.array([])
         embeddings = np.array([])
 
         with torch.no_grad():
-            for i, (data, target, tsindex, context) in enumerate(self.dataloaders['test']):
+            for i, (data, label, tsindex, context) in enumerate(self.dataloaders['test']):
                 
                 if self.config.experiment_name != "simple_transformer":
                     data = positional_encoding(self.config, data, tsindex)
@@ -108,12 +108,12 @@ class Trainer:
                     pred = self.net(data)
  
                 embeddings = np.append(embeddings, pred.detach().numpy() )
-                targets = np.append(targets, target.detach().numpy())  #always +bs
+                labels = np.append(labels, label.detach().numpy())  #always +bs
         
-            embeddings = embeddings.reshape(targets.shape[0], -1)
+            embeddings = embeddings.reshape(labels.shape[0], -1)
             df_logs = pd.DataFrame([])
 
-        return targets, embeddings, df_logs
+        return labels, embeddings, df_logs
 
             
             
