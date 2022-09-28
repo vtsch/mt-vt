@@ -139,27 +139,27 @@ class TSTCCTrainer:
 
                 if self.config.tstcc_training_mode == "self_supervised":
                     pass
+
                 else:
                     if self.config.context:
                         data_pos_enc = torch.cat((data_pos_enc, context), dim=1) # (batch_size, ts_length + context_dim)
-                    output = self.net(data_pos_enc)
+                    logits, features = self.net(data_pos_enc)
 
-                # compute loss
-                if self.config.tstcc_training_mode != "self_supervised":
-                    logits, features = output
+                    # compute loss
                     loss = eval_criterion(logits, labels.long())
                     total_acc.append(labels.eq(logits.detach().argmax(dim=1)).float().mean())
                     total_loss.append(loss.item())
 
-                if self.config.tstcc_training_mode != "self_supervised":
-                    pred = logits.max(1, keepdim=True)[1]  # get the index of the max log-probability
+                    # return embeddings, predictions and targets
+                    pred = logits.max(1, keepdim=True)[1]  # get max of logit
+                    feat = features.max(1, keepdim=True)[1] # get max of features
                     outs = np.append(outs, pred.cpu().numpy())
                     trgs = np.append(trgs, labels.data.cpu().numpy())
-                    embeddings = np.append(embeddings, features.detach().numpy())
+                    embeddings = np.append(embeddings, feat.detach().numpy())
 
         if self.config.tstcc_training_mode != "self_supervised":
             total_loss = torch.tensor(total_loss).mean()  # average loss
-            embeddings = embeddings.reshape(trgs.shape[0], -1, features.shape[2])
+            embeddings = embeddings.reshape(trgs.shape[0], -1) # reshape embeddings
         else:
             total_loss = 0
 

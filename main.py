@@ -174,8 +174,7 @@ if __name__ == '__main__':
             # Testing
             outs = trainer.model_evaluate()
             total_loss, total_acc, pred_labels, true_labels, embeddings = outs
-            #embeddings have shape (test set length,out size,emb_size)
-            embeddings = embeddings.reshape(embeddings.shape[0], -1) #reshape to (test set length,out size*emb_size, 1)
+
             kmeans_labels = run_kmeans_only(embeddings, config)
             plot_datapoints(embeddings, kmeans_labels, config.experiment_name+"kmeans", experiment)
             plot_datapoints(embeddings, pred_labels.astype(int), config.experiment_name+"pred", experiment)
