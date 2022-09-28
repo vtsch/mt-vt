@@ -161,13 +161,14 @@ if __name__ == '__main__':
             outs = trainer.model_evaluate()
             total_loss, total_acc, pred_labels, true_labels, embeddings = outs
 
+            plot_datapoints(embeddings, pred_labels.astype(int), config.experiment_name+"pred", experiment)
+            run_umap(embeddings, true_labels, pred_labels, config.experiment_name+config.tstcc_training_mode+"pred", experiment)
+            calculate_clustering_scores(true_labels.astype(int), pred_labels.astype(int), experiment)
+
             kmeans_labels = run_kmeans_only(embeddings, config)
             plot_datapoints(embeddings, kmeans_labels, config.experiment_name+"kmeans", experiment)
-            plot_datapoints(embeddings, pred_labels.astype(int), config.experiment_name+"pred", experiment)
             run_umap(embeddings, true_labels, kmeans_labels, config.experiment_name+config.tstcc_training_mode+"kmeans", experiment)
-            run_umap(embeddings, true_labels, pred_labels, config.experiment_name+config.tstcc_training_mode+"pred", experiment)
             calculate_clustering_scores(true_labels.astype(int), kmeans_labels.astype(int), experiment)
-            calculate_clustering_scores(true_labels.astype(int), pred_labels.astype(int), experiment)
 
     # calculate F1 score for all combination of labels
     if config.n_clusters == 3 and config.experiment_name != "raw_data":
