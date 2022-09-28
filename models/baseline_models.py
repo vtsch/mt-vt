@@ -134,6 +134,5 @@ class LSTMencoder(nn.Module):
         emb = self.avgpool(lstm_out)
         emb = self.fc(emb)
         emb = emb.reshape(emb.shape[0], -1)
-        logits = self.logits(emb)
         return emb
     
