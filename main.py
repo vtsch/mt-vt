@@ -6,7 +6,7 @@ from torchsummary import summary
 from configs import Config
 from preprocess import load_psa_data_to_pd, load_psa_df
 from kmeans import run_kmeans_and_plots, run_kmeans_only, plot_datapoints
-from metrics import calculate_clustering_scores
+from metrics import calculate_clustering_scores, log_cluster_combinations
 from utils import get_bunch_config_from_json, build_save_path, build_comet_logger, set_requires_grad
 from umapplot import run_umap
 from train import Trainer
@@ -51,55 +51,44 @@ if __name__ == '__main__':
         summary(model, input_size=(1, config.ts_length))
         trainer = Trainer(config=config, experiment=experiment, data=df_psa, net=model)
         trainer.run()
-        targets, output, _ = trainer.eval()
+        true_labels, output, _ = trainer.eval()
     
         kmeans_labels = run_kmeans_and_plots(output, config, experiment)
-        run_umap(output, targets, kmeans_labels, config.experiment_name, experiment)
-        calculate_clustering_scores(targets.astype(int), kmeans_labels, experiment)
-        if config.n_clusters > 2:
-            kmeans_labels[kmeans_labels >= 1] = 1
-            calculate_clustering_scores(targets.astype(int), kmeans_labels, experiment)
+        run_umap(output, true_labels, kmeans_labels, config.experiment_name, experiment)
+        calculate_clustering_scores(true_labels.astype(int), kmeans_labels, experiment)
 
     if config.experiment_name == "deep_ac":
         model = DeepAutoencoder(config)
         summary(model, input_size=(1, config.ts_length))
         trainer = Trainer(config=config, experiment=experiment, data=df_psa, net=model)
         trainer.run()
-        targets, output, _ = trainer.eval()
+        true_labels, output, _ = trainer.eval()
         kmeans_labels = run_kmeans_and_plots(output, config, experiment)
-        run_umap(output, targets, kmeans_labels, config.experiment_name, experiment)
-        calculate_clustering_scores(targets.astype(int), kmeans_labels, experiment)
-        if config.n_clusters > 2:
-            kmeans_labels[kmeans_labels >= 1] = 1
-            calculate_clustering_scores(targets.astype(int), kmeans_labels, experiment)
+        run_umap(output, true_labels, kmeans_labels, config.experiment_name, experiment)
+        calculate_clustering_scores(true_labels.astype(int), kmeans_labels, experiment)
 
     if config.experiment_name == "lstm": 
         model = LSTMencoder(config)
         print(model)
         trainer = Trainer(config=config, experiment=experiment, data=df_psa, net=model)
         trainer.run()
-        targets, output, _ = trainer.eval()
+        true_labels, output, _ = trainer.eval()
 
         kmeans_labels = run_kmeans_and_plots(output, config, experiment)
-        run_umap(output, targets, kmeans_labels, config.experiment_name, experiment)
-        calculate_clustering_scores(targets.astype(int), kmeans_labels, experiment)
-        if config.n_clusters > 2:
-            kmeans_labels[kmeans_labels >= 1] = 1
-            calculate_clustering_scores(targets.astype(int), kmeans_labels, experiment)
+        run_umap(output, true_labels, kmeans_labels, config.experiment_name, experiment)
+        calculate_clustering_scores(true_labels.astype(int), kmeans_labels, experiment)
+
 
     if config.experiment_name == "cnn":
         model = CNN(config)
         summary(model, input_size=(1, config.ts_length))
         trainer = Trainer(config=config, experiment=experiment, data=df_psa, net=model)
         trainer.run()
-        targets, output, _ = trainer.eval()
+        true_labels, output, _ = trainer.eval()
 
         kmeans_labels = run_kmeans_and_plots(output, config, experiment)
-        run_umap(output, targets, kmeans_labels, config.experiment_name, experiment)
-        calculate_clustering_scores(targets.astype(int), kmeans_labels, experiment)
-        if config.n_clusters > 2:
-            kmeans_labels[kmeans_labels >= 1] = 1
-            calculate_clustering_scores(targets.astype(int), kmeans_labels, experiment)
+        run_umap(output, true_labels, kmeans_labels, config.experiment_name, experiment)
+        calculate_clustering_scores(true_labels.astype(int), kmeans_labels, experiment)
     
 
     if config.experiment_name == "simple_transformer": 
@@ -107,14 +96,11 @@ if __name__ == '__main__':
         summary(model, input_size=(1, config.ts_length))
         trainer = Trainer(config=config, experiment=experiment, data=df_psa, net=model)
         trainer.run()
-        targets, predictions, _ = trainer.eval()
+        true_labels, predictions, _ = trainer.eval()
     
         kmeans_labels = run_kmeans_and_plots(predictions, config, experiment)
-        run_umap(predictions, targets, kmeans_labels, config.experiment_name, experiment)
-        calculate_clustering_scores(targets.astype(int), kmeans_labels, experiment)
-        if config.n_clusters > 2:
-            kmeans_labels[kmeans_labels >= 1] = 1
-            calculate_clustering_scores(targets.astype(int), kmeans_labels, experiment)
+        run_umap(predictions, true_labels, kmeans_labels, config.experiment_name, experiment)
+        calculate_clustering_scores(true_labels.astype(int), kmeans_labels, experiment)
     
     if config.experiment_name == "ts_tcc":
         experiment.set_name(config.experiment_name+config.tstcc_training_mode)
@@ -182,9 +168,11 @@ if __name__ == '__main__':
             run_umap(embeddings, true_labels, pred_labels, config.experiment_name+config.tstcc_training_mode+"pred", experiment)
             calculate_clustering_scores(true_labels.astype(int), kmeans_labels.astype(int), experiment)
             calculate_clustering_scores(true_labels.astype(int), pred_labels.astype(int), experiment)
-            if config.n_clusters > 2:
-                kmeans_labels[kmeans_labels >= 1] = 1
-                calculate_clustering_scores(true_labels.astype(int), kmeans_labels, experiment)
+
+    # calculate F1 score for all combination of labels
+    if config.n_clusters == 3 and config.experiment_name != "raw_data":
+        log_cluster_combinations(true_labels.astype(int), kmeans_labels, experiment)
+
 
 
 
