@@ -8,7 +8,7 @@ class Config(object):
 
         # kmeans
         self.metric = "dtw"  # metric : {“euclidean”, “dtw”, “softdtw”}
-        self.n_clusters = 2
+        self.n_clusters = 3
         self.n_clusters_real = 2
 
         # data
@@ -19,27 +19,25 @@ class Config(object):
 
         # experiment
         self.experiment_name = "simple_transformer" # "raw_data", "simple_ac", "deep_ac", "lstm", "cnn", "simple_transformer", "ts_tcc"
-        self.tstcc_training_mode = "self_supervised" # random_init, supervised, self_supervised, fine_tune, train_linear
+        self.tstcc_training_mode = "supervised" # random_init, supervised, self_supervised, fine_tune, train_linear
 
         # contexts
         self.context = True
         self.context_bmi = True
         self.context_age = True
         self.context_center = True
-        self.context_race = True
-        self.context_count = 4 if self.context_bmi and self.context_age and self.context_center and self.context_race else 1
+        self.context_count = 3 if self.context_bmi and self.context_age and self.context_center else 1
         self.context_count_size = self.context_count if self.context else 0 
 
         # additional info
-        self.pos_enc = "none" # "absolute_days", "delta_days", "learnable_pos_enc", "age_pos_enc", "rotary_pos_enc", "none"
-        self.feat_dim = 1 if self.context == False else 6+self.context_count
-        self.emb_size = 10 #if self.experiment_name != "simple_transformer" else 6
+        self.pos_enc = "learnable_pos_enc" # "absolute_days", "delta_days", "learnable_pos_enc", "age_pos_enc", "none", #"rotary_pos_enc",
+        self.emb_size = 6 
 
         # for training models
         self.loss_fn = torch.nn.CrossEntropyLoss()  #torch.nn.CrossEntropyLoss() #MSELoss for LSTM
         self.lr = 0.001
         self.batch_size = 8
-        self.n_epochs = 30
+        self.n_epochs = 10
         self.dropout = 0.1
         self.bl_hidden_size = 12
         self.num_layers = 1
@@ -51,7 +49,7 @@ class Config(object):
         self.dim_feedforward = 128
 
         # ts-tcc
-        self.tstcc_model_saved_dir = "saved_models/ts_tcc/self_supervised/22-09-20_12-22-38"
+        self.tstcc_model_saved_dir = "saved_models/ts_tcc/self_supervised/22-09-22_17-36-27"
         self.hidden_dim = 100
         self.tstcc_aug = False
 
