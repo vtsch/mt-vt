@@ -119,12 +119,12 @@ class TSTransformerEncoder(nn.Module):
         Returns:
             output: (batch_size, ts_length + context_dim)
         """
-
-        data = data.unsqueeze(1)
-        indices = indices.unsqueeze(1)
-
-        #add positional encoding
+        # add positional encoding
         inp = positional_encoding(self.config, data, indices)  # # (ts_length, batch_size, d_model)
+
+        # adjust shapes for transformer
+        inp = inp.unsqueeze(1)
+        indices = indices.unsqueeze(1)
 
         if self.config.context:
             #repeat context to match the shape of pos_enc_inp in dim 2
