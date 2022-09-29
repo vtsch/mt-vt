@@ -5,11 +5,6 @@ import json
 import os
 from datetime import datetime
 from bunch import Bunch
-from shutil import copy
-import numpy as np
-import torch
-from sklearn.metrics import classification_report, cohen_kappa_score, confusion_matrix, accuracy_score
-import pandas as pd
 
 def get_args() -> argparse.Namespace:
     argparser = argparse.ArgumentParser()
@@ -45,7 +40,7 @@ def build_save_path(config: Bunch) -> str:
     current_timestamp = datetime.now().strftime("%y-%m-%d_%H-%M-%S")
 
     return os.path.join(
-        config.model_save_dir, config.experiment_name, config.tstcc_training_mode, current_timestamp
+        config.model_save_dir, config.experiment_name, config.tstcc_training_mode, config.pos_enc, current_timestamp
     )
 
 def build_comet_logger(config: Bunch) -> Experiment:
