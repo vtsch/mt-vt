@@ -1,8 +1,8 @@
 import comet_ml
 import torch
 import os
-import numpy as np
 from torchsummary import summary
+import argparse
 from configs import Config
 from preprocess import load_psa_data_to_pd, load_psa_df
 from kmeans import run_kmeans_and_plots, run_kmeans_only, plot_datapoints
@@ -18,7 +18,44 @@ from models.tstcc_basemodel import base_Model
 
 if __name__ == '__main__':
 
+    parser = argparse.ArgumentParser()
+
+    ######################## Model parameters ########################
+    parser.add_argument('--n', default=2, type=int,
+                        help='nr of clusters')
+    parser.add_argument('--exp', default="raw_data", type=str,
+                        help='raw_data, simple_ac, deep_ac, lstm, cnn, simple_transformer, ts_tcc')
+    parser.add_argument('--tstcc_tm', default="supervised", type=str, help='random_init, supervised, self_supervised, fine_tune, train_linear')
+    parser.add_argument('--pos_enc', default="none", type=str, help='none, absolute_days, delta_days, learnable_pos_enc, age_pos_enc')
+    parser.add_argument('--c', default=False, type=bool, help='use context')
+    parser.add_argument('--c_a', default=True, type=bool, help='use age as context')
+    parser.add_argument('--c_b', default=True, type=bool, help='use bmi as context')
+    parser.add_argument('--c_c', default=True, type=bool, help='use center as context')
+    parser.add_argument('--tstcc_mod_sdir', default="saved_models/ts_tcc/self_supervised/absolute_days/22-09-29_11-58-03all", type=str, help='ts_tcc model save dir')
+    
+    #self.n_clusters = 2
+    #self.experiment_name = "raw_data" # "raw_data", "simple_ac", "deep_ac", "lstm", "cnn", "simple_transformer", "ts_tcc"
+    #self.tstcc_training_mode = "supervised" # random_init, supervised, self_supervised, fine_tune, train_linear
+    #self.context = False
+    #self.context_bmi = True
+    #self.context_age = True
+    #self.context_center = True
+    #self.pos_enc = "none" # "none", "absolute_days", "delta_days", "learnable_pos_enc", "age_pos_enc", #"rotary_pos_enc",
+    #self.tstcc_model_saved_dir = "saved_models/ts_tcc/self_supervised/absolute_days/22-09-29_11-58-03all"
+
+
+    args = parser.parse_args()
+
     config = Config()
+    config.n_clusters = args.n
+    config.experiment_name = args.exp
+    config.tstcc_training_mode = args.tstcc_tm
+    config.pos_enc = args.pos_enc
+    config.context = args.c
+    config.context_age = args.c_a
+    config.context_bmi = args.c_b
+    config.context_center = args.c_c
+    config.tstcc_model_saved_dir = args.tstcc_mod_sdir
 
     file_name = "data/pros_data_mar22_d032222.csv"
 

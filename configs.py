@@ -8,7 +8,7 @@ class Config(object):
 
         # kmeans
         self.metric = "dtw"  # metric : {“euclidean”, “dtw”, “softdtw”}
-        self.n_clusters = 3
+        self.n_clusters = 2
         self.n_clusters_real = 2
 
         # data
@@ -18,11 +18,11 @@ class Config(object):
         self.ts_length = 6 
 
         # experiment
-        self.experiment_name = "ts_tcc" # "raw_data", "simple_ac", "deep_ac", "lstm", "cnn", "simple_transformer", "ts_tcc"
-        self.tstcc_training_mode = "train_linear" # random_init, supervised, self_supervised, fine_tune, train_linear
+        self.experiment_name = "raw_data" # "raw_data", "simple_ac", "deep_ac", "lstm", "cnn", "simple_transformer", "ts_tcc"
+        self.tstcc_training_mode = "supervised" # random_init, supervised, self_supervised, fine_tune, train_linear
 
         # contexts
-        self.context = True
+        self.context = False
         self.context_bmi = True
         self.context_age = True
         self.context_center = True
@@ -49,8 +49,5 @@ class Config(object):
         self.dim_feedforward = 128
 
         # ts-tcc
-        self.tstcc_model_saved_dir = "saved_models/ts_tcc/self_supervised/none/22-09-29_11-04-24"
+        self.tstcc_model_saved_dir = "saved_models/ts_tcc/self_supervised/absolute_days/22-09-29_11-58-03all"
         self.hidden_dim = 100
-        self.tstcc_aug = False
-
-        self.max_seg = 5

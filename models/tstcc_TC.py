@@ -15,7 +15,7 @@ def DataTransform(sample, config):
     jitter_scale_ratio = 0.001
     jitter_ratio = 0.001
     weak_aug = scaling(sample, jitter_scale_ratio)
-    strong_aug = jitter(permutation(sample, max_segments=config.max_seg), jitter_ratio)
+    strong_aug = jitter(permutation(sample, max_segments=5), jitter_ratio)
 
     return weak_aug, strong_aug
 
