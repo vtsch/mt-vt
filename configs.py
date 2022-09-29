@@ -1,5 +1,4 @@
 import torch
-import os
 
 class Config(object):
     def __init__(self):

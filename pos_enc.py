@@ -1,11 +1,6 @@
 import torch
-import torch.optim as optim
-import torch.nn.functional as F
 import torch.nn as nn
-import numpy as np
-from typing import Optional, Any
-import math
-from torch import long, nn, Tensor
+from torch import nn
 #from rotary_embedding_torch import RotaryEmbedding, apply_rotary_emb
 
 def positional_encoding(config, inp, indices):
