@@ -38,7 +38,6 @@ if __name__ == '__main__':
         df_train_values = df_psa.values
         kmeans_labels = run_kmeans_and_plots(df_train_values, config, experiment)
         df = df_psa.to_numpy()
-        plot_datapoints(df, kmeans_labels, config.experiment_name, experiment)
         run_umap(df_psa, y_real, kmeans_labels, config.experiment_name, experiment)
         calculate_clustering_scores(y_real.astype(int), kmeans_labels, experiment)
 
@@ -108,7 +107,6 @@ if __name__ == '__main__':
 
         if config.tstcc_training_mode == "random_init":
             model_dict = model.state_dict()
-
             # delete all the parameters except for logits
             del_list = ['logits']
             pretrained_dict_copy = model_dict.copy()
@@ -161,9 +159,9 @@ if __name__ == '__main__':
             outs = trainer.model_evaluate()
             total_loss, total_acc, pred_labels, true_labels, embeddings = outs
 
-            plot_datapoints(embeddings, pred_labels.astype(int), config.experiment_name+"pred", experiment)
-            run_umap(embeddings, true_labels, pred_labels, config.experiment_name+config.tstcc_training_mode+"pred", experiment)
-            calculate_clustering_scores(true_labels.astype(int), pred_labels.astype(int), experiment)
+            #plot_datapoints(embeddings, pred_labels.astype(int), config.experiment_name+"pred", experiment)
+            #run_umap(embeddings, true_labels, pred_labels, config.experiment_name+config.tstcc_training_mode+"pred", experiment)
+            #calculate_clustering_scores(true_labels.astype(int), pred_labels.astype(int), experiment)
 
             kmeans_labels = run_kmeans_only(embeddings, config)
             plot_datapoints(embeddings, kmeans_labels, config.experiment_name+"kmeans", experiment)
