@@ -1,12 +1,12 @@
 import comet_ml
 import torch
 import os
-import numpy as np
 from torchsummary import summary
+import argparse
 from configs import Config
 from preprocess import load_psa_data_to_pd, load_psa_df
 from kmeans import run_kmeans_and_plots, run_kmeans_only, plot_datapoints
-from metrics import calculate_clustering_scores
+from metrics import calculate_clustering_scores, log_cluster_combinations
 from utils import get_bunch_config_from_json, build_save_path, build_comet_logger, set_requires_grad
 from umapplot import run_umap
 from train import Trainer
@@ -18,7 +18,46 @@ from models.tstcc_basemodel import base_Model
 
 if __name__ == '__main__':
 
+    parser = argparse.ArgumentParser()
+
+    ######################## Model parameters ########################
+    parser.add_argument('--n', default=2, type=int,
+                        help='nr of clusters')
+    parser.add_argument('--exp', default="raw_data", type=str,
+                        help='raw_data, simple_ac, deep_ac, lstm, cnn, simple_transformer, ts_tcc')
+    parser.add_argument('--tstcc_tm', default="supervised", type=str, help='random_init, supervised, self_supervised, fine_tune, train_linear')
+    parser.add_argument('--pos_enc', default="none", type=str, help='none, absolute_days, delta_days, learnable_pos_enc, age_pos_enc')
+    parser.add_argument('--c', default=False, type=bool, help='use context')
+    parser.add_argument('--c_a', default=True, type=bool, help='use age as context')
+    parser.add_argument('--c_b', default=True, type=bool, help='use bmi as context')
+    parser.add_argument('--c_c', default=True, type=bool, help='use center as context')
+    parser.add_argument('--tstcc_mod_sdir', default="saved_models/ts_tcc/self_supervised/absolute_days/22-09-29_11-58-03all", type=str, help='ts_tcc model save dir')
+    
+    #self.n_clusters = 2
+    #self.experiment_name = "raw_data" # "raw_data", "simple_ac", "deep_ac", "lstm", "cnn", "simple_transformer", "ts_tcc"
+    #self.tstcc_training_mode = "supervised" # random_init, supervised, self_supervised, fine_tune, train_linear
+    #self.context = False
+    #self.context_bmi = True
+    #self.context_age = True
+    #self.context_center = True
+    #self.pos_enc = "none" # "none", "absolute_days", "delta_days", "learnable_pos_enc", "age_pos_enc", #"rotary_pos_enc",
+    #self.tstcc_model_saved_dir = "saved_models/ts_tcc/self_supervised/absolute_days/22-09-29_11-58-03all"
+
+
+    args = parser.parse_args()
+
     config = Config()
+    config.n_clusters = args.n
+    config.experiment_name = args.exp
+    config.tstcc_training_mode = args.tstcc_tm
+    config.pos_enc = args.pos_enc
+    config.context = args.c
+    config.context_age = args.c_a
+    config.context_bmi = args.c_b
+    config.context_center = args.c_c
+    config.tstcc_model_saved_dir = args.tstcc_mod_sdir
+
+    file_name = "data/pros_data_mar22_d032222.csv"
 
     save_path = build_save_path(config)
     os.makedirs(save_path)
@@ -27,23 +66,20 @@ if __name__ == '__main__':
     experiment = build_comet_logger(config)
     cwd = os.getcwd()
     experiment.log_asset_folder(folder=cwd, step=None, log_file_name=True, recursive=False)
-
-    # load and preprocess PSA or ECG data 
-    file_name = "data/pros_data_mar22_d032222.csv"
-    df_psa = load_psa_data_to_pd(file_name, config)
-
         
     # run kmeans on raw data
     if config.experiment_name == "raw_data":
         df_psa = load_psa_df(file_name)
         y_real = df_psa['pros_cancer']
-        df_psa = df_psa.iloc[:,:-2]
+        df_psa = df_psa.iloc[:,:-1]
         df_train_values = df_psa.values
         kmeans_labels = run_kmeans_and_plots(df_train_values, config, experiment)
         df = df_psa.to_numpy()
-        plot_datapoints(df, kmeans_labels, config.experiment_name, experiment)
         run_umap(df_psa, y_real, kmeans_labels, config.experiment_name, experiment)
         calculate_clustering_scores(y_real.astype(int), kmeans_labels, experiment)
+
+    # load and preprocess data 
+    df_psa = load_psa_data_to_pd(file_name, config)
 
     # run embedding models and kmeans
     if config.experiment_name == "simple_ac":
@@ -51,55 +87,44 @@ if __name__ == '__main__':
         summary(model, input_size=(1, config.ts_length))
         trainer = Trainer(config=config, experiment=experiment, data=df_psa, net=model)
         trainer.run()
-        targets, output, _ = trainer.eval()
+        true_labels, output, _ = trainer.eval()
     
         kmeans_labels = run_kmeans_and_plots(output, config, experiment)
-        run_umap(output, targets, kmeans_labels, config.experiment_name, experiment)
-        calculate_clustering_scores(targets.astype(int), kmeans_labels, experiment)
-        if config.n_clusters > 2:
-            kmeans_labels[kmeans_labels >= 1] = 1
-            calculate_clustering_scores(targets.astype(int), kmeans_labels, experiment)
+        run_umap(output, true_labels, kmeans_labels, config.experiment_name, experiment)
+        calculate_clustering_scores(true_labels.astype(int), kmeans_labels, experiment)
 
     if config.experiment_name == "deep_ac":
         model = DeepAutoencoder(config)
         summary(model, input_size=(1, config.ts_length))
         trainer = Trainer(config=config, experiment=experiment, data=df_psa, net=model)
         trainer.run()
-        targets, output, _ = trainer.eval()
+        true_labels, output, _ = trainer.eval()
         kmeans_labels = run_kmeans_and_plots(output, config, experiment)
-        run_umap(output, targets, kmeans_labels, config.experiment_name, experiment)
-        calculate_clustering_scores(targets.astype(int), kmeans_labels, experiment)
-        if config.n_clusters > 2:
-            kmeans_labels[kmeans_labels >= 1] = 1
-            calculate_clustering_scores(targets.astype(int), kmeans_labels, experiment)
+        run_umap(output, true_labels, kmeans_labels, config.experiment_name, experiment)
+        calculate_clustering_scores(true_labels.astype(int), kmeans_labels, experiment)
 
     if config.experiment_name == "lstm": 
         model = LSTMencoder(config)
         print(model)
         trainer = Trainer(config=config, experiment=experiment, data=df_psa, net=model)
         trainer.run()
-        targets, output, _ = trainer.eval()
+        true_labels, output, _ = trainer.eval()
 
         kmeans_labels = run_kmeans_and_plots(output, config, experiment)
-        run_umap(output, targets, kmeans_labels, config.experiment_name, experiment)
-        calculate_clustering_scores(targets.astype(int), kmeans_labels, experiment)
-        if config.n_clusters > 2:
-            kmeans_labels[kmeans_labels >= 1] = 1
-            calculate_clustering_scores(targets.astype(int), kmeans_labels, experiment)
+        run_umap(output, true_labels, kmeans_labels, config.experiment_name, experiment)
+        calculate_clustering_scores(true_labels.astype(int), kmeans_labels, experiment)
+
 
     if config.experiment_name == "cnn":
         model = CNN(config)
         summary(model, input_size=(1, config.ts_length))
         trainer = Trainer(config=config, experiment=experiment, data=df_psa, net=model)
         trainer.run()
-        targets, output, _ = trainer.eval()
+        true_labels, output, _ = trainer.eval()
 
         kmeans_labels = run_kmeans_and_plots(output, config, experiment)
-        run_umap(output, targets, kmeans_labels, config.experiment_name, experiment)
-        calculate_clustering_scores(targets.astype(int), kmeans_labels, experiment)
-        if config.n_clusters > 2:
-            kmeans_labels[kmeans_labels >= 1] = 1
-            calculate_clustering_scores(targets.astype(int), kmeans_labels, experiment)
+        run_umap(output, true_labels, kmeans_labels, config.experiment_name, experiment)
+        calculate_clustering_scores(true_labels.astype(int), kmeans_labels, experiment)
     
 
     if config.experiment_name == "simple_transformer": 
@@ -107,14 +132,11 @@ if __name__ == '__main__':
         summary(model, input_size=(1, config.ts_length))
         trainer = Trainer(config=config, experiment=experiment, data=df_psa, net=model)
         trainer.run()
-        targets, predictions, _ = trainer.eval()
+        true_labels, predictions, _ = trainer.eval()
     
         kmeans_labels = run_kmeans_and_plots(predictions, config, experiment)
-        run_umap(predictions, targets, kmeans_labels, config.experiment_name, experiment)
-        calculate_clustering_scores(targets.astype(int), kmeans_labels, experiment)
-        if config.n_clusters > 2:
-            kmeans_labels[kmeans_labels >= 1] = 1
-            calculate_clustering_scores(targets.astype(int), kmeans_labels, experiment)
+        run_umap(predictions, true_labels, kmeans_labels, config.experiment_name, experiment)
+        calculate_clustering_scores(true_labels.astype(int), kmeans_labels, experiment)
     
     if config.experiment_name == "ts_tcc":
         experiment.set_name(config.experiment_name+config.tstcc_training_mode)
@@ -122,7 +144,6 @@ if __name__ == '__main__':
 
         if config.tstcc_training_mode == "random_init":
             model_dict = model.state_dict()
-
             # delete all the parameters except for logits
             del_list = ['logits']
             pretrained_dict_copy = model_dict.copy()
@@ -146,10 +167,6 @@ if __name__ == '__main__':
             model_dict.update(pretrained_dict)
             model.load_state_dict(model_dict)
 
-        # Trainer
-        trainer = TSTCCTrainer(config=config, experiment=experiment, data=df_psa, net=model)
-        trainer.run()
-
         if config.tstcc_training_mode == "train_linear":
             chkpoint = torch.load(os.path.join(config.tstcc_model_saved_dir, "ckp_last.pt"), map_location=config.device)
             pretrained_dict = chkpoint["model_state_dict"]
@@ -169,19 +186,29 @@ if __name__ == '__main__':
             model_dict.update(pretrained_dict)
             model.load_state_dict(model_dict)
             set_requires_grad(model, pretrained_dict, requires_grad=False)  # Freeze everything except last layer.
+        
+        # Trainer
+        trainer = TSTCCTrainer(config=config, experiment=experiment, data=df_psa, net=model)
+        trainer.run()
 
         if config.tstcc_training_mode != "self_supervised":
             # Testing
             outs = trainer.model_evaluate()
             total_loss, total_acc, pred_labels, true_labels, embeddings = outs
-            #embeddings have shape (test set length,out size,emb_size)
-            embeddings = embeddings.reshape(embeddings.shape[0], -1) #reshape to (test set length,out size*emb_size, 1)
+
+            #plot_datapoints(embeddings, pred_labels.astype(int), config.experiment_name+"pred", experiment)
+            #run_umap(embeddings, true_labels, pred_labels, config.experiment_name+config.tstcc_training_mode+"pred", experiment)
+            #calculate_clustering_scores(true_labels.astype(int), pred_labels.astype(int), experiment)
+
             kmeans_labels = run_kmeans_only(embeddings, config)
             plot_datapoints(embeddings, kmeans_labels, config.experiment_name+"kmeans", experiment)
-            plot_datapoints(embeddings, pred_labels.astype(int), config.experiment_name+"pred", experiment)
             run_umap(embeddings, true_labels, kmeans_labels, config.experiment_name+config.tstcc_training_mode+"kmeans", experiment)
-            run_umap(embeddings, true_labels, pred_labels, config.experiment_name+config.tstcc_training_mode+"pred", experiment)
             calculate_clustering_scores(true_labels.astype(int), kmeans_labels.astype(int), experiment)
-            calculate_clustering_scores(true_labels.astype(int), pred_labels.astype(int), experiment)
+
+    # calculate F1 score for all combination of labels
+    if config.n_clusters == 3 and config.experiment_name != "raw_data":
+        log_cluster_combinations(true_labels.astype(int), kmeans_labels, experiment)
+
+
 
 

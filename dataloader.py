@@ -18,9 +18,12 @@ class LoadPSADataset(Dataset):
                   'psa_level3', 'psa_level4', 'psa_level5']]
         y = data['pros_cancer']
 
-        if self.config.deltatimes:
+        if self.config.pos_enc == "delta_days":
             ts = data[['psa_delta0', 'psa_delta1', 'psa_delta2',
                        'psa_delta3', 'psa_delta4', 'psa_delta5']]
+        elif self.config.pos_enc == "age_pos_enc":
+            ts = data[['psa_age0', 'psa_age1', 'psa_age2',
+                       'psa_age3', 'psa_age4', 'psa_age5']]
         else:
             ts = data[['psa_days0', 'psa_days1', 'psa_days2',
                        'psa_days3', 'psa_days4', 'psa_days5']]
@@ -30,12 +33,11 @@ class LoadPSADataset(Dataset):
             context_b = 'bmi_curr' if self.config.context_bmi else None
             context_c = 'center' if self.config.context_center else None
             context_a = 'age' if self.config.context_age else None
-            context_r = 'race7' if self.config.context_race else None
-            context_indices = [context_b, context_c, context_a, context_r]
+            context_indices = [context_b, context_c, context_a]
             context_indices = [i for i in context_indices if i is not None]
             context = data[context_indices]
             #add 4 columns with zeros to ts if context is used with concat 
-            ts = pd.concat([ts, pd.DataFrame(np.zeros((ts.shape[0], self.config.context_count)))], axis=1)
+            #ts = pd.concat([ts, pd.DataFrame(np.zeros((ts.shape[0], self.config.context_count)))], axis=1)
 
         else: 
             context = data[[]]
@@ -72,7 +74,7 @@ class LoadPSADataset(Dataset):
         if self.config.experiment_name == "ts_tcc":
             aug1 = self.aug1[index]
             aug2 = self.aug2[index]
-            return signal, target, aug1, aug2, context
+            return signal, target, aug1, aug2, tsindex, context
         else:
             return signal, target, tsindex, context
 
