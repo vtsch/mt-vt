@@ -33,16 +33,6 @@ if __name__ == '__main__':
     parser.add_argument('--c_c', default=True, type=bool, help='use center as context')
     parser.add_argument('--tstcc_mod_sdir', default="saved_models/ts_tcc/self_supervised/absolute_days/22-09-29_11-58-03all", type=str, help='ts_tcc model save dir')
     
-    #self.n_clusters = 2
-    #self.experiment_name = "raw_data" # "raw_data", "simple_ac", "deep_ac", "lstm", "cnn", "simple_transformer", "ts_tcc"
-    #self.tstcc_training_mode = "supervised" # random_init, supervised, self_supervised, fine_tune, train_linear
-    #self.context = False
-    #self.context_bmi = True
-    #self.context_age = True
-    #self.context_center = True
-    #self.pos_enc = "none" # "none", "absolute_days", "delta_days", "learnable_pos_enc", "age_pos_enc", #"rotary_pos_enc",
-    #self.tstcc_model_saved_dir = "saved_models/ts_tcc/self_supervised/absolute_days/22-09-29_11-58-03all"
-
 
     args = parser.parse_args()
 
