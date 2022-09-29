@@ -12,29 +12,25 @@ class SimpleAutoencoder(nn.Module):
         Simple Autoencoder, input is (batch_size, seq_length+nr_features)
         '''
         super(SimpleAutoencoder, self).__init__()
-        self.fc = nn.Linear(in_features=config.feat_dim, out_features=config.emb_size)
+        self.fc = nn.Linear(in_features=config.ts_length+config.context_count_size, out_features=config.ts_length+config.context_count_size)
 
     def forward(self, x):
-        x = x.view(x.shape[0], -1) # (batch_size, feat_dim)
         x = self.fc(x)
         return x
 
 class DeepAutoencoder(nn.Module):
     def __init__(self, config):
         super(DeepAutoencoder, self).__init__()
-        self.fc1 = nn.Linear(in_features=config.feat_dim, out_features=240)
-        self.fc2 = nn.Linear(in_features=240, out_features=120)
-        self.fc3 = nn.Linear(in_features=120, out_features=60)
-        self.fc4 = nn.Linear(in_features=60, out_features=config.emb_size)
-        self.avgpool = nn.AvgPool1d(kernel_size=2)
+        self.fc1 = nn.Linear(in_features=config.ts_length+config.context_count_size, out_features=96)
+        self.fc2 = nn.Linear(in_features=96, out_features=48)
+        self.fc3 = nn.Linear(in_features=48, out_features=24)
+        self.fc4 = nn.Linear(in_features=24, out_features=config.ts_length+config.context_count_size)
 
     def forward(self, x):
-        x = x.view(x.shape[0], -1)
         x = self.fc1(x)
         x = self.fc2(x)
         x = self.fc3(x)
         x = self.fc4(x)
-        x = self.avgpool(x)
         return x
 
 
@@ -95,7 +91,7 @@ class CNN(nn.Module):
             kernel_size=config.kernel_size,
         )
         self.avgpool = nn.AdaptiveAvgPool1d((1))
-        self.fc = nn.Linear(in_features=config.bl_hidden_size//2, out_features=config.emb_size)
+        self.fc = nn.Linear(in_features=config.bl_hidden_size//2, out_features=config.ts_length+config.context_count_size)
         
     def forward(self, input):
         input = input.reshape(input.shape[0], 1, input.shape[1])
@@ -118,11 +114,12 @@ class LSTMencoder(nn.Module):
         super(LSTMencoder, self).__init__()
         # define LSTM layer
         self.config = config
-        self.lstm = nn.LSTM(input_size = config.feat_dim, hidden_size = config.bl_hidden_size,
+        self.lstm = nn.LSTM(input_size = 1, hidden_size = config.bl_hidden_size,
                             num_layers = config.num_layers, batch_first = True)
                             # dropout=dropout_p if num_rnn_layers>1 else 0, bidirectional=bidirectional,
         self.avgpool = nn.AdaptiveAvgPool1d((config.bl_hidden_size//2))
-        self.fc = nn.Linear(in_features=config.bl_hidden_size//2, out_features=config.feat_dim)
+        self.fc = nn.Linear(in_features=config.bl_hidden_size//2, out_features=1)
+        self.logits = nn.Linear(1, config.n_clusters)
         
 
     def forward(self, x):
@@ -132,8 +129,10 @@ class LSTMencoder(nn.Module):
         :                              hidden gives the hidden state and cell state for the last
         :                              element in the sequence 
         '''
+        x = x.reshape(x.shape[0], x.shape[1], -1)
         lstm_out, self.hidden = self.lstm(x)
         emb = self.avgpool(lstm_out)
         emb = self.fc(emb)
-        return emb     
+        emb = emb.reshape(emb.shape[0], -1)
+        return emb
     
