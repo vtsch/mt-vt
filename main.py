@@ -4,7 +4,7 @@ import os
 from torchsummary import summary
 import argparse
 from configs import Config
-from preprocess import load_psa_data_to_pd, load_psa_df
+from preprocess import load_psa_data_to_pd, load_plco_df, load_furst_df
 from kmeans import run_kmeans_and_plots, run_kmeans_only, plot_datapoints
 from metrics import calculate_clustering_scores, log_cluster_combinations
 from utils import get_bunch_config_from_json, build_save_path, build_comet_logger, set_requires_grad
@@ -21,6 +21,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
 
     ######################## Model parameters ########################
+    parser.add_argument('--d', type=str, default='plco', help='plco or furst dataset')
     parser.add_argument('--n', default=2, type=int,
                         help='nr of clusters')
     parser.add_argument('--exp', default="raw_data", type=str,
@@ -37,6 +38,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     config = Config()
+    config.dataset = args.d
     config.n_clusters = args.n
     config.experiment_name = args.exp
     config.tstcc_training_mode = args.tstcc_tm
@@ -47,8 +49,6 @@ if __name__ == '__main__':
     config.context_center = args.c_c
     config.tstcc_model_saved_dir = args.tstcc_mod_sdir
 
-    file_name = "data/pros_data_mar22_d032222.csv"
-
     save_path = build_save_path(config)
     os.makedirs(save_path)
     config.model_save_path = save_path
@@ -56,20 +56,34 @@ if __name__ == '__main__':
     experiment = build_comet_logger(config)
     cwd = os.getcwd()
     experiment.log_asset_folder(folder=cwd, step=None, log_file_name=True, recursive=False)
+
+    # load and preprocess data 
+    if config.dataset == "plco":
+        file_name = "data/pros_data_mar22_d032222.csv"
+        df_psa = load_psa_data_to_pd(file_name, config)
+    elif config.dataset == "furst":
+        file_name = "data/furst_data.csv"
+        # TODO: load and preprocess furst data
+    else:
+        raise ValueError("Dataset not supported")
         
     # run kmeans on raw data
     if config.experiment_name == "raw_data":
-        df_psa = load_psa_df(file_name)
-        y_real = df_psa['pros_cancer']
-        df_psa = df_psa.iloc[:,:-1]
+        if config.dataset == "plco":
+            df_psa = load_plco_df(file_name)
+            y_real = df_psa['pros_cancer']
+            df_psa = df_psa.iloc[:,:-1]
+        elif config.dataset == "furst":
+            df_psa = load_furst_df(file_name)
+            #TODO
+        else:
+            raise ValueError("Dataset not supported")
         df_train_values = df_psa.values
         kmeans_labels = run_kmeans_and_plots(df_train_values, config, experiment)
         df = df_psa.to_numpy()
         run_umap(df_psa, y_real, kmeans_labels, config.experiment_name, experiment)
         calculate_clustering_scores(y_real.astype(int), kmeans_labels, experiment)
 
-    # load and preprocess data 
-    df_psa = load_psa_data_to_pd(file_name, config)
 
     # run embedding models and kmeans
     if config.experiment_name == "simple_ac":

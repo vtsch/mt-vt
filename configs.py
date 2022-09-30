@@ -4,6 +4,7 @@ class Config(object):
     def __init__(self):
         self.device = 'cuda:0' if torch.cuda.is_available() else 'cpu'
         self.model_save_dir = "saved_models"
+        self.dataset = "plco"
 
         # kmeans
         self.metric = "dtw"  # metric : {“euclidean”, “dtw”, “softdtw”}
