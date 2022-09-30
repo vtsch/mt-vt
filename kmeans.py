@@ -58,14 +58,14 @@ def kmeans(data, n_clusters, metric):
     return centroids, labels
 
 def run_kmeans_and_plots(output, config, experiment):
-    centroids, kmeans_labels = kmeans(output, config.n_clusters, config.metric)
-    plot_centroids(centroids, config.n_clusters, "%s kmeans centroids %s" %(config.metric, config.experiment_name), experiment)
+    centroids, kmeans_labels = kmeans(output, config.n_clusters, config.kmeans_metric)
+    plot_centroids(centroids, config.n_clusters, "%s kmeans centroids %s" %(config.kmeans_metric, config.experiment_name), experiment)
     plot_datapoints(output, kmeans_labels, config.experiment_name, experiment)
     return kmeans_labels
 
 def run_kmeans_only(data, config):
     data = data.reshape(data.shape[0], data.shape[1], 1)
-    kmeans = TimeSeriesKMeans(n_clusters=config.n_clusters, metric=config.metric, max_iter=20, random_state=0, n_init=5).fit(data)
+    kmeans = TimeSeriesKMeans(n_clusters=config.n_clusters, metric=config.kmeans_metric, max_iter=20, random_state=0, n_init=5).fit(data)
     kmeans_labels = kmeans.predict(data)
     return kmeans_labels
 
