@@ -20,7 +20,7 @@ class TSTCCTrainer:
         self.net = net.to(config.device)
         self.config = config
         self.experiment = experiment
-        self.criterion = config.loss_fn
+        self.criterion = torch.nn.CrossEntropyLoss()
         self.optimizer = Adam(self.net.parameters(), lr=config.lr, betas=(0.9, 0.99), weight_decay=3e-4)
         self.scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(self.optimizer, 'min')
         self.best_loss = float('inf')
