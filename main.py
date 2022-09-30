@@ -188,8 +188,8 @@ if __name__ == '__main__':
             calculate_clustering_scores(true_labels.astype(int), kmeans_labels.astype(int), experiment)
 
     # calculate F1 score for all combination of labels
-    if config.n_clusters == 3 and config.experiment_name != "raw_data":
-        log_cluster_combinations(true_labels.astype(int), kmeans_labels, experiment)
+    if config.n_clusters >2:
+        log_cluster_combinations(config, true_labels.astype(int), kmeans_labels, experiment)
 
 
 
