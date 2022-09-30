@@ -2,12 +2,10 @@ import comet_ml
 import torch
 import os
 from torchsummary import summary
-import argparse
-from configs import Config
 from preprocess import load_psa_data_to_pd, load_plco_df, load_furst_df
 from kmeans import run_kmeans_and_plots, run_kmeans_only, plot_datapoints
 from metrics import calculate_clustering_scores, log_cluster_combinations
-from utils import get_bunch_config_from_json, build_save_path, build_comet_logger, set_requires_grad
+from utils import get_args, build_save_path, build_comet_logger, set_required_grad, get_bunch_config_from_json
 from umapplot import run_umap
 from train import Trainer
 from traintstcc import TSTCCTrainer
@@ -18,41 +16,21 @@ from models.tstcc_basemodel import base_Model
 
 if __name__ == '__main__':
 
-    parser = argparse.ArgumentParser()
+ 
+    args = get_args()
+    config = get_bunch_config_from_json("config.json")
 
-    ######################## Model parameters ########################
-    parser.add_argument('--d', type=str, default='plco', help='plco or furst dataset')
-    parser.add_argument('--n', default=2, type=int,
-                        help='nr of clusters')
-    parser.add_argument('--exp', default="raw_data", type=str,
-                        help='raw_data, simple_ac, deep_ac, lstm, cnn, simple_transformer, ts_tcc')
-    parser.add_argument('--tstcc_tm', default="supervised", type=str, help='random_init, supervised, self_supervised, fine_tune, train_linear')
-    parser.add_argument('--pos_enc', default="none", type=str, help='none, absolute_days, delta_days, learnable_pos_enc, age_pos_enc')
-    parser.add_argument('--c', default=False, type=bool, help='use context')
-    parser.add_argument('--c_a', default=True, type=bool, help='use age as context')
-    parser.add_argument('--c_b', default=True, type=bool, help='use bmi as context')
-    parser.add_argument('--c_c', default=True, type=bool, help='use center as context')
-    parser.add_argument('--tstcc_mod_sdir', default="saved_models/ts_tcc/self_supervised/absolute_days/22-09-29_11-58-03all", type=str, help='ts_tcc model save dir')
+    # fix context for configs
+    config.device = 'cuda:0' if torch.cuda.is_available() else 'cpu'
+    config.context_count = 3 if config.context_bmi and config.context_age and config.context_center else 1
+    config.context_count_size = config.context_count if config.context else 0 
     
-
-    args = parser.parse_args()
-
-    config = Config()
-    config.dataset = args.d
-    config.n_clusters = args.n
-    config.experiment_name = args.exp
-    config.tstcc_training_mode = args.tstcc_tm
-    config.pos_enc = args.pos_enc
-    config.context = args.c
-    config.context_age = args.c_a
-    config.context_bmi = args.c_b
-    config.context_center = args.c_c
-    config.tstcc_model_saved_dir = args.tstcc_mod_sdir
-
+    # build model save path
     save_path = build_save_path(config)
     os.makedirs(save_path)
     config.model_save_path = save_path
 
+    # build comet logger
     experiment = build_comet_logger(config)
     cwd = os.getcwd()
     experiment.log_asset_folder(folder=cwd, step=None, log_file_name=True, recursive=False)
@@ -155,7 +133,7 @@ if __name__ == '__main__':
                 for j in del_list:
                     if j in i:
                         del model_dict[i]
-            set_requires_grad(model, model_dict, requires_grad=False)  # Freeze everything except last layer.
+            set_required_grad(model, model_dict, requires_grad=False)  # Freeze everything except last layer.
 
         if config.tstcc_training_mode == "fine_tune":
             # load saved model of this experiment
@@ -189,7 +167,7 @@ if __name__ == '__main__':
 
             model_dict.update(pretrained_dict)
             model.load_state_dict(model_dict)
-            set_requires_grad(model, pretrained_dict, requires_grad=False)  # Freeze everything except last layer.
+            set_required_grad(model, pretrained_dict, requires_grad=False)  # Freeze everything except last layer.
         
         # Trainer
         trainer = TSTCCTrainer(config=config, experiment=experiment, data=df_psa, net=model)
