@@ -59,7 +59,7 @@ def generate_split(data):
 
 # ---- for PSA data ----
 
-def load_psa_df(file_name):
+def load_plco_df(file_name):
     df = pd.read_csv(file_name, header=0)
     # select columns with psa data, set threshold to have at least 5 measurements
     # psa_levels per year: 69-74
@@ -73,14 +73,28 @@ def load_psa_df(file_name):
     #df.fillna(0, inplace=True)
     return df
 
-def create_gleas_df(df):
-    # select columns with gleas data
-    # pclo_id: 44
-    # gleason score, gleason biopsy, gleason prostatectomy, source of score (1=p, 2=b)
-    # pros_cancer label: 4
-    df = df.iloc[:, [44, 23, 24, 25, 26, 4]]
-    df.dropna(inplace=True)
+def load_furst_df(file_name):
+    df = pd.read_csv(file_name, header=0)
+    # select columns with psa data, set threshold to have at least 5 measurements
+    # ss_nr_id =0
+    # psa levels: 2, 4, 6, 8, 10, 12, ... 42
+    # label: 44
+    # in column 44, change all "localized" to 1, "advanced" to 2, "metastatic" to 3, "missing"  to 0 in column
+    df.replace(to_replace="localized", value=1, inplace=True)
+    df.replace(to_replace="advanced", value=2, inplace=True)
+    df.replace(to_replace="metastatic", value=3, inplace=True)
+    df.replace(to_replace="missing", value=0, inplace=True)
+
+    df = df.iloc[:, [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 34, 36, 38, 40, 42, 44]]
+    #df.dropna(thresh=4, inplace=True)
+    if df.iloc[:, :8].isnull().values.any():
+        df.dropna(axis=0, inplace=True)
+        
+    print("class distribution: \n", df['npcc_risk_class_group_1'].value_counts())
+    df.fillna(0, inplace=True)
+    print(df.head(10))
     return df
+
 
 def create_context_df(df, config):
     # select columns with demographic data
@@ -132,11 +146,8 @@ def load_psa_and_deltatime_df(df):
     df = df.iloc[:, [69, 70, 71, 72, 73, 74, 80, 81, 82, 83, 84, 85, 4, 44]]
     #calculate deltatime between psa measurements
     df['psa_delta0'] = 0
-    df['psa_delta1'] = df['psa_days1'] - df['psa_days0']
-    df['psa_delta2'] = df['psa_days2'] - df['psa_days1']
-    df['psa_delta3'] = df['psa_days3'] - df['psa_days2']
-    df['psa_delta4'] = df['psa_days4'] - df['psa_days3']
-    df['psa_delta5'] = df['psa_days5'] - df['psa_days4']
+    for i in range(1, 6):
+        df['psa_delta' + str(i)] = df['psa_days' + str(i)] - df['psa_days' + str(i-1)]
 
     df.drop(['psa_days0', 'psa_days1', 'psa_days2', 'psa_days3', 'psa_days4', 'psa_days5'], axis=1, inplace=True)
     return df
@@ -148,11 +159,8 @@ def load_psa_and_age_df(df):
     df = df.iloc[:, [69, 70, 71, 72, 73, 74, 205, 4, 44]]
     # calculate age at psa measurement
     df['psa_age0'] = df['age']
-    df['psa_age1'] = df['age'] + 1
-    df['psa_age2'] = df['age'] + 2
-    df['psa_age3'] = df['age'] + 3
-    df['psa_age4'] = df['age'] + 4
-    df['psa_age5'] = df['age'] + 5
+    for i in range(1, 6):
+        df['psa_age' + str(i)] = df['age'] + i
     
     df.drop(['age'], axis=1, inplace=True)
     return df
@@ -190,6 +198,7 @@ def load_psa_data_to_pd(file_name: str, config: dict) -> pd.DataFrame:
     df.drop(['plco_id'], axis=1, inplace=True)
     #fill nan values with -1
     df.fillna(-1, inplace=True)
+    print(df.head(10))
     #df[df < 0] = 0
 
     return df
