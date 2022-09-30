@@ -52,7 +52,7 @@ def plot_centroids(centroids, n_clusters, title, experiment):
 def kmeans(data, n_clusters, metric):
     # tskmeans takes data of shape (n_ts, sz, d)
     data = data.reshape(data.shape[0], data.shape[1], 1)
-    kmeans = TimeSeriesKMeans(n_clusters=n_clusters, metric=metric, max_iter=20, random_state=0, n_init=5).fit(data)
+    kmeans = TimeSeriesKMeans(n_clusters=n_clusters, metric=metric, max_iter=10, random_state=0, n_init=5).fit(data)
     labels = kmeans.predict(data)
     centroids = kmeans.cluster_centers_
     return centroids, labels
@@ -65,7 +65,7 @@ def run_kmeans_and_plots(output, config, experiment):
 
 def run_kmeans_only(data, config):
     data = data.reshape(data.shape[0], data.shape[1], 1)
-    kmeans = TimeSeriesKMeans(n_clusters=config.n_clusters, metric=config.kmeans_metric, max_iter=20, random_state=0, n_init=5).fit(data)
+    kmeans = TimeSeriesKMeans(n_clusters=config.n_clusters, metric=config.kmeans_metric, max_iter=10, random_state=0, n_init=5).fit(data)
     kmeans_labels = kmeans.predict(data)
     return kmeans_labels
 
