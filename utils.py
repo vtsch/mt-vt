@@ -7,18 +7,11 @@ from datetime import datetime
 from bunch import Bunch
 
 def get_args() -> argparse.Namespace:
+    """
+    Get the arguments from the command line.
+    """
     argparser = argparse.ArgumentParser()
-    argparser.add_argument(
-        "-c",
-        "--config",
-        required=True,
-        help="Add the Configuration file that has all the relevant parameters",
-    )
-    argparser.add_argument(
-        "-t",
-        "--test_model_path",
-        help="Path to saved model to be used for test set prediction",
-    )
+    argparser.add_argument("-c", "--config", help="Path to the config file", default="config.json")    
     return argparser.parse_args()
 
 def get_bunch_config_from_json(json_file_path: str) -> Bunch:
@@ -31,12 +24,10 @@ def get_bunch_config_from_json(json_file_path: str) -> Bunch:
         config_dict = json.load(config_file)
     return Bunch(config_dict)
 
-def set_requires_grad(model, dict_, requires_grad=True):
-    for param in model.named_parameters():
-        if param[0] in dict_:
-            param[1].requires_grad = requires_grad
-
 def build_save_path(config: Bunch) -> str:
+    """
+    Build the path to save the model.
+    """
     current_timestamp = datetime.now().strftime("%y-%m-%d_%H-%M-%S")
 
     return os.path.join(
@@ -44,6 +35,9 @@ def build_save_path(config: Bunch) -> str:
     )
 
 def build_comet_logger(config: Bunch) -> Experiment:
+    """
+    Build the comet logger.
+    """
     experiment = Experiment(
         api_key="HzUytPeFFfa9aiGmafVP6CMkP",
         project_name="mt-vt",
@@ -52,3 +46,12 @@ def build_comet_logger(config: Bunch) -> Experiment:
     experiment.set_name(config.experiment_name)
     experiment.log_parameters(config)
     return experiment
+
+# for TS-TCC
+def set_required_grad(model, dict_, requires_grad=True) -> None:
+    """
+    Set the requires_grad attribute of the parameters in the model.
+    """
+    for param in model.named_parameters():
+        if param[0] in dict_:
+            param[1].requires_grad = requires_grad
