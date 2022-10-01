@@ -10,13 +10,12 @@
     "upsample": false,
     "ts_length": 6,
 
-    "_____tstcc_training_mode_options": "random_init, supervised, self_supervised, fine_tune, train_linear",
-    "tstcc_training_mode": "supervised",
-
     "context": true,
     "context_age": false,
     "context_bmi": true,
     "context_center": false,    
+
+    "tstcc_model_dir" : "saved_models/ts_tcc/self_supervised",
 
     "emb_size" : 6,
     "lr" : 0.001,
@@ -29,7 +28,6 @@
     "max_value" : 3000,
     "n_heads" : 2,
     "dim_feedforward" : 128,
-    "tstcc_model_saved_dir" : "saved_models/ts_tcc/self_supervised/absolute_days/22-09-29_11-58-03all",
     "hidden_dim" : 100
 
 }

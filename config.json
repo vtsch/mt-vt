@@ -5,27 +5,19 @@
     "_____kmeans_metric_options": "euclidean, dtw, softdtw",
     "kmeans_metric" : "dtw", 
 
-    "n_clusters": 2,
     "n_clusters_real" : 2,
     "sample_size" : 500,
     "upsample": false,
     "ts_length": 6,
 
-    "_____experiment_name_options": "raw_data, simple_ac, deep_ac, lstm, cnn, simple_transformer, ts_tc",
-    "experiment_name" : "simple_ac", 
-
-    "_____tstcc_training_mode_options": "random_init, supervised, self_supervised, fine_tune, train_linear",
-    "tstcc_training_mode": "supervised",
-
     "context": true,
     "context_age": false,
-    "context_bmi": true,
-    "context_center": false,    
+    "context_bmi": false,
+    "context_center": true,    
 
-    "_____pos_enc_options": "none, absolute_days, delta_days, age_pos_enc, learnable_pos_enc",
-    "pos_enc" : "learnable_pos_enc",
+    "tstcc_model_dir" : "saved_models/ts_tcc/self_supervised",
 
-    "emb_size" : 6 ,
+    "emb_size" : 6,
     "lr" : 0.001,
     "batch_size" : 8,
     "n_epochs" : 10,
@@ -36,7 +28,6 @@
     "max_value" : 3000,
     "n_heads" : 2,
     "dim_feedforward" : 128,
-    "tstcc_model_saved_dir" : "saved_models/ts_tcc/self_supervised/absolute_days/22-09-29_11-58-03all",
     "hidden_dim" : 100
 
 }
