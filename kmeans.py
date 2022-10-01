@@ -1,9 +1,19 @@
+from typing import Tuple
 from sklearn import cluster
 from tslearn.clustering import TimeSeriesKMeans
 import matplotlib.pyplot as plt
 import numpy as np
 
-def plot_datapoints_of_cluster(data, labels, cluster_id, label_color_map, title, experiment):
+def plot_datapoints_of_cluster(data: np.ndarray, labels: np.ndarray, cluster_id: int, label_color_map: list, title: str, experiment) -> None:
+    '''
+    Parameters:
+        data: data to plot
+        labels: labels of the data
+        cluster_id: id of the cluster to plot
+        label_color_map: list of colors for each cluster
+        title: title of the plot
+        experiment: comet.ml experiment to log the figure
+    '''
     datapoints = data[labels == cluster_id]
     print("Cluster %d has %d datapoints predicted" %(cluster_id, datapoints.shape[0]))
 
@@ -25,7 +35,14 @@ def plot_datapoints_of_cluster(data, labels, cluster_id, label_color_map, title,
     experiment.log_figure(figure=fig2, figure_name="boxplot_%s_cluster_%d" %(title, cluster_id))
 
 
-def plot_datapoints(data, labels, title, experiment):
+def plot_datapoints(data: np.ndarray, labels: np.ndarray, title: str, experiment) -> None:
+    '''
+    Parameters:
+        data: data to plot
+        labels: labels of the data
+        title: title of the plot
+        experiment: comet.ml experiment to log the figure
+    '''
     fig0 = plt.figure("%s" %title)
     #set colors for each cluster label
     label_color_map = ['#3cb44b', '#4363d8', '#ffe119', '#f58231', '#911eb4']
@@ -42,14 +59,30 @@ def plot_datapoints(data, labels, title, experiment):
         plot_datapoints_of_cluster(data, labels, i, label_color_map, title, experiment)
 
 
-def plot_centroids(centroids, n_clusters, title, experiment):
+def plot_centroids(centroids: np.ndarray, n_clusters: int, title: str, experiment) -> None:
+    '''
+    Parameters:
+        centroids: centroids to plot
+        n_clusters: number of clusters
+        title: title of the plot
+        experiment: comet.ml experiment to log the figure
+    '''
     for i in range(n_clusters):
         plt.plot(centroids[i])
     plt.title(title)
     plt.legend(['%d' %i for i in range(n_clusters)], loc='upper left', title="Clusters")
     experiment.log_figure(figure=plt, figure_name="centroids_%s" %title)
 
-def kmeans(data, n_clusters, metric):
+def kmeans(data: np.ndarray, n_clusters: int, metric: str) -> Tuple[np.ndarray, np.ndarray]:
+    '''
+    Parameters:
+        data: data to cluster
+        n_clusters: number of clusters
+        metric: metric to use for clustering
+    Returns:
+        centroids: centroids of the clusters
+        labels: labels of the data given by kmeans
+    '''
     # tskmeans takes data of shape (n_ts, sz, d)
     data = data.reshape(data.shape[0], data.shape[1], 1)
     kmeans = TimeSeriesKMeans(n_clusters=n_clusters, metric=metric, max_iter=10, random_state=0, n_init=5).fit(data)
@@ -57,19 +90,17 @@ def kmeans(data, n_clusters, metric):
     centroids = kmeans.cluster_centers_
     return centroids, labels
 
-def run_kmeans_and_plots(output, config, experiment):
+def run_kmeans_and_plots(output: np.ndarray, config: dict, experiment) -> np.ndarray:
+    '''
+    Parameters:
+        output: learn representation of the model
+        config: config file
+        experiment: comet.ml experiment to log the figures
+    Returns:
+        centroids: centroids of the clusters
+        labels: labels of the data given by kmeans
+    '''
     centroids, kmeans_labels = kmeans(output, config.n_clusters, config.kmeans_metric)
     plot_centroids(centroids, config.n_clusters, "%s kmeans centroids %s" %(config.kmeans_metric, config.experiment_name), experiment)
     plot_datapoints(output, kmeans_labels, config.experiment_name, experiment)
-    return kmeans_labels
-
-def run_kmeans_only(data, config):
-    data = data.reshape(data.shape[0], data.shape[1], 1)
-    kmeans = TimeSeriesKMeans(n_clusters=config.n_clusters, metric=config.kmeans_metric, max_iter=10, random_state=0, n_init=5).fit(data)
-    kmeans_labels = kmeans.predict(data)
-    return kmeans_labels
-
-def run_sklearn_kmeans(data, config):
-    kmeans = cluster.KMeans(n_clusters=config.n_clusters, random_state=42).fit(data)
-    kmeans_labels = kmeans.predict(data)
     return kmeans_labels

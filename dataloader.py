@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+from bunch import Bunch
 
 from models.tstcc_TC import DataTransform
 
@@ -9,6 +10,13 @@ from preprocess import generate_split, normalize
 
 
 class LoadPSADataset(Dataset):
+    '''
+    Parameters:
+        config: config file
+        data: dataframe
+    Returns:
+        dataset
+    '''
     def __init__(self, config, data):
 
         self.df = data
@@ -84,7 +92,7 @@ class LoadPSADataset(Dataset):
         return self.len
 
 
-def get_dataloader(config, data, phase: str) -> DataLoader:
+def get_dataloader(config: Bunch, data: Dataset, phase: str) -> DataLoader:
     '''
     Parameters:
         config: config file
@@ -118,8 +126,14 @@ def get_dataloader(config, data, phase: str) -> DataLoader:
 
 
 # TS-TCC
-def data_generator_tstcc(data, config):
-
+def data_generator_tstcc(data: Dataset, config: Bunch) -> DataLoader:
+    '''
+    Parameters:
+        config: config file
+        data: dataframe
+    Returns:
+        data generator
+    '''
     data = normalize(data)
 
     train_df, val_df = generate_split(data)

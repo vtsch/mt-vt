@@ -3,7 +3,7 @@ import torch
 import os
 from torchsummary import summary
 from preprocess import load_psa_data_to_pd, load_furst_df
-from kmeans import run_kmeans_and_plots, run_kmeans_only, plot_datapoints
+from kmeans import kmeans, run_kmeans_and_plots, plot_datapoints
 from metrics import calculate_clustering_scores, log_cluster_combinations
 from utils import get_args, build_save_path, build_comet_logger, set_required_grad, get_bunch_config_from_json
 from umapplot import run_umap
@@ -203,7 +203,7 @@ if __name__ == '__main__':
             #run_umap(embeddings, true_labels, pred_labels, config.experiment_name+config.tstcc_training_mode+"pred", experiment)
             #calculate_clustering_scores(true_labels.astype(int), pred_labels.astype(int), experiment)
 
-            kmeans_labels = run_kmeans_only(embeddings, config)
+            centroids, kmeans_labels = kmeans(embeddings, config)
             plot_datapoints(embeddings, kmeans_labels, config.experiment_name+"kmeans", experiment)
             run_umap(embeddings, true_labels, kmeans_labels, config.experiment_name+config.tstcc_training_mode+"kmeans", experiment)
             calculate_clustering_scores(true_labels.astype(int), kmeans_labels.astype(int), experiment)
