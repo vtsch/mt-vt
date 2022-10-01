@@ -1,0 +1,35 @@
+{
+    "dataset": "plco",
+    "model_save_dir": "saved_models",
+
+    "_____kmeans_metric_options": "euclidean, dtw, softdtw",
+    "kmeans_metric" : "dtw", 
+
+    "n_clusters_real" : 2,
+    "sample_size" : 500,
+    "upsample": false,
+    "ts_length": 6,
+
+    "_____tstcc_training_mode_options": "random_init, supervised, self_supervised, fine_tune, train_linear",
+    "tstcc_training_mode": "supervised",
+
+    "context": true,
+    "context_age": true,
+    "context_bmi": false,
+    "context_center": false,    
+
+    "emb_size" : 6,
+    "lr" : 0.001,
+    "batch_size" : 8,
+    "n_epochs" : 10,
+    "dropout" : 0.1,
+    "bl_hidden_size" : 12,
+    "num_layers" : 1,
+    "kernel_size" : 1,
+    "max_value" : 3000,
+    "n_heads" : 2,
+    "dim_feedforward" : 128,
+    "tstcc_model_saved_dir" : "saved_models/ts_tcc/self_supervised/absolute_days/22-09-29_11-58-03all",
+    "hidden_dim" : 100
+
+}
