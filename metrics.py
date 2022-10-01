@@ -1,9 +1,19 @@
-import numpy as np
+from bunch import Bunch
 import pandas as pd
+import torch
+import numpy as np
 from sklearn.metrics import accuracy_score, f1_score, rand_score, confusion_matrix
 from sklearn.metrics import r2_score, mean_squared_error, mean_absolute_error
 
-def calculate_clustering_scores(y_true, y_pred, experiment):
+# --- metrics for clustering evaluation ---
+
+def calculate_clustering_scores(y_true: np.ndarray, y_pred: np.ndarray, experiment) -> None:
+    '''
+    Parameters:
+        y_true: true labels
+        y_pred: predicted labels
+        experiment: comet_ml experiment object
+    '''
     accuracy = accuracy_score(y_true, y_pred)
     ri = rand_score(y_true, y_pred)
     f1 = f1_score(y_true, y_pred, average="weighted")
@@ -16,7 +26,15 @@ def calculate_clustering_scores(y_true, y_pred, experiment):
     experiment.log_metrics(pd.DataFrame({'accuracy': [accuracy], 'ri': [ri], 'f1': [f1]}))
     experiment.log_confusion_matrix(y_true, y_pred, title = "Confusion Matrix")
 
-def log_cluster_combinations(config, true_labels, kmeans_labels_old, experiment):
+def log_cluster_combinations(config: Bunch, true_labels: np.ndarray, kmeans_labels_old: np.ndarray, experiment) -> None:
+    '''
+    Parameters:
+        config: config object
+        true_labels: true labels
+        kmeans_labels_old: predicted labels
+        experiment: comet_ml experiment object
+    '''
+    # log cluster combinations
     if config.n_clusters == 3:
         kmeans_labels = kmeans_labels_old.copy()
         kmeans_labels[kmeans_labels_old == 1] = 0  
@@ -103,18 +121,33 @@ def log_cluster_combinations(config, true_labels, kmeans_labels_old, experiment)
     else:
         print('No cluster combinations logged')
 
+
+
+# --- metrics for training ---
+
 class Meter:
     def __init__(self):
         self.metrics = {}
 
-    def update(self, x, y, phase, loss):
+    def update(self, x: torch.Tensor, y: torch.Tensor, phase: str, loss: torch.Tensor) -> None:
+        '''
+        Parameters:
+            x: input data
+            y: true data
+            phase: train or val
+            loss: loss value
+        '''
         x = x.detach().cpu().numpy()
         y = y.detach().cpu().numpy()
         self.metrics[phase + '_loss'] += loss
         self.metrics[phase + '_mse'] += mean_squared_error(x,y)
         self.metrics[phase + '_mae'] += mean_absolute_error(x,y)
     
-    def init_metrics(self, phase):
+    def init_metrics(self, phase: str) -> None:
+        '''
+        Parameters:
+            phase: train or val
+        '''
         self.metrics[phase + '_loss'] = 0
         self.metrics[phase + '_mse'] = 0
         self.metrics[phase + '_mae'] = 0

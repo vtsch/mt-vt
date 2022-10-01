@@ -1,5 +1,5 @@
 from typing import Tuple
-from sklearn import cluster
+from bunch import Bunch
 from tslearn.clustering import TimeSeriesKMeans
 import matplotlib.pyplot as plt
 import numpy as np
@@ -73,24 +73,23 @@ def plot_centroids(centroids: np.ndarray, n_clusters: int, title: str, experimen
     plt.legend(['%d' %i for i in range(n_clusters)], loc='upper left', title="Clusters")
     experiment.log_figure(figure=plt, figure_name="centroids_%s" %title)
 
-def kmeans(data: np.ndarray, n_clusters: int, metric: str) -> Tuple[np.ndarray, np.ndarray]:
+def kmeans(data: np.ndarray, config: Bunch) -> Tuple[np.ndarray, np.ndarray]:
     '''
     Parameters:
         data: data to cluster
-        n_clusters: number of clusters
-        metric: metric to use for clustering
+        config: config file with parameters for kmeans
     Returns:
         centroids: centroids of the clusters
         labels: labels of the data given by kmeans
     '''
     # tskmeans takes data of shape (n_ts, sz, d)
     data = data.reshape(data.shape[0], data.shape[1], 1)
-    kmeans = TimeSeriesKMeans(n_clusters=n_clusters, metric=metric, max_iter=10, random_state=0, n_init=5).fit(data)
+    kmeans = TimeSeriesKMeans(n_clusters=config.n_clusters, metric=config.kmeans_metric, max_iter=10, random_state=0, n_init=5).fit(data)
     labels = kmeans.predict(data)
     centroids = kmeans.cluster_centers_
     return centroids, labels
 
-def run_kmeans_and_plots(output: np.ndarray, config: dict, experiment) -> np.ndarray:
+def run_kmeans_and_plots(output: np.ndarray, config: Bunch, experiment) -> np.ndarray:
     '''
     Parameters:
         output: learn representation of the model
@@ -100,7 +99,7 @@ def run_kmeans_and_plots(output: np.ndarray, config: dict, experiment) -> np.nda
         centroids: centroids of the clusters
         labels: labels of the data given by kmeans
     '''
-    centroids, kmeans_labels = kmeans(output, config.n_clusters, config.kmeans_metric)
+    centroids, kmeans_labels = kmeans(output, config)
     plot_centroids(centroids, config.n_clusters, "%s kmeans centroids %s" %(config.kmeans_metric, config.experiment_name), experiment)
     plot_datapoints(output, kmeans_labels, config.experiment_name, experiment)
     return kmeans_labels
