@@ -12,6 +12,9 @@ def get_args() -> argparse.Namespace:
     """
     argparser = argparse.ArgumentParser()
     argparser.add_argument("-c", "--config", help="Path to the config file", default="config.json")    
+    argparser.add_argument("-exp", "--experiment_name", help="model to run, options: raw_data, simple_ac, deep_ac, lstm, cnn, simple_transformer, ts_tc", default="simple_transformer", type=str)
+    argparser.add_argument("-n_clusters", "--n_clusters", help="number of clusters to predict", default=2, type=int)
+    argparser.add_argument("-pos_enc", "--positional_encoding", help="positional encoding to use, options: none, absolute_days, delta_days, age_pos_enc, learnable_pos_enc", default="none", type=str)
     return argparser.parse_args()
 
 def get_bunch_config_from_json(json_file_path: str) -> Bunch:

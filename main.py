@@ -18,12 +18,19 @@ if __name__ == '__main__':
 
  
     args = get_args()
-    config = get_bunch_config_from_json("config.json")
+    config = get_bunch_config_from_json(args.config)
 
     # fix context for configs
+    config.experiment_name = args.experiment_name
+    config.n_clusters = args.n_clusters
+    config.pos_enc = args.positional_encoding
     config.device = 'cuda:0' if torch.cuda.is_available() else 'cpu'
     config.context_count = 3 if config.context_bmi and config.context_age and config.context_center else 1
     config.context_count_size = config.context_count if config.context else 0 
+
+    print("config.experiment_name: ", config.experiment_name)
+    print("config.n_clusters: ", config.n_clusters)
+    print("config.pos_enc: ", config.pos_enc)
     
     # build model save path
     save_path = build_save_path(config)
@@ -57,6 +64,9 @@ if __name__ == '__main__':
         else:
             raise ValueError("Dataset not supported")
         df_train_values = df_psa.values
+
+        # TODO: add posencs and context to df_psa
+
         kmeans_labels = run_kmeans_and_plots(df_train_values, config, experiment)
         df = df_psa.to_numpy()
         run_umap(df_psa, y_real, kmeans_labels, config.experiment_name, experiment)
