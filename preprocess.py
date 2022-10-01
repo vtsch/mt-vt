@@ -198,7 +198,6 @@ def load_psa_data_to_pd(file_name: str, config: dict) -> pd.DataFrame:
     df.drop(['plco_id'], axis=1, inplace=True)
     #fill nan values with -1
     df.fillna(-1, inplace=True)
-    print(df.head(10))
     #df[df < 0] = 0
 
     return df
