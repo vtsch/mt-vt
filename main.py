@@ -69,7 +69,6 @@ if __name__ == '__main__':
                     print(df_psa.head(5))
                     df_psa.drop(df_psa.iloc[:, 1:7], inplace = True, axis = 1)
             # drop labels column
-            print(df_psa.head(5))
             df_psa.drop(['pros_cancer'], axis=1, inplace=True)
 
         elif config.dataset == "furst":
