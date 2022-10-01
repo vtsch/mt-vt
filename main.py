@@ -54,16 +54,22 @@ if __name__ == '__main__':
         
     # run kmeans on raw data
     if config.experiment_name == "raw_data":
-        
+
         if config.dataset == "plco":
             df_psa = load_psa_data_to_pd(file_name, config)
             y_real = df_psa['pros_cancer']
             # add positional encodings
-            if config.pos_enc == "absolute_days" or "delta_days" or "age_pos_enc":
+            if config.pos_enc == "absolute_days" or config.pos_enc == "delta_days" or config.pos_enc == "age_pos_enc":
                 for i in range(0, 6):
                     df_psa["psa_with_enc" + str(i)] = df_psa.iloc[:,i] + df_psa.iloc[:,i+6]
-                df_psa.drop(df_psa.iloc[:, 0:12], inplace = True, axis = 1)
+                if config.pos_enc == "absolute_days":
+                    df_psa.drop(df_psa.iloc[:, 0:12], inplace = True, axis = 1)
+                else:
+                    df_psa.drop(df_psa.iloc[:, 0:6], inplace = True, axis = 1)
+                    print(df_psa.head(5))
+                    df_psa.drop(df_psa.iloc[:, 1:7], inplace = True, axis = 1)
             # drop labels column
+            print(df_psa.head(5))
             df_psa.drop(['pros_cancer'], axis=1, inplace=True)
 
         elif config.dataset == "furst":
