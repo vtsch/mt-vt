@@ -36,43 +36,48 @@ def reshape_psa_data_and_save():
 def get_measurements():
     file_name = "data/psadata_furst_measurements_restructured.csv"
     df = pd.read_csv(file_name, header=0)
+    # print("nr of rows measurements: ", len(df)) # 1'087'385
     # drop rows with less than 9 entries --> need to have more than 4 measurements
     df = df.dropna(axis=0, thresh=9)
-    print("nr of rows psa data: ", len(df)) # 912'111 --> with threshold 514'002
+    # print("nr of rows psa data: ", len(df)) # 411'205
     return df
 
 def get_ages():
     file_name = "data/psadata_furst_age.csv"
     df = pd.read_csv(file_name, header=0)
     df['date_of_birth_15'] = df['date_of_birth_15'].map(lambda x: x.split()[0])
-    print("nr of rows ages: ", len(df)) # 1'879'007
+    # print("nr of rows ages: ", len(df)) # 3'771'007
+    # drop rows where birthday is before 1979 --> no, otherwise only 3019 datapoints
+    # df = df[df.date_of_birth_15 > '1979-01-01']
     return df
 
 def get_labels():
     file_name = "data/psadata_furst_labels.csv"
     df = pd.read_csv(file_name, header=0)
-    print("nr of rows labels: ", len(df)) #155'865 --> without missing: 118'698
+    # print("nr of rows labels: ", len(df)) # 155'865
     # delete rows with 'missing' in npcc_risk_class_group_1 as missing = couldn't make diagnosis
     df = df[df.npcc_risk_class_group_1 != 'Missing']
     # encode risk classes as 1, 2, 3
     df['npcc_risk_class_group_1'] = df['npcc_risk_class_group_1'].map(lambda x: 1 if x == 'Localized' else x)
     df['npcc_risk_class_group_1'] = df['npcc_risk_class_group_1'].map(lambda x: 2 if x == 'Advanced' else x)
     df['npcc_risk_class_group_1'] = df['npcc_risk_class_group_1'].map(lambda x: 3 if x == 'Metastatic' else x)
-    print("nr of rows labels without missing: ", len(df)) #155'865 --> without missing: 118'698
+    # print("nr of rows labels without missing: ", len(df)) # 118'698
     return df
 
 
 if __name__ == "__main__":
-    reshape_psa_data_and_save()
+    #reshape_psa_data_and_save()
     df_m = get_measurements()
     df_a = get_ages()
     df_l = get_labels()
 
     # merge dataframe psa levels and ages on id
-    df = pd.merge(df_m, df_a, on='ss_number_id', how='left')
-    print("nr of rows after merge psa and age: ", len(df)) # 256'834
+    df = pd.merge(df_m, df_a, on='ss_number_id', how='inner')
+    print("nr of rows after merge psa and age: ", len(df)) # 411'205
+    # check: print nr of rows without entry in date_of_birth_15
+    # print("nr of rows without entry in date_of_birth_15: ", len(df[df.date_of_birth_15.isnull()])) # 0
     df = pd.merge(df, df_l, on='ss_number_id', how='left')
-    print("nr of rows after merge labels: ", len(df)) # 118'698
+    print("nr of rows after merge labels: ", len(df)) # 411'205
     # fill 0 for all patients without label
     df['npcc_risk_class_group_1'] = df['npcc_risk_class_group_1'].fillna(0)
     df['npcc_risk_class_group_2'] = df['npcc_risk_class_group_2'].fillna(0)
@@ -80,8 +85,8 @@ if __name__ == "__main__":
     # create row cancer, add 0 if npcc_risk_class_group_1 == 0, else 1
     df['cancer'] = np.where(df['npcc_risk_class_group_1'] == 0, 0, 1)
     #print nr of patients with cancer
-    print("nr of patients with cancer: ", len(df[df['cancer'] == 1])) # 118'698
-    print("nr of patients without cancer: ", len(df[df['cancer'] == 0])) # rest
+    print("nr of patients with cancer: ", len(df[df['cancer'] == 1])) # 79'053
+    print("nr of patients without cancer: ", len(df[df['cancer'] == 0])) # 332'152
 
     print(df.head(5))
 
