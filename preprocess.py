@@ -1,55 +1,29 @@
 import numpy as np
 import pandas as pd
+from bunch import Bunch
 
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import MinMaxScaler
 
-# ---- for ECG data ----
-def create_irregular_ts(data):
-    # random boolean mask for which values will be changed
-    replace_rate = 0.3
-    mask = np.random.choice([0, 1], size=data.shape, p=((1-replace_rate),replace_rate)).astype(np.bool)
-
-    # random matrix the same shape
-    r = np.zeros(shape=data.shape)
-
-    # use  mask to replace values in input array
-    data[mask] = r[mask]
-
-    return data
-
-def load_ecg_data_to_pd(file_name_train, file_name_test):
-    df_mitbih_train = pd.read_csv(file_name_train, header=None)
-    df_mitbih_test = pd.read_csv(file_name_test, header=None)
-    #df_mitbih = pd.concat([df_mitbih_train, df_mitbih_test], axis=0)
-    df_mitbih_train.rename(columns={187: 'class'}, inplace=True)
-    df_mitbih_test.rename(columns={187: 'class'}, inplace=True)
-    #print(df_mitbih.head(5))
-
-    return df_mitbih_train, df_mitbih_test
-
-
 # ---- utils ----
-def upsample_data(df, config):
+def upsample_data(df: pd.DataFrame, config: Bunch) -> pd.DataFrame:
     #select sample_size samples from each class
     upsampled_data = pd.DataFrame()
     for i in range(config.n_clusters_real):
         upsampled_data = pd.concat([upsampled_data, df.loc[df['pros_cancer'] == i].sample(n=config.sample_size, replace=True)])
-    #print nr of values in each class
-    #print(df['pros_cancer'].value_counts())
     #shuffle rows of df and remove index column
     upsampled_data = upsampled_data.sample(frac=1)
     upsampled_data = upsampled_data.reset_index(drop=True)  
     return upsampled_data
 
-def normalize(data):
+def normalize(data: pd.DataFrame) -> pd.DataFrame:
     #x = df.values #returns a numpy array
     min_max_scaler = MinMaxScaler()
     data_scaled = min_max_scaler.fit_transform(data)
     df = pd.DataFrame(data_scaled, columns = data.columns)
     return df
 
-def generate_split(data):
+def generate_split(data: pd.DataFrame) -> Bunch:
     train_df, test_df = train_test_split(
         # data, test_size=0.15, random_state=42, stratify=data['class']
         data, test_size=0.2, random_state=42, stratify=data['pros_cancer']
@@ -57,23 +31,18 @@ def generate_split(data):
     train_df, test_df = train_df.reset_index(drop=True), test_df.reset_index(drop=True)
     return train_df, test_df
 
-# ---- for PSA data ----
 
-def load_plco_df(file_name):
+# ---- load PSA data with features, positional encodings and contexts ----
+
+def load_plco_df(file_name: str) -> pd.DataFrame:
     df = pd.read_csv(file_name, header=0)
     # select columns with psa data, set threshold to have at least 5 measurements
     # psa_levels per year: 69-74
     # pros_cancer label: 4
     df = df.iloc[:, [69, 70, 71, 72, 73, 74, 4]]
-    #df.dropna(thresh=4, inplace=True)
-    if df.iloc[:, :6].isnull().values.any():
-        df.dropna(axis=0, inplace=True)
-    
-    print("class distribution: \n", df['pros_cancer'].value_counts())
-    #df.fillna(0, inplace=True)
     return df
 
-def load_furst_df(file_name):
+def load_furst_df(file_name: str) -> pd.DataFrame:
     df = pd.read_csv(file_name, header=0)
     # select columns with psa data, set threshold to have at least 5 measurements
     # ss_nr_id =0
@@ -96,7 +65,7 @@ def load_furst_df(file_name):
     return df
 
 
-def create_context_df(df, config):
+def create_context_df(df: pd.DataFrame, config: Bunch) -> pd.DataFrame:
     # select columns with demographic data
     # pclo_id: 44
     # bmi20, bmi50, bmicurr, height: 142, 143, 144, 149
@@ -121,7 +90,7 @@ def create_context_df(df, config):
     df = df.iloc[:, indices]
     return df
 
-def load_timesteps_df(df):
+def load_timesteps_df(df: pd.DataFrame) -> pd.DataFrame:
     # select columns with timesteps data
     # pclo_id: 44
     # pros_dx_psa_gap: time last psa measurement to diagnosis: 6
@@ -132,14 +101,14 @@ def load_timesteps_df(df):
     df = df.iloc[:, [44, 80, 81, 82, 83, 84, 85, 4]]
     return df
 
-def load_psa_and_timesteps_df(df):
+def load_psa_and_absolutedays_df(df: pd.DataFrame) -> pd.DataFrame:
     # psa_levels per year: 69-74
     # day of psa level mesaurements: 80-85
     # pros_cancer label: 4
     df = df.iloc[:, [69, 70, 71, 72, 73, 74, 80, 81, 82, 83, 84, 85, 4, 44]]
     return df
 
-def load_psa_and_deltatime_df(df):
+def load_psa_and_deltadays_df(df: pd.DataFrame) -> pd.DataFrame:
     # psa_levels per year: 69-74
     # day of psa level mesaurements: 80-85
     # pros_cancer label: 4
@@ -152,7 +121,7 @@ def load_psa_and_deltatime_df(df):
     df.drop(['psa_days0', 'psa_days1', 'psa_days2', 'psa_days3', 'psa_days4', 'psa_days5'], axis=1, inplace=True)
     return df
 
-def load_psa_and_age_df(df):
+def load_psa_and_age_df(df: pd.DataFrame) -> pd.DataFrame:
     # psa_levels per year: 69-74
     # age at trial entry: 205
     # pros_cancer label: 4
@@ -175,12 +144,14 @@ def load_psa_data_to_pd(file_name: str, config: dict) -> pd.DataFrame:
     '''
     df_raw = pd.read_csv(file_name, header=0)
 
-    if config.pos_enc == "delta_days":
-        df = load_psa_and_deltatime_df(df_raw)
+    if config.pos_enc == "absolute_days":
+        df = load_psa_and_absolutedays_df(df_raw)
+    elif config.pos_enc == "delta_days":
+        df = load_psa_and_deltadays_df(df_raw)
     elif config.pos_enc == "age_pos_enc":
         df = load_psa_and_age_df(df_raw)
     else:
-        df = load_psa_and_timesteps_df(df_raw)
+        df = load_plco_df(df_raw)
     
     if config.context:
         df_context = create_context_df(df_raw, config)
