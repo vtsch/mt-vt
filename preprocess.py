@@ -34,12 +34,11 @@ def generate_split(data: pd.DataFrame) -> Bunch:
 
 # ---- load PSA data with features, positional encodings and contexts ----
 
-def load_plco_df(file_name: str) -> pd.DataFrame:
-    df = pd.read_csv(file_name, header=0)
+def load_plco_df(df: pd.DataFrame) -> pd.DataFrame:
     # select columns with psa data, set threshold to have at least 5 measurements
     # psa_levels per year: 69-74
     # pros_cancer label: 4
-    df = df.iloc[:, [69, 70, 71, 72, 73, 74, 4]]
+    df = df.iloc[:, [69, 70, 71, 72, 73, 74, 4, 44]]
     return df
 
 def load_furst_df(file_name: str) -> pd.DataFrame:
@@ -88,17 +87,6 @@ def create_context_df(df: pd.DataFrame, config: Bunch) -> pd.DataFrame:
     indices = [context_b, context_c, context_a, 44]
     indices = [i for i in indices if i is not None]
     df = df.iloc[:, indices]
-    return df
-
-def load_timesteps_df(df: pd.DataFrame) -> pd.DataFrame:
-    # select columns with timesteps data
-    # pclo_id: 44
-    # pros_dx_psa_gap: time last psa measurement to diagnosis: 6
-    # pros_exitdays: entry to pros cancer diagnosis or trial exit: 49
-    # mortality_exitdays: days until mortality, last day known to be alive: 174
-    # day of psa level mesaurements: 80-85
-    # pros_cancer label: 4
-    df = df.iloc[:, [44, 80, 81, 82, 83, 84, 85, 4]]
     return df
 
 def load_psa_and_absolutedays_df(df: pd.DataFrame) -> pd.DataFrame:
