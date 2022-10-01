@@ -2,7 +2,7 @@ import comet_ml
 import torch
 import os
 from torchsummary import summary
-from preprocess import load_psa_data_to_pd, load_plco_df, load_furst_df
+from preprocess import load_psa_data_to_pd, load_furst_df
 from kmeans import run_kmeans_and_plots, run_kmeans_only, plot_datapoints
 from metrics import calculate_clustering_scores, log_cluster_combinations
 from utils import get_args, build_save_path, build_comet_logger, set_required_grad, get_bunch_config_from_json
@@ -54,18 +54,24 @@ if __name__ == '__main__':
         
     # run kmeans on raw data
     if config.experiment_name == "raw_data":
+        
         if config.dataset == "plco":
-            df_psa = load_plco_df(file_name)
+            df_psa = load_psa_data_to_pd(file_name, config)
             y_real = df_psa['pros_cancer']
-            df_psa = df_psa.iloc[:,:-1]
+            # add positional encodings
+            if config.pos_enc == "absolute_days" or "delta_days" or "age_pos_enc":
+                for i in range(0, 6):
+                    df_psa["psa_with_enc" + str(i)] = df_psa.iloc[:,i] + df_psa.iloc[:,i+6]
+                df_psa.drop(df_psa.iloc[:, 0:12], inplace = True, axis = 1)
+            # drop labels column
+            df_psa.drop(['pros_cancer'], axis=1, inplace=True)
+
         elif config.dataset == "furst":
             df_psa = load_furst_df(file_name)
             #TODO
         else:
             raise ValueError("Dataset not supported")
         df_train_values = df_psa.values
-
-        # TODO: add posencs and context to df_psa
 
         kmeans_labels = run_kmeans_and_plots(df_train_values, config, experiment)
         df = df_psa.to_numpy()
