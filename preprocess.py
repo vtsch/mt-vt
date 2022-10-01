@@ -97,6 +97,12 @@ def load_psa_and_absolutedays_df(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 def load_psa_and_deltadays_df(df: pd.DataFrame) -> pd.DataFrame:
+    '''
+    Parameters:
+        df (pd.DataFrame): raw psa dataframe 
+    Returns:
+        df (pd.DataFrame): dataframe with psa levels and delta days (days between psa measurements)
+    '''
     # psa_levels per year: 69-74
     # day of psa level mesaurements: 80-85
     # pros_cancer label: 4
@@ -110,6 +116,12 @@ def load_psa_and_deltadays_df(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 def load_psa_and_age_df(df: pd.DataFrame) -> pd.DataFrame:
+    '''
+    Parameters:
+        df (pd.DataFrame): raw psa dataframe 
+    Returns:
+        df (pd.DataFrame): dataframe with psa levels and age at trial date
+    '''
     # psa_levels per year: 69-74
     # age at trial entry: 205
     # pros_cancer label: 4
