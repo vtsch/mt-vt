@@ -5,7 +5,7 @@ from torchsummary import summary
 from preprocess import load_psa_data_to_pd, load_furst_df
 from kmeans import kmeans, run_kmeans_and_plots, plot_datapoints
 from metrics import calculate_clustering_scores, log_cluster_combinations
-from utils import get_args, build_save_path, build_comet_logger, set_required_grad, get_bunch_config_from_json
+from utils import get_args, build_save_path, build_comet_logger, set_required_grad, get_bunch_config_from_json, complete_config
 from umapplot import run_umap
 from train import Trainer
 from traintstcc import TSTCCTrainer
@@ -16,18 +16,10 @@ from models.tstcc_basemodel import base_Model
 
 if __name__ == '__main__':
 
- 
     args = get_args()
     config = get_bunch_config_from_json(args.config)
-
-    # fix context for configs
-    config.experiment_name = args.experiment_name
-    config.n_clusters = args.n_clusters
-    config.pos_enc = args.positional_encoding
-    config.device = 'cuda:0' if torch.cuda.is_available() else 'cpu'
-    config.context_count = 3 if config.context_bmi and config.context_age and config.context_center else 1
-    config.context_count_size = config.context_count if config.context else 0 
-
+    config = complete_config(config, args)
+    
     print("config.experiment_name: ", config.experiment_name)
     print("config.n_clusters: ", config.n_clusters)
     print("config.pos_enc: ", config.pos_enc)
