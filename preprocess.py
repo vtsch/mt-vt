@@ -1,8 +1,6 @@
 import numpy as np
 import pandas as pd
 from bunch import Bunch
-
-from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import MinMaxScaler
 
 # ---- utils ----
@@ -22,15 +20,6 @@ def normalize(data: pd.DataFrame) -> pd.DataFrame:
     data_scaled = min_max_scaler.fit_transform(data)
     df = pd.DataFrame(data_scaled, columns = data.columns)
     return df
-
-def generate_split(data: pd.DataFrame) -> Bunch:
-    train_df, test_df = train_test_split(
-        # data, test_size=0.15, random_state=42, stratify=data['class']
-        data, test_size=0.2, random_state=42, stratify=data['pros_cancer']
-    )
-    train_df, test_df = train_df.reset_index(drop=True), test_df.reset_index(drop=True)
-    return train_df, test_df
-
 
 # ---- load PSA data with features, positional encodings and contexts ----
 
@@ -188,20 +177,19 @@ def load_psa_data_to_pd(file_name: str, config: dict) -> pd.DataFrame:
     if config.upsample:
         df = upsample_data(df, config)
 
-    # print class distribution and final cleanup for models
+    # final cleanup for models
     if config.dataset == "plco":
         # drop rows that have nan in psa levels
         if df.iloc[:, :6].isnull().values.any():
             df.dropna(axis=0, inplace=True)
-        print("class distribution:\n", df['pros_cancer'].value_counts())
         df.drop(['plco_id'], axis=1, inplace=True)
         #fill nan values with -1
         df.fillna(-1, inplace=True)
 
     elif config.dataset == "furst":
-        print("class distribution:\n", df['cancer'].value_counts())
         df.drop(['ss_number_id'], axis=1, inplace=True)
         df.drop(['date_of_birth_15'], axis=1, inplace=True)
+        df.drop(['npcc_risk_class_group_1'], axis=1, inplace=True)
         df.drop(['npcc_risk_class_group_2'], axis=1, inplace=True)
         df.drop(['npcc_risk_class_group_3'], axis=1, inplace=True)
         #fill nan values with -1
@@ -210,6 +198,9 @@ def load_psa_data_to_pd(file_name: str, config: dict) -> pd.DataFrame:
         print(df.head(10))
     else:
         raise ValueError("Dataset not supported")
+    
+    # print class distribution
+    print("class distribution:\n", df[config.classlabel].value_counts())
 
     return df
 
