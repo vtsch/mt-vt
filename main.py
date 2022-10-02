@@ -2,7 +2,7 @@ import comet_ml
 import torch
 import os
 from torchsummary import summary
-from preprocess import load_psa_data_to_pd, load_furst_df
+from preprocess import load_psa_data_to_pd
 from kmeans import kmeans, run_kmeans_and_plots, plot_datapoints
 from metrics import calculate_clustering_scores, log_cluster_combinations
 from utils import get_args, build_save_path, build_comet_logger, set_required_grad, get_bunch_config_from_json, complete_config
@@ -37,18 +37,18 @@ if __name__ == '__main__':
     # load and preprocess data 
     if config.dataset == "plco":
         file_name = "data/pros_data_mar22_d032222.csv"
-        df_psa = load_psa_data_to_pd(file_name, config)
     elif config.dataset == "furst":
-        file_name = "data/furst_data.csv"
-        # TODO: load and preprocess furst data
+        file_name = "data/psadata_furst.csv"
     else:
-        raise ValueError("Dataset not supported")
-        
+        raise ValueError("Dataset not found")
+    
+    df_psa = load_psa_data_to_pd(file_name, config)
+    print("-- data loaded --")
+
     # run kmeans on raw data
     if config.experiment_name == "raw_data":
 
         if config.dataset == "plco":
-            df_psa = load_psa_data_to_pd(file_name, config)
             true_labels = df_psa['pros_cancer']
             # add positional encodings
             if config.pos_enc == "absolute_days" or config.pos_enc == "delta_days" or config.pos_enc == "age_pos_enc":
@@ -61,12 +61,33 @@ if __name__ == '__main__':
                     df_psa.drop(df_psa.iloc[:, 1:7], inplace = True, axis = 1)
             # drop labels column
             df_psa.drop(['pros_cancer'], axis=1, inplace=True)
-
         elif config.dataset == "furst":
-            df_psa = load_furst_df(file_name)
-            #TODO
+            true_labels = df_psa['cancer']
+            # add positional encodings
+            if config.pos_enc == "absolute_days":
+                for i in range(0, 21):
+                    df_psa["psa_with_enc" + str(i)] = df_psa['psa_' + str(i)] + df_psa['psa_absolute' + str(i)]
+                    df_psa.drop('psa_' + str(i), axis=1, inplace=True)
+                    df_psa.drop('psa_absolute' + str(i), axis=1, inplace=True)
+            elif config.pos_enc == "delta_days":
+                for i in range(0, 21):
+                    df_psa["psa_with_enc" + str(i)] = df_psa['psa_' + str(i)] + df_psa['psa_delta' + str(i)]
+                    df_psa.drop('psa_' + str(i), axis=1, inplace=True)
+                    df_psa.drop('psa_delta' + str(i), axis=1, inplace=True)
+            elif config.pos_enc == "age_pos_enc":
+                for i in range(0, 21):
+                    df_psa["psa_with_enc" + str(i)] = df_psa['psa_' + str(i)] + df_psa['psa_age' + str(i)]
+                    df_psa.drop('psa_' + str(i), axis=1, inplace=True)
+                    df_psa.drop('psa_age' + str(i), axis=1, inplace=True)
+            else:
+                pass
+            # drop labels column
+            df_psa.drop(['npcc_risk_class_group_1'], axis=1, inplace=True)
+            df_psa.drop(['cancer'], axis=1, inplace=True)
+            print(df_psa.columns)
         else:
             raise ValueError("Dataset not supported")
+
         df_train_values = df_psa.values
 
         kmeans_labels = run_kmeans_and_plots(df_train_values, config, experiment)
