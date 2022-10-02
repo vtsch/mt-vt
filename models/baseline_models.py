@@ -1,10 +1,7 @@
 import torch
 import torch.nn as nn
-import torch.optim as optim
 import torch.nn.functional as F
-import pandas as pd
 
-import matplotlib.pyplot as plt
 
 class SimpleAutoencoder(nn.Module):
     def __init__(self, config):
@@ -33,8 +30,6 @@ class DeepAutoencoder(nn.Module):
         x = self.fc4(x)
         return x
 
-
-# https://www.kaggle.com/code/polomarco/ecg-classification-cnn-lstm-attention-mechanism 
 
 class ConvNormPool(nn.Module):
     """Conv Skip-connection module"""
