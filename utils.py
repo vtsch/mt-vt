@@ -80,7 +80,7 @@ def build_comet_logger(config: Bunch) -> Experiment:
     '''
     experiment = Experiment(
         api_key="HzUytPeFFfa9aiGmafVP6CMkP",
-        project_name="mt-vt",
+        project_name="mt-vt-results",
         workspace="vtsch",
     )
     experiment.set_name(config.experiment_name)
