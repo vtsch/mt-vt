@@ -71,7 +71,6 @@ class ConvNormPool(nn.Module):
 
 
 class CNN(nn.Module):
-    #def __init__(self, emb_size, input_size = 1, hid_size = 256, kernel_size = 5):
     def __init__(self, config):
         super().__init__()
         self.config = config
