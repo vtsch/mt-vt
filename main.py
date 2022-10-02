@@ -46,10 +46,9 @@ if __name__ == '__main__':
     # run kmeans on raw data
     if config.experiment_name == "raw_data":
 
+
+        true_labels = df_psa[config.classlabel]
         if config.dataset == "plco":
-            true_labels = df_psa['pros_cancer']
-            # add positional encodings
-            print(df_psa.head())
             if config.pos_enc == "absolute_days":
                 for i in range(0, 6):
                     df_psa["psa_with_enc" + str(i)] = df_psa['psa_level' + str(i)] + df_psa['psa_days' + str(i)]
@@ -67,11 +66,7 @@ if __name__ == '__main__':
                     df_psa.drop('psa_age' + str(i), axis=1, inplace=True)
             else:
                 pass
-            # drop labels column
-            df_psa.drop(['pros_cancer'], axis=1, inplace=True)
         elif config.dataset == "furst":
-            true_labels = df_psa['cancer']
-            # add positional encodings
             if config.pos_enc == "absolute_days":
                 for i in range(0, 21):
                     df_psa["psa_with_enc" + str(i)] = df_psa['psa_' + str(i)] + df_psa['psa_absolute' + str(i)]
@@ -89,13 +84,11 @@ if __name__ == '__main__':
                     df_psa.drop('psa_age' + str(i), axis=1, inplace=True)
             else:
                 pass
-            # drop labels column
-            df_psa.drop(['npcc_risk_class_group_1'], axis=1, inplace=True)
-            df_psa.drop(['cancer'], axis=1, inplace=True)
-            print(df_psa.columns)
+
         else:
             raise ValueError("Dataset not supported")
 
+        df_psa.drop([config.classlabel], axis=1, inplace=True)
         df_train_values = df_psa.values
 
         kmeans_labels = run_kmeans_and_plots(df_train_values, config, experiment)

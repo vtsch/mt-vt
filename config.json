@@ -1,5 +1,6 @@
 {
-    "dataset": "plco",
+    "dataset": "furst",
+    "classlabel": "cancer",
     "model_save_dir": "saved_models",
 
     "_____kmeans_metric_options": "euclidean, dtw, softdtw",
