@@ -102,6 +102,8 @@ def load_psa_and_deltadays_df(df: pd.DataFrame, config: Bunch) -> pd.DataFrame:
     '''
     # calculate deltatime between psa measurements and add to dataframe and delete measurement days
     if config.dataset == "plco":
+        df = df.iloc[:, [69, 70, 71, 72, 73, 74, 80, 81, 82, 83, 84, 85, 4, 44]]
+        print(df.head(4))
         df['psa_delta0'] = 0
         for i in range(1, 6):
             df['psa_delta' + str(i)] = df['psa_days' + str(i)] - df['psa_days' + str(i-1)]

@@ -41,9 +41,7 @@ if __name__ == '__main__':
         file_name = "data/psadata_furst.csv"
     else:
         raise ValueError("Dataset not found")
-    
     df_psa = load_psa_data_to_pd(file_name, config)
-    print("-- data loaded --")
 
     # run kmeans on raw data
     if config.experiment_name == "raw_data":
@@ -51,14 +49,24 @@ if __name__ == '__main__':
         if config.dataset == "plco":
             true_labels = df_psa['pros_cancer']
             # add positional encodings
-            if config.pos_enc == "absolute_days" or config.pos_enc == "delta_days" or config.pos_enc == "age_pos_enc":
+            print(df_psa.head())
+            if config.pos_enc == "absolute_days":
                 for i in range(0, 6):
-                    df_psa["psa_with_enc" + str(i)] = df_psa.iloc[:,i] + df_psa.iloc[:,i+6]
-                if config.pos_enc == "absolute_days":
-                    df_psa.drop(df_psa.iloc[:, 0:12], inplace = True, axis = 1)
-                else:
-                    df_psa.drop(df_psa.iloc[:, 0:6], inplace = True, axis = 1)
-                    df_psa.drop(df_psa.iloc[:, 1:7], inplace = True, axis = 1)
+                    df_psa["psa_with_enc" + str(i)] = df_psa['psa_level' + str(i)] + df_psa['psa_days' + str(i)]
+                    df_psa.drop('psa_level' + str(i), axis=1, inplace=True)
+                    df_psa.drop('psa_days' + str(i), axis=1, inplace=True)
+            elif config.pos_enc == "delta_days":
+                for i in range(0, 6):
+                    df_psa["psa_with_enc" + str(i)] = df_psa['psa_level' + str(i)] + df_psa['psa_delta' + str(i)]
+                    df_psa.drop('psa_level' + str(i), axis=1, inplace=True)
+                    df_psa.drop('psa_delta' + str(i), axis=1, inplace=True)
+            elif config.pos_enc == "age_pos_enc":
+                for i in range(0, 6):
+                    df_psa["psa_with_enc" + str(i)] = df_psa['psa_level' + str(i)] + df_psa['psa_age' + str(i)]
+                    df_psa.drop('psa_level' + str(i), axis=1, inplace=True)
+                    df_psa.drop('psa_age' + str(i), axis=1, inplace=True)
+            else:
+                pass
             # drop labels column
             df_psa.drop(['pros_cancer'], axis=1, inplace=True)
         elif config.dataset == "furst":
