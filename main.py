@@ -68,17 +68,17 @@ if __name__ == '__main__':
                 pass
         elif config.dataset == "furst":
             if config.pos_enc == "absolute_days":
-                for i in range(0, 21):
+                for i in range(0, 20):
                     df_psa["psa_with_enc" + str(i)] = df_psa['psa_' + str(i)] + df_psa['psa_absolute' + str(i)]
                     df_psa.drop('psa_' + str(i), axis=1, inplace=True)
                     df_psa.drop('psa_absolute' + str(i), axis=1, inplace=True)
             elif config.pos_enc == "delta_days":
-                for i in range(0, 21):
+                for i in range(0, 20):
                     df_psa["psa_with_enc" + str(i)] = df_psa['psa_' + str(i)] + df_psa['psa_delta' + str(i)]
                     df_psa.drop('psa_' + str(i), axis=1, inplace=True)
                     df_psa.drop('psa_delta' + str(i), axis=1, inplace=True)
             elif config.pos_enc == "age_pos_enc":
-                for i in range(0, 21):
+                for i in range(0, 20):
                     df_psa["psa_with_enc" + str(i)] = df_psa['psa_' + str(i)] + df_psa['psa_age' + str(i)]
                     df_psa.drop('psa_' + str(i), axis=1, inplace=True)
                     df_psa.drop('psa_age' + str(i), axis=1, inplace=True)

@@ -20,11 +20,11 @@ def reshape_psa_data_and_save():
             .reset_index())
     #print(df1.head(5))
 
-    # delete all columns after column 21
-    df1 = df1.iloc[:, :22]
+    # delete all columns after column 20
+    df1 = df1.iloc[:, :21]
 
     # split datapsa_i into date and measurement at empty space for all columns
-    for i in range(0, 21):
+    for i in range(0, 20):
             df1['date_' + str(i)] = [x[:10] for x in df1['datapsa_' + str(i)]]
             df1['psa_' + str(i)] = [x[10:] for x in df1['datapsa_' + str(i)]]
             #delete the old column
