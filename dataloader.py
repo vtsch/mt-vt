@@ -1,13 +1,12 @@
 import numpy as np
 import pandas as pd
 from bunch import Bunch
-
+from typing import Tuple
 from models.tstcc_TC import DataTransform
-
 import torch
 from torch.utils.data import Dataset, DataLoader
-from preprocess import generate_split, normalize
-
+from preprocess import normalize
+from sklearn.model_selection import train_test_split
 
 class LoadPSADataset(Dataset):
     '''
@@ -22,33 +21,44 @@ class LoadPSADataset(Dataset):
         self.df = data
         self.config = config
 
-        X = data[['psa_level0', 'psa_level1', 'psa_level2',
-                  'psa_level3', 'psa_level4', 'psa_level5']]
-        y = data['pros_cancer']
+        y = data[config.classlabel]
 
-        if self.config.pos_enc == "absolute_days":
-            ts = data[['psa_days0', 'psa_days1', 'psa_days2',
-                       'psa_days3', 'psa_days4', 'psa_days5']]
-        elif self.config.pos_enc == "delta_days":
-            ts = data[['psa_delta0', 'psa_delta1', 'psa_delta2',
-                       'psa_delta3', 'psa_delta4', 'psa_delta5']]
-        elif self.config.pos_enc == "age_pos_enc":
-            ts = data[['psa_age0', 'psa_age1', 'psa_age2',
-                       'psa_age3', 'psa_age4', 'psa_age5']]
+        if config.dataset == "plco":
+            X = data[['psa_level0', 'psa_level1', 'psa_level2', 'psa_level3', 'psa_level4', 'psa_level5']]
+
+            if self.config.pos_enc == "absolute_days":
+                ts = data[['psa_days0', 'psa_days1', 'psa_days2', 'psa_days3', 'psa_days4', 'psa_days5']]
+            elif self.config.pos_enc == "delta_days":
+                ts = data[['psa_delta0', 'psa_delta1', 'psa_delta2','psa_delta3', 'psa_delta4', 'psa_delta5']]
+            elif self.config.pos_enc == "age_pos_enc":
+                ts = data[['psa_age0', 'psa_age1', 'psa_age2', 'psa_age3', 'psa_age4', 'psa_age5']]
+            else:
+                ts = pd.DataFrame(np.zeros((len(data), 6)))
+
+        elif config.dataset == "furst":
+            X = data[['psa_0', 'psa_1', 'psa_2','psa_3', 'psa_4', 'psa_5', 'psa_6', 'psa_7', 'psa_8', 'psa_9', 'psa_10', 'psa_11', 'psa_12','psa_13', 'psa_14', 'psa_15', 'psa_16', 'psa_17', 'psa_18', 'psa_19', 'psa_20']]
+
+            if self.config.pos_enc == "absolute_days":
+                ts = data[['psa_absolute0', 'psa_absolute1', 'psa_absolute2','psa_absolute3', 'psa_absolute4', 'psa_absolute5', 'psa_absolute6', 'psa_absolute7', 'psa_absolute8', 'psa_absolute9', 'psa_absolute10', 'psa_absolute11', 'psa_absolute12','psa_absolute13', 'psa_absolute14', 'psa_absolute15', 'psa_absolute16', 'psa_absolute17', 'psa_absolute18', 'psa_absolute19', 'psa_absolute20']]
+            elif self.config.pos_enc == "delta_days":
+                ts = data[['psa_delta0', 'psa_delta1', 'psa_delta2','psa_delta3', 'psa_delta4', 'psa_delta5', 'psa_delta6', 'psa_delta7', 'psa_delta8', 'psa_delta9', 'psa_delta10', 'psa_delta11', 'psa_delta12','psa_delta13', 'psa_delta14', 'psa_delta15', 'psa_delta16', 'psa_delta17', 'psa_delta18', 'psa_delta19', 'psa_delta20']]
+
+            elif self.config.pos_enc == "age_pos_enc":
+                ts = data[['psa_age0', 'psa_age1', 'psa_age2','psa_age3', 'psa_age4', 'psa_age5', 'psa_age6', 'psa_age7', 'psa_age8', 'psa_age9', 'psa_age10', 'psa_age11', 'psa_age12','psa_age13', 'psa_age14', 'psa_age15', 'psa_age16', 'psa_age17', 'psa_age18', 'psa_age19', 'psa_age20']]
+            else:
+                ts = pd.DataFrame(np.zeros((len(data), 21)))
         else:
-            ts = pd.DataFrame(np.zeros((len(data), 6)))
+            raise ValueError("Dataset not supported")
         
-        if self.config.context:
-            #context = data[['bmi_curr', 'center', 'age', 'race7']]
-            context_b = 'bmi_curr' if self.config.context_bmi else None
-            context_c = 'center' if self.config.context_center else None
-            context_a = 'age' if self.config.context_age else None
-            context_indices = [context_b, context_c, context_a]
-            context_indices = [i for i in context_indices if i is not None]
-            context = data[context_indices]
-            #add 4 columns with zeros to ts if context is used with concat 
-            #ts = pd.concat([ts, pd.DataFrame(np.zeros((ts.shape[0], self.config.context_count)))], axis=1)
-
+        if self.config.dataset == "plco":
+            if self.config.context:
+                #context = data[['bmi_curr', 'center', 'age', 'race7']]
+                context_b = 'bmi_curr' if self.config.context_bmi else None
+                context_c = 'center' if self.config.context_center else None
+                context_a = 'age' if self.config.context_age else None
+                context_indices = [context_b, context_c, context_a]
+                context_indices = [i for i in context_indices if i is not None]
+                context = data[context_indices]
         else: 
             context = data[[]]
 
@@ -91,6 +101,13 @@ class LoadPSADataset(Dataset):
     def __len__(self):
         return self.len
 
+def generate_split(data: pd.DataFrame, config: Bunch) -> Tuple[pd.DataFrame, pd.DataFrame]:
+    train_df, test_df = train_test_split(
+        data, test_size=0.2, random_state=42, stratify=data[config.classlabel]
+    )
+    train_df, test_df = train_df.reset_index(drop=True), test_df.reset_index(drop=True)
+    return train_df, test_df
+
 
 def get_dataloader(config: Bunch, data: Dataset, phase: str) -> DataLoader:
     '''
@@ -103,8 +120,8 @@ def get_dataloader(config: Bunch, data: Dataset, phase: str) -> DataLoader:
     '''
     data = normalize(data)
 
-    train_df, test_df = generate_split(data)
-    train_df, val_df = generate_split(train_df)
+    train_df, test_df = generate_split(data, config)
+    train_df, val_df = generate_split(train_df, config)
 
     if phase == 'train':
         df = train_df
@@ -117,8 +134,7 @@ def get_dataloader(config: Bunch, data: Dataset, phase: str) -> DataLoader:
 
     dataset = LoadPSADataset(config, df)
     print(f'{phase} data shape: {dataset.df.shape}')
-
-    print(df['pros_cancer'].value_counts())
+    print(df[config.classlabel].value_counts())
 
     dataloader = DataLoader(
         dataset=dataset, batch_size=config.batch_size, drop_last=True, num_workers=0)
@@ -136,8 +152,8 @@ def data_generator_tstcc(data: Dataset, config: Bunch) -> DataLoader:
     '''
     data = normalize(data)
 
-    train_df, val_df = generate_split(data)
-    train_df, test_df = generate_split(train_df)
+    train_df, val_df = generate_split(data, config)
+    train_df, test_df = generate_split(train_df, config)
 
     train_dataset = LoadPSADataset(config, train_df)
     valid_dataset = LoadPSADataset(config, val_df)
