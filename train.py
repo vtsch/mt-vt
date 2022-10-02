@@ -1,21 +1,22 @@
 import time
 import torch
 from torch.optim import Adam
-import torch.nn.functional as F
 import pandas as pd
 from metrics import Meter
 from dataloader import get_dataloader
 import numpy as np
 from models.transformer import generate_square_subsequent_mask
 from pos_enc import positional_encoding
-
+from models.soft_dtw import SoftDTW
 
 class Trainer:
     def __init__(self, config, experiment, data, net):
         self.net = net.to(config.device)
         self.config = config
         self.experiment = experiment
-        self.criterion = torch.nn.CrossEntropyLoss()
+        #self.criterion = torch.nn.CrossEntropyLoss()
+        self.criterion = torch.nn.MSELoss(reduction='sum')
+        #self.criterion = SoftDTW(gamma=1.0, normalize=False)
         self.optimizer = Adam(self.net.parameters(), lr=config.lr, betas=(0.9, 0.99), weight_decay=3e-4)
         self.scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(self.optimizer, 'min')
         self.best_loss = float('inf')
@@ -59,7 +60,8 @@ class Trainer:
             meter.update(pred, data, phase, loss.item())
 
         metrics = meter.get_metrics()
-        metrics = {k:v / i for k, v in metrics.items()}
+        #i = 1
+        metrics = {k:v / i for k, v in metrics.items()}  # i = nr of batches
         df_logs = pd.DataFrame([metrics])
 
         return loss, df_logs            
