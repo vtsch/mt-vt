@@ -31,12 +31,12 @@ def load_plco_df(df: pd.DataFrame) -> pd.DataFrame:
 
 def load_furst_df(df: pd.DataFrame) -> pd.DataFrame:
     # ss_nr_id: 0
-    # psa levels: 2, 4, 6, 8, 10, 12, ... 42
-    # psa days: 1, 5, 7, 9, 11, 13, ... 41
-    # date_of_birth: 43
-    # npcc_risk_class_group_1-3: 44, 45, 46
-    # cancer: 47
-    df = df.iloc[:, [2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 34, 36, 38, 40, 42, 43, 44, 45, 46, 47, 0]]
+    # psa levels: 2, 4, 6, 8, 10, 12, ... 40
+    # psa days: 1, 5, 7, 9, 11, 13, ... 39
+    # date_of_birth: 41
+    # npcc_risk_class_group_1-3: 42, 43, 44
+    # cancer: 45
+    df = df.iloc[:, [2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 34, 36, 38, 40, 41, 42, 43, 44, 45, 0]]
     return df
 
 def create_context_df(df: pd.DataFrame, config: Bunch) -> pd.DataFrame:
@@ -75,7 +75,7 @@ def load_psa_and_absolutedays_df(df: pd.DataFrame, config: Bunch) -> pd.DataFram
         # psa days: 1, 3, 5, 7, 9, 11, 13, ... 41
         # cancer label: 47
         earliest_date = df['date_0'].min()
-        for i in range(0, 21):
+        for i in range(0, 20):
             df['psa_absolute' + str(i)] = (df['date_' + str(i)] - earliest_date) / np.timedelta64(1, 'D')
             df.drop(['date_' + str(i)], axis=1, inplace=True)
     else:
@@ -99,9 +99,9 @@ def load_psa_and_deltadays_df(df: pd.DataFrame, config: Bunch) -> pd.DataFrame:
 
     elif config.dataset == "furst":
         df['psa_delta0'] = 0
-        for i in range(1, 21):
+        for i in range(1, 20):
             df['psa_delta' + str(i)] = (df['date_' + str(i)] - df['date_' + str(i-1)]) / np.timedelta64(1, 'D')
-        for i in range(0, 21):
+        for i in range(0, 20):
             df.drop(['date_' + str(i)], axis=1, inplace=True)
     else:
         raise ValueError("Dataset not supported")
@@ -128,7 +128,7 @@ def load_psa_and_age_df(df: pd.DataFrame, config: Bunch) -> pd.DataFrame:
         df.drop(['age'], axis=1, inplace=True)
 
     elif config.dataset == "furst":
-        for i in range(0, 21):
+        for i in range(0, 20):
             df['psa_age' + str(i)] = (df['date_' + str(i)] - df['date_of_birth_15']) / np.timedelta64(1, 'Y')
             df.drop(['date_' + str(i)], axis=1, inplace=True)
     else:
@@ -148,7 +148,8 @@ def load_psa_data_to_pd(file_name: str, config: dict) -> pd.DataFrame:
 
     # convert dates to datetime in furst dataset
     if config.dataset == 'furst':
-        for i in range(0, 21):
+        for i in range(0, 20):
+            print(i)
             df_raw['date_' + str(i)] = pd.to_datetime(df_raw['date_' + str(i)], format='%Y-%m-%d')
         df_raw['date_of_birth_15'] = pd.to_datetime(df_raw['date_of_birth_15'], format='%Y-%m-%d')
 
@@ -194,8 +195,6 @@ def load_psa_data_to_pd(file_name: str, config: dict) -> pd.DataFrame:
         df.drop(['npcc_risk_class_group_3'], axis=1, inplace=True)
         #fill nan values with -1
         df.fillna(-1, inplace=True)
-        # convert whole df to float
-        print(df.head(10))
     else:
         raise ValueError("Dataset not supported")
     
