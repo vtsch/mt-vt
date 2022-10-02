@@ -73,11 +73,11 @@ if __name__ == "__main__":
 
     # merge dataframe psa levels and ages on id
     df = pd.merge(df_m, df_a, on='ss_number_id', how='inner')
-    print("nr of rows after merge psa and age: ", len(df)) # 411'205
+    # print("nr of rows after merge psa and age: ", len(df)) # 411'205
     # check: print nr of rows without entry in date_of_birth_15
     # print("nr of rows without entry in date_of_birth_15: ", len(df[df.date_of_birth_15.isnull()])) # 0
     df = pd.merge(df, df_l, on='ss_number_id', how='left')
-    print("nr of rows after merge labels: ", len(df)) # 411'205
+    # print("nr of rows after merge labels: ", len(df)) # 411'205
     # fill 0 for all patients without label
     df['npcc_risk_class_group_1'] = df['npcc_risk_class_group_1'].fillna(0)
     df['npcc_risk_class_group_2'] = df['npcc_risk_class_group_2'].fillna(0)
@@ -87,6 +87,9 @@ if __name__ == "__main__":
     #print nr of patients with cancer
     print("nr of patients with cancer: ", len(df[df['cancer'] == 1])) # 79'053
     print("nr of patients without cancer: ", len(df[df['cancer'] == 0])) # 332'152
+
+    # print nr of entries in each column without nan
+    # print(df.count())
 
     print(df.head(5))
 
