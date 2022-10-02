@@ -49,7 +49,7 @@ if __name__ == '__main__':
 
         if config.dataset == "plco":
             df_psa = load_psa_data_to_pd(file_name, config)
-            y_real = df_psa['pros_cancer']
+            true_labels = df_psa['pros_cancer']
             # add positional encodings
             if config.pos_enc == "absolute_days" or config.pos_enc == "delta_days" or config.pos_enc == "age_pos_enc":
                 for i in range(0, 6):
@@ -58,7 +58,6 @@ if __name__ == '__main__':
                     df_psa.drop(df_psa.iloc[:, 0:12], inplace = True, axis = 1)
                 else:
                     df_psa.drop(df_psa.iloc[:, 0:6], inplace = True, axis = 1)
-                    print(df_psa.head(5))
                     df_psa.drop(df_psa.iloc[:, 1:7], inplace = True, axis = 1)
             # drop labels column
             df_psa.drop(['pros_cancer'], axis=1, inplace=True)
@@ -72,8 +71,8 @@ if __name__ == '__main__':
 
         kmeans_labels = run_kmeans_and_plots(df_train_values, config, experiment)
         df = df_psa.to_numpy()
-        run_umap(df_psa, y_real, kmeans_labels, config.experiment_name, experiment)
-        calculate_clustering_scores(y_real.astype(int), kmeans_labels, experiment)
+        run_umap(df_psa, true_labels, kmeans_labels, config.experiment_name, experiment)
+        calculate_clustering_scores(true_labels.astype(int), kmeans_labels, experiment)
 
 
     # run embedding models and kmeans
