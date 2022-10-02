@@ -8,24 +8,15 @@ from torch import long, nn, Tensor
 from torch.nn.modules import MultiheadAttention, Linear, Dropout, BatchNorm1d, TransformerEncoderLayer
 from pos_enc import positional_encoding
 
-#https://github.com/sunnyqiny/Unsupervised-Temporal-Embedding-and-Clustering/tree/cc5a41df905efbac11788a43b6151c08c68b8c6c 
+# from https://github.com/gzerveas/mvts_transformer 
 
 def generate_square_subsequent_mask(config):
-    ts_length = 6
-    t0 = np.floor(ts_length *0.8)
-    t0 = t0.astype(int)
-    mask = torch.zeros(config.batch_size, ts_length)
-    for i in range(0,t0):
-        mask[i,t0:] = 1 
-    for i in range(t0,ts_length):
-        mask[i,i+1:] = 1
-    mask = mask.int().masked_fill(mask == 1, float(0.0))#.masked_fill(mask == 1, float('-inf'))
+    # Used to mask padded positions: creates a (batch_size, max_len) boolean mask from a tensor of sequence lengths, where 1 means keep element at this position (time step)
+    mask = torch.arange(0, config.ts_length).repeat(config.batch_size, 1)
     if config.context:
         mask = torch.cat((mask, torch.ones(config.batch_size, config.context_count)), 1)
         mask = mask.int()
     return mask
-
-# from https://github.com/gzerveas/mvts_transformer 
 
 def _get_activation_fn(activation):
     if activation == "relu":
