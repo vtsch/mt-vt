@@ -49,6 +49,13 @@ def complete_config(config: Bunch, args: argparse.Namespace) -> Bunch:
     config.context_count = 3 if config.context_bmi and config.context_age and config.context_center else 1
     config.context_count_size = config.context_count if config.context else 0 
 
+    if config.dataset == 'furst':
+        config.classlabel = 'cancer'
+        config.ts_length = 20
+    if config.dataset == 'plco':
+        config.classlabel = 'pros_cancer'
+        config.ts_length = 6
+
     return config
 
 def build_save_path(config: Bunch) -> str:
