@@ -3,10 +3,17 @@ import pandas as pd
 from bunch import Bunch
 from sklearn.preprocessing import MinMaxScaler
 
-# ---- utils ----
+# ---- utils for data processing ----
 def upsample_data(df: pd.DataFrame, config: Bunch) -> pd.DataFrame:
-    #select sample_size samples from each class
+    '''
+    Upsample data to balance classes
+    Args:
+        df (pd.DataFrame): dataframe with psa levels and labels
+    Returns:
+        df (pd.DataFrame): dataframe with balanced classes
+    '''
     upsampled_data = pd.DataFrame()
+    #select sample_size samples from each class
     for i in range(config.n_clusters_real):
         upsampled_data = pd.concat([upsampled_data, df.loc[df['pros_cancer'] == i].sample(n=config.sample_size, replace=True)])
     #shuffle rows of df and remove index column
@@ -15,11 +22,18 @@ def upsample_data(df: pd.DataFrame, config: Bunch) -> pd.DataFrame:
     return upsampled_data
 
 def normalize(data: pd.DataFrame) -> pd.DataFrame:
-    #x = df.values #returns a numpy array
+    '''
+    Normalize data
+    Args:
+        data: dataframe with psa levels and labels
+    Returns:
+        data: dataframe with normalized psa levels and labels
+    '''
     min_max_scaler = MinMaxScaler()
     data_scaled = min_max_scaler.fit_transform(data)
     df = pd.DataFrame(data_scaled, columns = data.columns)
     return df
+
 
 # ---- load PSA data with features, positional encodings and contexts ----
 
@@ -84,7 +98,8 @@ def load_psa_and_absolutedays_df(df: pd.DataFrame, config: Bunch) -> pd.DataFram
 
 def load_psa_and_deltadays_df(df: pd.DataFrame, config: Bunch) -> pd.DataFrame:
     '''
-    Parameters:
+    Load PSA data with features and delta days positional encoding
+    Args:
         df (pd.DataFrame): raw psa dataframe 
     Returns:
         df (pd.DataFrame): dataframe with psa levels and delta days (days between psa measurements)
@@ -110,7 +125,8 @@ def load_psa_and_deltadays_df(df: pd.DataFrame, config: Bunch) -> pd.DataFrame:
 
 def load_psa_and_age_df(df: pd.DataFrame, config: Bunch) -> pd.DataFrame:
     '''
-    Parameters:
+    Load PSA data with features and age position encoding
+    Args:
         df (pd.DataFrame): raw psa dataframe 
     Returns:
         df (pd.DataFrame): dataframe with psa levels and age at trial date
@@ -138,18 +154,19 @@ def load_psa_and_age_df(df: pd.DataFrame, config: Bunch) -> pd.DataFrame:
 
 def load_psa_data_to_pd(file_name: str, config: dict) -> pd.DataFrame:
     '''
-    Parameters:
+    Load PSA data from file, select PSA measurements, position encodings and context
+    Args:
         file_name: str
-        config:dictionary with configuration parameters
+        config: dictionary with configuration parameters
     Returns:
-        df_psa_ts: pd.DataFrame with psa values and timestep index and labels
+        df_psa_ts: pd.DataFrame with psa values and position encodings and labels
     '''
+    # read data
     df_raw = pd.read_csv(file_name, header=0)
 
     # convert dates to datetime in furst dataset
     if config.dataset == 'furst':
         for i in range(0, 20):
-            print(i)
             df_raw['date_' + str(i)] = pd.to_datetime(df_raw['date_' + str(i)], format='%Y-%m-%d')
         df_raw['date_of_birth_15'] = pd.to_datetime(df_raw['date_of_birth_15'], format='%Y-%m-%d')
 
