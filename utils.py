@@ -8,9 +8,11 @@ from datetime import datetime
 from bunch import Bunch
 
 def get_args() -> argparse.Namespace:
-    """
-    Get the arguments from the command line.
-    """
+    '''
+    Get the configs from the command line
+    Returns:
+        args: arguments 
+    '''
     argparser = argparse.ArgumentParser()
     argparser.add_argument("-c", "--config", help="Path to the config file", default="config.json")    
     argparser.add_argument("-exp", "--experiment_name", help="model to run, options: raw_data, simple_ac, deep_ac, lstm, cnn, simple_transformer, ts_tc", default="simple_transformer", type=str)
@@ -22,7 +24,8 @@ def get_args() -> argparse.Namespace:
 
 def get_bunch_config_from_json(json_file_path: str) -> Bunch:
     '''
-    Parameters:
+    Load the configs from the json file
+    Args:
         json_file_path: path to the json file
     Returns:
         config: Bunch object with the configuration parameters
@@ -33,7 +36,8 @@ def get_bunch_config_from_json(json_file_path: str) -> Bunch:
 
 def complete_config(config: Bunch, args: argparse.Namespace) -> Bunch:
     '''
-    Parameters:
+    Complete the config file with the arguments from the command line, additional calculations for context configs and dataset-specific configs
+    Args:
         config: config file
         args: arguments from the command line
     Returns:
@@ -60,7 +64,8 @@ def complete_config(config: Bunch, args: argparse.Namespace) -> Bunch:
 
 def build_save_path(config: Bunch) -> str:
     '''
-    Parameters:
+    Build the path for where to save the model
+    Args:
         config: config file
     Returns:
         save_path: path to where the model will be saved
@@ -73,14 +78,15 @@ def build_save_path(config: Bunch) -> str:
 
 def build_comet_logger(config: Bunch) -> Experiment:
     '''
-    Parameters:
+    Build the comet logger
+    Args:
         config: config file
     Returns:
         experiment: Comet logger
     '''
     experiment = Experiment(
         api_key="HzUytPeFFfa9aiGmafVP6CMkP",
-        project_name="mt-vt-results",
+        project_name="mt-vt-soft-dtw",
         workspace="vtsch",
     )
     experiment.set_name(config.experiment_name)
@@ -90,7 +96,8 @@ def build_comet_logger(config: Bunch) -> Experiment:
 # for TS-TCC
 def set_required_grad(model, dict_, requires_grad=True) -> None:
     '''
-    Parameters:
+    Set the requires_grad attribute of the parameters in the model
+    Args:
         model: model to set the required grad
         dict_: dictionary with the parameters to set the required grad
         requires_grad: boolean to set the required grad

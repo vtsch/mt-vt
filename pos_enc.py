@@ -6,7 +6,8 @@ from torch import nn
 
 def positional_encoding(config: Bunch, inp: torch.Tensor, indices: torch.Tensor) -> torch.Tensor:
     '''
-    Parameters:
+    Add positional encoding to the input
+    Args:
         config: config file
         inp: input tensor
         indices: indices of the input tensor

@@ -6,7 +6,8 @@ import numpy as np
 
 def plot_datapoints_of_cluster(data: np.ndarray, labels: np.ndarray, cluster_id: int, label_color_map: list, title: str, experiment) -> None:
     '''
-    Parameters:
+    Plot datapoints of a specific cluster, plot the TS as lines and boxplots
+    Args:
         data: data to plot
         labels: labels of the data
         cluster_id: id of the cluster to plot
@@ -37,7 +38,8 @@ def plot_datapoints_of_cluster(data: np.ndarray, labels: np.ndarray, cluster_id:
 
 def plot_datapoints(data: np.ndarray, labels: np.ndarray, title: str, experiment) -> None:
     '''
-    Parameters:
+    Plot datapoints of each cluster together and each cluster separately
+    Args:
         data: data to plot
         labels: labels of the data
         title: title of the plot
@@ -61,7 +63,8 @@ def plot_datapoints(data: np.ndarray, labels: np.ndarray, title: str, experiment
 
 def plot_centroids(centroids: np.ndarray, n_clusters: int, title: str, experiment) -> None:
     '''
-    Parameters:
+    Plot centroids of the clusters
+    Args:
         centroids: centroids to plot
         n_clusters: number of clusters
         title: title of the plot
@@ -75,7 +78,8 @@ def plot_centroids(centroids: np.ndarray, n_clusters: int, title: str, experimen
 
 def kmeans(data: np.ndarray, config: Bunch) -> Tuple[np.ndarray, np.ndarray]:
     '''
-    Parameters:
+    Perform TS KMeans clustering on the data with the specified metric
+    Args:
         data: data to cluster
         config: config file with parameters for kmeans
     Returns:
@@ -91,7 +95,8 @@ def kmeans(data: np.ndarray, config: Bunch) -> Tuple[np.ndarray, np.ndarray]:
 
 def run_kmeans_and_plots(output: np.ndarray, config: Bunch, experiment) -> np.ndarray:
     '''
-    Parameters:
+    Run kmeans and plot the results
+    Args:
         output: learn representation of the model
         config: config file
         experiment: comet.ml experiment to log the figures

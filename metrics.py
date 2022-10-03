@@ -9,6 +9,7 @@ from sklearn.metrics import r2_score, mean_squared_error, mean_absolute_error
 
 def calculate_clustering_scores(y_true: np.ndarray, y_pred: np.ndarray, experiment) -> None:
     '''
+    Calculate clustering scores of k-means 
     Parameters:
         y_true: true labels
         y_pred: predicted labels
@@ -28,6 +29,7 @@ def calculate_clustering_scores(y_true: np.ndarray, y_pred: np.ndarray, experime
 
 def log_cluster_combinations(config: Bunch, true_labels: np.ndarray, kmeans_labels_old: np.ndarray, experiment) -> None:
     '''
+    Log the cluster combinations, i.e. combine predicted labels to result in labels 0 and 1, test each combination and log the best one
     Parameters:
         config: config object
         true_labels: true labels
@@ -131,6 +133,7 @@ class Meter:
 
     def update(self, x: torch.Tensor, y: torch.Tensor, phase: str, loss: torch.Tensor) -> None:
         '''
+        Update metrics for a batch
         Parameters:
             x: input data
             y: true data
@@ -145,6 +148,7 @@ class Meter:
     
     def init_metrics(self, phase: str) -> None:
         '''
+        Initialize metrics for a phase
         Parameters:
             phase: train or val
         '''
