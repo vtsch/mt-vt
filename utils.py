@@ -1,4 +1,5 @@
 
+from re import A
 from comet_ml import Experiment
 import argparse
 import json
@@ -72,8 +73,25 @@ def build_save_path(config: Bunch) -> str:
     '''
     current_timestamp = datetime.now().strftime("%y-%m-%d_%H-%M-%S")
 
+    path1 = os.path.join(config.model_save_dir, config.experiment_name, config.tstcc_training_mode, config.pos_enc)
+    
+    if config.context:
+        if config.context_age and config.context_bmi and config.context_center:
+            con_str = "all"
+        elif config.context_age:
+            con_str = "a"
+        elif config.context_bmi:
+            con_str = "b"
+        elif config.context_center:
+            con_str = "c"
+        else:
+            ValueError("invalid context configuration")
+            pass
+    else:
+        con_str = "f"
+        
     return os.path.join(
-        config.model_save_dir, config.experiment_name, config.tstcc_training_mode, config.pos_enc, current_timestamp
+       path1, con_str, current_timestamp
     )
 
 def build_comet_logger(config: Bunch) -> Experiment:
@@ -86,7 +104,7 @@ def build_comet_logger(config: Bunch) -> Experiment:
     '''
     experiment = Experiment(
         api_key="HzUytPeFFfa9aiGmafVP6CMkP",
-        project_name="mt-vt-soft-dtw",
+        project_name="mt-vt-results",
         workspace="vtsch",
     )
     experiment.set_name(config.experiment_name)

@@ -222,7 +222,7 @@ if __name__ == '__main__':
             calculate_clustering_scores(true_labels.astype(int), kmeans_labels.astype(int), experiment)
 
     # calculate F1 score for all combination of labels
-    if config.n_clusters >2:
+    if config.n_clusters > 2 and config.tstcc_training_mode != "self_supervised":
         log_cluster_combinations(config, true_labels.astype(int), kmeans_labels, experiment)
 
 
