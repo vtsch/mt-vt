@@ -11,7 +11,6 @@ from dataloader import get_dataloader
 import numpy as np
 from models.transformer import generate_square_subsequent_mask
 from pos_enc import positional_encoding
-from models.soft_dtw import SoftDTW
 
 class Trainer:
     def __init__(self, config: Bunch, experiment, data: pd.DataFrame, net: nn.Module):
@@ -26,9 +25,7 @@ class Trainer:
         self.net = net.to(config.device)
         self.config = config
         self.experiment = experiment
-        #self.criterion = torch.nn.CrossEntropyLoss()
-        #self.criterion = torch.nn.MSELoss(reduction='sum')
-        self.criterion = SoftDTW(gamma=1.0, normalize=False)
+        self.criterion = torch.nn.MSELoss(reduction='sum')
         self.optimizer = Adam(self.net.parameters(), lr=config.lr, betas=(0.9, 0.99), weight_decay=3e-4)
         self.scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(self.optimizer, 'min')
         self.best_loss = float('inf')
