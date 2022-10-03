@@ -11,7 +11,7 @@ from train import Trainer
 from traintstcc import TSTCCTrainer
 from models.baseline_models import CNN, LSTMencoder, SimpleAutoencoder, DeepAutoencoder
 from models.transformer import TSTransformerEncoder
-from models.tstcc_basemodel import base_Model
+from models.tstcc_basemodel import TSTCCbase_Model
 
 
 if __name__ == '__main__':
@@ -156,7 +156,7 @@ if __name__ == '__main__':
     
     if config.experiment_name == "ts_tcc":
         experiment.set_name(config.experiment_name+config.tstcc_training_mode)
-        model = base_Model(config).to(config.device)
+        model = TSTCCbase_Model(config).to(config.device)
 
         if config.tstcc_training_mode == "random_init":
             model_dict = model.state_dict()
