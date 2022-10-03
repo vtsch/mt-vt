@@ -1,9 +1,10 @@
 import os
 import sys
-
+import pandas as pd
 sys.path.append("..")
 import numpy as np
-
+from bunch import Bunch
+from typing import Tuple
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -16,7 +17,15 @@ from pos_enc import positional_encoding
 
 
 class TSTCCTrainer:
-    def __init__(self, config, experiment, data, net):
+    def __init__(self, config: Bunch, experiment, data: pd.DataFrame, net: nn.Module):
+        '''
+        Initialize the trainer
+        Args:
+            config: configuration parameters
+            experiment: comet_ml experiment
+            data: data to train on
+            net: model to train
+        '''
         self.net = net.to(config.device)
         self.config = config
         self.experiment = experiment
@@ -29,7 +38,10 @@ class TSTCCTrainer:
         self.temp_cont_optimizer = Adam(self.temporal_contr_model.parameters(), lr=config.lr, betas=(0.9, 0.99), weight_decay=3e-4)
         self.tstcc_train_dl, self.tstcc_valid_dl, self.tstcc_test_dl = data_generator_tstcc(data, config)
     
-    def run(self):
+    def run(self) -> None:
+        '''
+        Run the TS-TCC training
+        '''
         # Start training
         for epoch in range(1, self.config.n_epochs + 1):
             # Train and validate
@@ -55,7 +67,13 @@ class TSTCCTrainer:
             print(f'Test loss      :{test_loss:0.4f}\t | Test Accuracy      : {test_acc:0.4f}')
 
 
-    def model_train(self):
+    def model_train(self) -> Tuple[torch.Tensor, torch.Tensor]:
+        '''
+        Train the model
+        Returns:
+            train_loss: training loss
+            train_acc: training accuracy
+        '''
         total_loss = []
         total_acc = []
 
@@ -118,7 +136,16 @@ class TSTCCTrainer:
         return total_loss, total_acc
 
 
-    def model_evaluate(self):
+    def model_evaluate(self) -> Tuple[torch.Tensor, torch.Tensor, np.ndarray, np.ndarray, np.ndarray]:
+        '''
+        Evaluate the model (validation or test)
+        Returns:
+            total_loss: validation loss
+            total_acc: validation accuracy
+            outs: predicted labels
+            trgs: true labels
+            embeddings: learned embeddings of the data
+        '''
         self.net.eval()
         self.temporal_contr_model.eval()
 
