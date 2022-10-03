@@ -10,7 +10,7 @@ from sklearn.metrics import r2_score, mean_squared_error, mean_absolute_error
 def calculate_clustering_scores(y_true: np.ndarray, y_pred: np.ndarray, experiment) -> None:
     '''
     Calculate clustering scores of k-means 
-    Parameters:
+    Args:
         y_true: true labels
         y_pred: predicted labels
         experiment: comet_ml experiment object
@@ -30,7 +30,7 @@ def calculate_clustering_scores(y_true: np.ndarray, y_pred: np.ndarray, experime
 def log_cluster_combinations(config: Bunch, true_labels: np.ndarray, kmeans_labels_old: np.ndarray, experiment) -> None:
     '''
     Log the cluster combinations, i.e. combine predicted labels to result in labels 0 and 1, test each combination and log the best one
-    Parameters:
+    Args:
         config: config object
         true_labels: true labels
         kmeans_labels_old: predicted labels
