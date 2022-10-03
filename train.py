@@ -1,4 +1,6 @@
 from torch import nn
+import time
+import os
 import torch
 from bunch import Bunch
 from torch.optim import Adam
@@ -12,7 +14,7 @@ from pos_enc import positional_encoding
 from models.soft_dtw import SoftDTW
 
 class Trainer:
-    def __init__(self, config: Bunch, experiment, data: dict, net: nn.Module):
+    def __init__(self, config: Bunch, experiment, data: pd.DataFrame, net: nn.Module):
         '''
         Initialize trainer
         Args:
@@ -104,9 +106,9 @@ class Trainer:
                 self.best_loss = val_loss
                 print('-- new checkpoint --')
                 self.best_loss = val_loss
-                #self.experiment.log_metrics(self.best_loss, step=epoch)
+                self.experiment.log_metrics(self.best_loss, step=epoch)
                 #save best model 
-                #torch.save(self.net.state_dict(), os.path.join(self.config.model_save_path, f"best_model_epoc{epoch}.pth"))
+                torch.save(self.net.state_dict(), os.path.join(self.config.model_save_path, f"best_model_epoc{epoch}.pth"))
 
 
     def eval(self) -> Tuple[np.ndarray, np.ndarray, dict]:
