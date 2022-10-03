@@ -48,7 +48,6 @@ def complete_config(config: Bunch, args: argparse.Namespace) -> Bunch:
     config.n_clusters = args.n_clusters
     config.pos_enc = args.positional_encoding
     config.tstcc_training_mode = args.tstcc_training_mode
-    config.tstcc_model_saved_dir = os.path.join(config.tstcc_model_dir, config.pos_enc, args.tstcc_last_dir)
 
     config.device = 'cuda:0' if torch.cuda.is_available() else 'cpu'
     config.context_count = 3 if config.context_bmi and config.context_age and config.context_center else 1
@@ -60,6 +59,22 @@ def complete_config(config: Bunch, args: argparse.Namespace) -> Bunch:
     if config.dataset == 'plco':
         config.classlabel = 'pros_cancer'
         config.ts_length = 6
+
+    if config.context:
+        if config.context_age and config.context_bmi and config.context_center:
+            config.con_str = "all"
+        elif config.context_age:
+            config.con_str = "a"
+        elif config.context_bmi:
+            config.con_str = "b"
+        elif config.context_center:
+            config.con_str = "c"
+        else:
+            ValueError("invalid context configuration")
+            pass
+    else:
+        config.con_str = "f"
+    config.tstcc_model_saved_dir = os.path.join(config.tstcc_model_dir, config.pos_enc, config.con_str, args.tstcc_last_dir)
 
     return config
 
@@ -73,26 +88,8 @@ def build_save_path(config: Bunch) -> str:
     '''
     current_timestamp = datetime.now().strftime("%y-%m-%d_%H-%M-%S")
 
-    path1 = os.path.join(config.model_save_dir, config.experiment_name, config.tstcc_training_mode, config.pos_enc)
-    
-    if config.context:
-        if config.context_age and config.context_bmi and config.context_center:
-            con_str = "all"
-        elif config.context_age:
-            con_str = "a"
-        elif config.context_bmi:
-            con_str = "b"
-        elif config.context_center:
-            con_str = "c"
-        else:
-            ValueError("invalid context configuration")
-            pass
-    else:
-        con_str = "f"
-        
-    return os.path.join(
-       path1, con_str, current_timestamp
-    )
+    path = os.path.join(config.model_save_dir, config.experiment_name, config.tstcc_training_mode, config.pos_enc, config.con_str, current_timestamp)    
+    return path
 
 def build_comet_logger(config: Bunch) -> Experiment:
     '''
