@@ -89,4 +89,3 @@ python3 main.py -c configs/config_c_a.json -exp ts_tcc -n_clusters 4 -pos_enc le
 python3 main.py -c configs/config_c_b.json -exp ts_tcc -n_clusters 4 -pos_enc learnable_pos_enc -tstcc_tm self_supervised
 python3 main.py -c configs/config_c_c.json -exp ts_tcc -n_clusters 4 -pos_enc learnable_pos_enc -tstcc_tm self_supervised 
 
-# CHANGE THE NEPOCHS TO 40 for TSTCC
