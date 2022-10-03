@@ -1,7 +1,9 @@
-import time
+from torch import nn
 import torch
+from bunch import Bunch
 from torch.optim import Adam
 import pandas as pd
+from typing import Tuple
 from metrics import Meter
 from dataloader import get_dataloader
 import numpy as np
@@ -10,13 +12,21 @@ from pos_enc import positional_encoding
 from models.soft_dtw import SoftDTW
 
 class Trainer:
-    def __init__(self, config, experiment, data, net):
+    def __init__(self, config: Bunch, experiment, data: dict, net: nn.Module):
+        '''
+        Initialize trainer
+        Args:
+            config: config file
+            experiment: comet_ml experiment
+            data: dict of dataloaders
+            net: model
+        '''
         self.net = net.to(config.device)
         self.config = config
         self.experiment = experiment
         #self.criterion = torch.nn.CrossEntropyLoss()
-        self.criterion = torch.nn.MSELoss(reduction='sum')
-        #self.criterion = SoftDTW(gamma=1.0, normalize=False)
+        #self.criterion = torch.nn.MSELoss(reduction='sum')
+        self.criterion = SoftDTW(gamma=1.0, normalize=False)
         self.optimizer = Adam(self.net.parameters(), lr=config.lr, betas=(0.9, 0.99), weight_decay=3e-4)
         self.scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(self.optimizer, 'min')
         self.best_loss = float('inf')
@@ -26,8 +36,15 @@ class Trainer:
         }
         self.attention_masks = generate_square_subsequent_mask(self.config)
     
-    def _train_epoch(self, phase):
-
+    def _train_epoch(self, phase: str) -> Tuple[float, dict]:
+        '''
+        Train one epoch
+        Args:
+            phase: train, val or test
+        Returns:
+            loss: loss of the epoch
+            logs: logs of the epoch
+        '''
         self.net.train()
         meter = Meter()
         meter.init_metrics(phase)
@@ -66,7 +83,10 @@ class Trainer:
 
         return loss, df_logs            
     
-    def run(self):
+    def run(self) -> None:
+        '''
+        Run training
+        '''
         for epoch in range(self.config.n_epochs):
             print('Epoch: %d | time: %s' %(epoch, time.strftime('%H:%M:%S')))
             
@@ -89,7 +109,14 @@ class Trainer:
                 #torch.save(self.net.state_dict(), os.path.join(self.config.model_save_path, f"best_model_epoc{epoch}.pth"))
 
 
-    def eval(self):
+    def eval(self) -> Tuple[np.ndarray, np.ndarray, dict]:
+        '''
+        Evaluate model
+        Returns:
+            labels: true labels
+            embeddings: embeddings of the test set
+            df_logs: logs
+        '''
         self.net.eval()
         labels = np.array([])
         embeddings = np.array([])
