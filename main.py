@@ -3,7 +3,7 @@ import torch
 import os
 from torchsummary import summary
 from preprocess import load_psa_data_to_pd
-from kmeans import kmeans, run_kmeans_and_plots, plot_datapoints
+from kmeans import kmeans, run_kmeans_and_plots, plot_all_representations
 from metrics import calculate_clustering_scores, log_cluster_combinations
 from utils import get_args, build_save_path, build_comet_logger, set_required_grad, get_bunch_config_from_json, complete_config
 from plots import run_umap
@@ -102,7 +102,7 @@ if __name__ == '__main__':
         summary(model, input_size=(1, config.ts_length))
         trainer = Trainer(config=config, experiment=experiment, data=df_psa, net=model)
         trainer.run()
-        true_labels, output, _ = trainer.eval()
+        true_labels, output = trainer.eval()
     
         kmeans_labels = run_kmeans_and_plots(config, output, true_labels, experiment)
         calculate_clustering_scores(config, true_labels.astype(int), kmeans_labels, experiment)
@@ -112,7 +112,7 @@ if __name__ == '__main__':
         summary(model, input_size=(1, config.ts_length))
         trainer = Trainer(config=config, experiment=experiment, data=df_psa, net=model)
         trainer.run()
-        true_labels, output, _ = trainer.eval()
+        true_labels, output = trainer.eval()
 
         kmeans_labels = run_kmeans_and_plots(config, output, true_labels, experiment)
         calculate_clustering_scores(config, true_labels.astype(int), kmeans_labels, experiment)
@@ -122,7 +122,7 @@ if __name__ == '__main__':
         print(model)
         trainer = Trainer(config=config, experiment=experiment, data=df_psa, net=model)
         trainer.run()
-        true_labels, output, _ = trainer.eval()
+        true_labels, output = trainer.eval()
 
         kmeans_labels = run_kmeans_and_plots(config, output, true_labels, experiment)
         calculate_clustering_scores(config, true_labels.astype(int), kmeans_labels, experiment)
@@ -133,7 +133,7 @@ if __name__ == '__main__':
         summary(model, input_size=(1, config.ts_length))
         trainer = Trainer(config=config, experiment=experiment, data=df_psa, net=model)
         trainer.run()
-        true_labels, output, _ = trainer.eval()
+        true_labels, output = trainer.eval()
 
         kmeans_labels = run_kmeans_and_plots(config, output, true_labels, experiment)
         calculate_clustering_scores(config, true_labels.astype(int), kmeans_labels, experiment)
@@ -144,7 +144,7 @@ if __name__ == '__main__':
         summary(model, input_size=(1, config.ts_length))
         trainer = Trainer(config=config, experiment=experiment, data=df_psa, net=model)
         trainer.run()
-        true_labels, output, _ = trainer.eval()
+        true_labels, output = trainer.eval()
     
         kmeans_labels = run_kmeans_and_plots(config, output, true_labels, experiment)
         calculate_clustering_scores(config, true_labels.astype(int), kmeans_labels, experiment)
@@ -203,16 +203,15 @@ if __name__ == '__main__':
         trainer.run()
 
         if config.tstcc_training_mode != "self_supervised":
-            # Testing
-            outs = trainer.model_evaluate()
-            _, _, pred_labels, true_labels, embeddings = outs
-
-            #plot_datapoints(embeddings, pred_labels.astype(int), config.experiment_name+"pred", experiment)
-            #run_umap(embeddings, true_labels, pred_labels, config.experiment_name+config.tstcc_training_mode+"pred", experiment)
-            #calculate_clustering_scores(true_labels.astype(int), pred_labels.astype(int), experiment)
-
-            kmeans_labels = run_kmeans_and_plots(config, embeddings, true_labels, experiment)
-            calculate_clustering_scores(config, true_labels.astype(int), kmeans_labels.astype(int), experiment)
+            if config.tstcc_training_mode == "supervised":
+                outs = trainer.model_evaluate()
+                _, _, pred_labels, true_labels, _ = outs
+                calculate_clustering_scores(config, true_labels.astype(int), pred_labels.astype(int), experiment)
+            else:
+                outs = trainer.model_evaluate()
+                _, _, _, true_labels, embeddings = outs
+                kmeans_labels = run_kmeans_and_plots(config, embeddings, true_labels, experiment)
+                calculate_clustering_scores(config, true_labels.astype(int), kmeans_labels.astype(int), experiment)
 
     # calculate F1 score for all combination of labels
     if config.n_clusters > 2 and config.tstcc_training_mode != "self_supervised":

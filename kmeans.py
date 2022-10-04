@@ -4,7 +4,7 @@ from bunch import Bunch
 from tslearn.clustering import TimeSeriesKMeans
 import matplotlib.pyplot as plt
 import numpy as np
-from plots import plot_centroids, plot_datapoints, run_umap
+from plots import plot_centroids, plot_all_representations, run_umap
 
 def kmeans(data: np.ndarray, config: Bunch) -> Tuple[np.ndarray, np.ndarray]:
     '''
@@ -23,7 +23,7 @@ def kmeans(data: np.ndarray, config: Bunch) -> Tuple[np.ndarray, np.ndarray]:
     centroids = kmeans.cluster_centers_
     return centroids, labels
 
-def run_kmeans_and_plots(config: Bunch, output: np.ndarray, true_labels: np.ndarray, experiment) -> np.ndarray:
+def run_kmeans_and_plots(config: Bunch, embeddings: np.ndarray, true_labels: np.ndarray, experiment) -> np.ndarray:
     '''
     Run kmeans and plot the results
     Args:
@@ -34,8 +34,8 @@ def run_kmeans_and_plots(config: Bunch, output: np.ndarray, true_labels: np.ndar
         centroids: centroids of the clusters
         labels: labels of the data given by kmeans
     '''
-    centroids, kmeans_labels = kmeans(output, config)
+    centroids, kmeans_labels = kmeans(embeddings, config)
     plot_centroids(config, centroids, experiment)
-    plot_datapoints(config, output, kmeans_labels, experiment)
-    run_umap(config, output, true_labels, kmeans_labels, experiment)
+    plot_all_representations(config, embeddings, kmeans_labels, experiment)
+    run_umap(config, embeddings, true_labels, kmeans_labels, experiment)
     return kmeans_labels
