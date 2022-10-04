@@ -11,6 +11,7 @@ from dataloader import get_dataloader
 import numpy as np
 from models.transformer import generate_square_subsequent_mask
 from pos_enc import positional_encoding
+from sklearn.metrics import mean_squared_error
 
 class Trainer:
     def __init__(self, config: Bunch, experiment, data: pd.DataFrame, net: nn.Module):
@@ -76,7 +77,6 @@ class Trainer:
             meter.update(pred, data, phase, loss.item())
 
         metrics = meter.get_metrics()
-        #i = 1
         metrics = {k:v / i for k, v in metrics.items()}  # i = nr of batches
         df_logs = pd.DataFrame([metrics])
 
@@ -119,6 +119,7 @@ class Trainer:
         self.net.eval()
         labels = np.array([])
         embeddings = np.array([])
+        mse = 0
 
         with torch.no_grad():
             for i, (data, label, tsindex, context) in enumerate(self.dataloaders['test']):
@@ -134,14 +135,18 @@ class Trainer:
                         data = torch.cat((data, context), dim=1)
                 else: 
                     pred = self.net(data)
- 
+                
+                mse += mean_squared_error(data.detach().cpu().numpy(), pred.detach().cpu().numpy())
                 embeddings = np.append(embeddings, pred.detach().numpy() )
                 labels = np.append(labels, label.detach().numpy())  #always +bs
-        
-            embeddings = embeddings.reshape(labels.shape[0], -1)
-            df_logs = pd.DataFrame([])
 
-        return labels, embeddings, df_logs
+            mse /= i
+            print('MSE of learned representations: {:.3f}'.format(mse))
+            self.experiment.log_metric('test_mse', mse)
+            
+            embeddings = embeddings.reshape(labels.shape[0], -1)
+
+        return labels, embeddings
 
             
             
