@@ -29,7 +29,7 @@ class TSTCCTrainer:
         self.net = net.to(config.device)
         self.config = config
         self.experiment = experiment
-        self.criterion = torch.nn.CrossEntropyLoss()
+        self.criterion = torch.nn.CrossEntropyLoss() if self.config.tstcc_training_mode == 'supervised' else torch.nn.MSELoss()
         self.optimizer = Adam(self.net.parameters(), lr=config.lr, betas=(0.9, 0.99), weight_decay=3e-4)
         self.scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(self.optimizer, 'min')
         self.best_loss = float('inf')
@@ -119,7 +119,7 @@ class TSTCCTrainer:
                 nt_xent_criterion = NTXentLoss(self.config.device, self.config.batch_size, use_cosine_similarity=True)
                 loss = (temp_cont_loss1 + temp_cont_loss2) * lambda1 +  nt_xent_criterion(zis, zjs) * lambda2    
             else:
-                loss = self.criterion(logits, labels.long())
+                loss = self.criterion(logits, psa_data)
                 total_acc.append(labels.eq(logits.detach().argmax(dim=1)).float().mean())
 
             total_loss.append(loss.item())
@@ -152,9 +152,8 @@ class TSTCCTrainer:
         total_loss = []
         total_acc = []
 
-        eval_criterion = nn.CrossEntropyLoss()
-        outs = np.array([])
-        trgs = np.array([])
+        preds = np.array([])
+        true_labels = np.array([])
         embeddings = np.array([])
 
         with torch.no_grad():
@@ -173,20 +172,20 @@ class TSTCCTrainer:
                     logits, features = self.net(data_pos_enc)
 
                     # compute loss
-                    loss = eval_criterion(logits, labels.long())
+                    loss = self.criterion(logits, psa_data)
                     total_acc.append(labels.eq(logits.detach().argmax(dim=1)).float().mean())
                     total_loss.append(loss.item())
 
                     # return embeddings, predictions and targets
                     pred = logits.max(1, keepdim=True)[1]  # get max of logit
                     feat = features.max(1, keepdim=True)[1] # get max of features
-                    outs = np.append(outs, pred.cpu().numpy())
-                    trgs = np.append(trgs, labels.data.cpu().numpy())
+                    preds = np.append(preds, pred.cpu().numpy())
+                    true_labels = np.append(true_labels, labels.data.cpu().numpy())
                     embeddings = np.append(embeddings, feat.detach().numpy())
 
         if self.config.tstcc_training_mode != "self_supervised":
             total_loss = torch.tensor(total_loss).mean()  # average loss
-            embeddings = embeddings.reshape(trgs.shape[0], -1) # reshape embeddings
+            embeddings = embeddings.reshape(true_labels.shape[0], -1) # reshape embeddings
         else:
             total_loss = 0
 
@@ -195,4 +194,4 @@ class TSTCCTrainer:
             return total_loss, total_acc, [], [], []
         else:
             total_acc = torch.tensor(total_acc).mean()  # average acc
-            return total_loss, total_acc, outs, trgs, embeddings
+            return total_loss, total_acc, preds, true_labels, embeddings
