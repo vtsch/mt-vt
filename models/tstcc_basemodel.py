@@ -34,7 +34,8 @@ class TSTCCbase_Model(nn.Module):
         self.linear = nn.Linear(8, config.emb_size)
 
         model_output_dim = config.ts_length
-        self.logits = nn.Linear(model_output_dim * config.emb_size, config.n_clusters)
+        self.logits_supervised = nn.Linear(model_output_dim * config.emb_size, config.n_clusters)
+        self.logits = nn.Linear(model_output_dim * config.emb_size, config.ts_length) # as we learn representations, output in ts_length not n_classes
 
     def forward(self, x_in):
         '''
