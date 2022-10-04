@@ -1,29 +1,50 @@
 import torch
+from bunch import Bunch
 import torch.nn as nn
 import torch.nn.functional as F
 
 
 class SimpleAutoencoder(nn.Module):
-    def __init__(self, config):
+    def __init__(self, config: Bunch) -> None:
         '''
-        Simple Autoencoder, input is (batch_size, seq_length+nr_features)
+        Initialize the model
+        Args:
+            config: config file
         '''
         super(SimpleAutoencoder, self).__init__()
         self.fc = nn.Linear(in_features=config.ts_length+config.context_count_size, out_features=config.ts_length+config.context_count_size)
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        '''
+        Forward pass of the model.
+        Args:
+            x: the input to the model, (batch_size, ts_length+context_count_size)
+        Returns:
+            x: the learned representation of the model, (batch_size, emb_size, ts_length+context_count_size)'''
         x = self.fc(x)
         return x
 
 class DeepAutoencoder(nn.Module):
-    def __init__(self, config):
+    def __init__(self, config: Bunch) -> None:
+        '''
+        Initialize the model, 4 layers of the autoencoder
+        Args:
+            config: config file
+        '''
         super(DeepAutoencoder, self).__init__()
         self.fc1 = nn.Linear(in_features=config.ts_length+config.context_count_size, out_features=96)
         self.fc2 = nn.Linear(in_features=96, out_features=48)
         self.fc3 = nn.Linear(in_features=48, out_features=24)
         self.fc4 = nn.Linear(in_features=24, out_features=config.ts_length+config.context_count_size)
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        '''
+        Forward pass of the model.
+        Args:
+            x: the input to the model, (batch_size, ts_length+context_count_size)
+        Returns:
+            x: the learned representation of the model, (batch_size, emb_size, ts_length+context_count_size)
+        '''
         x = self.fc1(x)
         x = self.fc2(x)
         x = self.fc3(x)
@@ -32,8 +53,14 @@ class DeepAutoencoder(nn.Module):
 
 
 class ConvNormPool(nn.Module):
-    """Conv Skip-connection module"""
-    def __init__(self, input_size, hidden_size, kernel_size):
+    def __init__(self, input_size: int, hidden_size: int, kernel_size: int) -> None:
+        '''
+        Conv Skip-connection module for CNN
+        Args:
+            input_size: input size of the layer
+            hidden_size: hidden size of the layer
+            kernel_size: kernel size of the layer
+        '''
         super().__init__()
         
         self.kernel_size = kernel_size
@@ -56,7 +83,14 @@ class ConvNormPool(nn.Module):
             
         self.pool = nn.MaxPool1d(kernel_size=1)
         
-    def forward(self, input):
+    def forward(self, input: torch.Tensor) -> torch.Tensor:
+        '''
+        Forward pass of Conv Norm Pool Layer
+        Args:
+            input: the input to the model, (batch_size, 1, ts_length+context_count_size)
+        Returns:   
+            x: output of conv norm pool layer, (batch_size, 1, ts_length+context_count_size)
+        '''
         conv1 = self.conv_1(input)
         x = self.normalization(conv1)
         
@@ -71,7 +105,12 @@ class ConvNormPool(nn.Module):
 
 
 class CNN(nn.Module):
-    def __init__(self, config):
+    def __init__(self, config: Bunch) -> None:
+        '''
+        Initialize the model
+        Args:
+            config: config file
+        '''
         super().__init__()
         self.config = config
         self.conv1 = ConvNormPool(
@@ -87,7 +126,14 @@ class CNN(nn.Module):
         self.avgpool = nn.AdaptiveAvgPool1d((1))
         self.fc = nn.Linear(in_features=config.bl_hidden_size//2, out_features=config.ts_length+config.context_count_size)
         
-    def forward(self, input):
+    def forward(self, input: torch.Tensor) -> torch.Tensor:
+        '''
+        Forward pass of the model - 2 stacked Conv Norm Pool layers
+        Args:
+            input: the input to the model, (batch_size, ts_length+context_count_size)
+        Returns:
+            x: the learned representation of the model, (batch_size, emb_size, ts_length+context_count_size)
+        '''
         input = input.reshape(input.shape[0], 1, input.shape[1])
         x = self.conv1(input)
         x = self.conv2(x)
@@ -98,27 +144,34 @@ class CNN(nn.Module):
 
 class LSTMencoder(nn.Module):
     ''' Encodes time-series sequence '''
-    def __init__(self, config):
+    def __init__(self, config: Bunch) -> None:
         '''
-        : param input_size:     the number of features in the input X -> is 1 as 1d time series
-        : param hidden_size:    the number of features in the hidden state h
-        : param num_layers:     number of recurrent layers (i.e., 2 means there are
-        :                       2 stacked LSTMs)
+        Encoder of the model
+        Args:
+            config: config file
+
+        LSTM Layer:
+        : input_size:     the number of features in the input X -> is 1 as 1d time series
+        : hidden_size:    the number of features in the hidden state h
+        : num_layers:     number of recurrent layers
         '''
         super(LSTMencoder, self).__init__()
         # define LSTM layer
         self.config = config
         self.lstm = nn.LSTM(input_size = 1, hidden_size = config.bl_hidden_size,
-                            num_layers = config.num_layers, batch_first = True)
+                            num_layers = 2, batch_first = True)
                             # dropout=dropout_p if num_rnn_layers>1 else 0, bidirectional=bidirectional,
         self.avgpool = nn.AdaptiveAvgPool1d((config.bl_hidden_size//2))
         self.fc = nn.Linear(in_features=config.bl_hidden_size//2, out_features=1)
         
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         '''
-        : param x_input:               input of the TS is (batch_size, seq_length), for LSTM must be (batch_size, seq_len, input_size) if batch_first = True, 
-        : return lstm_out, hidden:     lstm_out gives all the hidden states in the sequence; (batch_size, seq_len, hidden_size)
+        Forward pass of the model.
+        Args:
+            x: the input to the model, (batch_size, ts_length+context_count_size) for LSTM must be (batch_size, seq_len, input_size) if batch_first = True
+        Returns:
+            emb: the learned representation of the model, (batch_size, emb_size, ts_length+context_count_size), all the hidden states in the sequence; (batch_size, seq_len, hidden_size)
         :                              hidden gives the hidden state and cell state for the last
         :                              element in the sequence 
         '''

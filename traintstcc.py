@@ -181,7 +181,8 @@ class TSTCCTrainer:
                     feat = features.max(1, keepdim=True)[1] # get max of features
                     preds = np.append(preds, pred.cpu().numpy())
                     true_labels = np.append(true_labels, labels.data.cpu().numpy())
-                    embeddings = np.append(embeddings, feat.detach().numpy())
+                    #embeddings = np.append(embeddings, feat.detach().numpy())
+                    embeddings = np.append(embeddings, logits.detach().numpy())
 
         if self.config.tstcc_training_mode != "self_supervised":
             total_loss = torch.tensor(total_loss).mean()  # average loss
