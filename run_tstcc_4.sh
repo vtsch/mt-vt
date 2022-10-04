@@ -1,0 +1,61 @@
+#!/bin/sh
+
+python3 main.py -c configs/config_c_f.json -exp ts_tcc -n_clusters 4 -pos_enc none  -tstcc_tm fine_tune -tstcc_dir '22-10-04_03-50-58' 
+python3 main.py -c configs/config_c_all.json -exp ts_tcc -n_clusters 4 -pos_enc none -tstcc_tm fine_tune -tstcc_dir '22-10-04_03-58-06' 
+python3 main.py -c configs/config_c_a.json -exp ts_tcc -n_clusters 4 -pos_enc none -tstcc_tm fine_tune -tstcc_dir '22-10-04_04-05-14' 
+python3 main.py -c configs/config_c_b.json -exp ts_tcc -n_clusters 4 -pos_enc none -tstcc_tm fine_tune -tstcc_dir '22-10-04_04-11-57' 
+python3 main.py -c configs/config_c_c.json -exp ts_tcc -n_clusters 4 -pos_enc none -tstcc_tm fine_tune -tstcc_dir '22-10-04_04-19-01' 
+
+python3 main.py -c configs/config_c_f.json -exp ts_tcc -n_clusters 4 -pos_enc absolute_days -tstcc_tm fine_tune -tstcc_dir '22-10-04_04-25-39' 
+python3 main.py -c configs/config_c_all.json -exp ts_tcc -n_clusters 4 -pos_enc absolute_days -tstcc_tm fine_tune -tstcc_dir '22-10-04_04-31-51' 
+python3 main.py -c configs/config_c_a.json -exp ts_tcc -n_clusters 4 -pos_enc absolute_days -tstcc_tm fine_tune -tstcc_dir '22-10-04_04-38-15' 
+python3 main.py -c configs/config_c_b.json -exp ts_tcc -n_clusters 4 -pos_enc absolute_days -tstcc_tm fine_tune -tstcc_dir '22-10-04_04-45-21' 
+python3 main.py -c configs/config_c_c.json -exp ts_tcc -n_clusters 4 -pos_enc absolute_days -tstcc_tm fine_tune -tstcc_dir '22-10-04_04-51-29' 
+
+python3 main.py -c configs/config_c_f.json -exp ts_tcc -n_clusters 4 -pos_enc delta_days -tstcc_tm fine_tune -tstcc_dir '22-10-04_04-57-12' 
+python3 main.py -c configs/config_c_all.json -exp ts_tcc -n_clusters 4 -pos_enc delta_days -tstcc_tm fine_tune -tstcc_dir '22-10-04_05-04-16' 
+python3 main.py -c configs/config_c_a.json -exp ts_tcc -n_clusters 4 -pos_enc delta_days -tstcc_tm fine_tune -tstcc_dir '22-10-04_05-10-44' 
+python3 main.py -c configs/config_c_b.json -exp ts_tcc -n_clusters 4 -pos_enc delta_days -tstcc_tm fine_tune -tstcc_dir '22-10-04_05-17-49' 
+python3 main.py -c configs/config_c_c.json -exp ts_tcc -n_clusters 4 -pos_enc delta_days -tstcc_tm fine_tune -tstcc_dir '22-10-04_05-24-38' 
+
+python3 main.py -c configs/config_c_f.json -exp ts_tcc -n_clusters 4 -pos_enc age_pos_enc -tstcc_tm fine_tune -tstcc_dir '22-10-04_05-32-28' 
+python3 main.py -c configs/config_c_all.json -exp ts_tcc -n_clusters 4 -pos_enc age_pos_enc -tstcc_tm fine_tune -tstcc_dir '22-10-04_05-38-10' 
+python3 main.py -c configs/config_c_a.json -exp ts_tcc -n_clusters 4 -pos_enc age_pos_enc -tstcc_tm fine_tune -tstcc_dir '22-10-04_05-45-23' 
+python3 main.py -c configs/config_c_b.json -exp ts_tcc -n_clusters 4 -pos_enc age_pos_enc -tstcc_tm fine_tune -tstcc_dir '22-10-04_05-51-35' 
+python3 main.py -c configs/config_c_c.json -exp ts_tcc -n_clusters 4 -pos_enc age_pos_enc -tstcc_tm fine_tune -tstcc_dir '22-10-04_05-58-17' 
+
+python3 main.py -c configs/config_c_f.json -exp ts_tcc -n_clusters 4 -pos_enc learnable_pos_enc -tstcc_tm fine_tune -tstcc_dir '22-10-04_06-05-20' 
+python3 main.py -c configs/config_c_all.json -exp ts_tcc -n_clusters 4 -pos_enc learnable_pos_enc -tstcc_tm fine_tune -tstcc_dir '22-10-04_06-12-21' 
+python3 main.py -c configs/config_c_a.json -exp ts_tcc -n_clusters 4 -pos_enc learnable_pos_enc -tstcc_tm fine_tune -tstcc_dir '22-10-04_06-19-46' 
+python3 main.py -c configs/config_c_b.json -exp ts_tcc -n_clusters 4 -pos_enc learnable_pos_enc -tstcc_tm fine_tune -tstcc_dir '22-10-04_06-26-36' 
+python3 main.py -c configs/config_c_c.json -exp ts_tcc -n_clusters 4 -pos_enc learnable_pos_enc -tstcc_tm fine_tune -tstcc_dir '22-10-04_06-32-17' 
+
+python3 main.py -c configs/config_c_f.json -exp ts_tcc -n_clusters 4 -pos_enc none  -tstcc_tm train_linear -tstcc_dir '22-10-04_03-50-58' 
+python3 main.py -c configs/config_c_all.json -exp ts_tcc -n_clusters 4 -pos_enc none -tstcc_tm train_linear -tstcc_dir '22-10-04_03-58-06' 
+python3 main.py -c configs/config_c_a.json -exp ts_tcc -n_clusters 4 -pos_enc none -tstcc_tm train_linear -tstcc_dir '22-10-04_04-05-14' 
+python3 main.py -c configs/config_c_b.json -exp ts_tcc -n_clusters 4 -pos_enc none -tstcc_tm train_linear -tstcc_dir '22-10-04_04-11-57' 
+python3 main.py -c configs/config_c_c.json -exp ts_tcc -n_clusters 4 -pos_enc none -tstcc_tm train_linear -tstcc_dir '22-10-04_04-19-01' 
+
+python3 main.py -c configs/config_c_f.json -exp ts_tcc -n_clusters 4 -pos_enc absolute_days -tstcc_tm train_linear -tstcc_dir '22-10-04_04-25-39' 
+python3 main.py -c configs/config_c_all.json -exp ts_tcc -n_clusters 4 -pos_enc absolute_days -tstcc_tm train_linear -tstcc_dir '22-10-04_04-31-51' 
+python3 main.py -c configs/config_c_a.json -exp ts_tcc -n_clusters 4 -pos_enc absolute_days -tstcc_tm train_linear -tstcc_dir '22-10-04_04-38-15' 
+python3 main.py -c configs/config_c_b.json -exp ts_tcc -n_clusters 4 -pos_enc absolute_days -tstcc_tm train_linear -tstcc_dir '22-10-04_04-45-21' 
+python3 main.py -c configs/config_c_c.json -exp ts_tcc -n_clusters 4 -pos_enc absolute_days -tstcc_tm train_linear -tstcc_dir '22-10-04_04-51-29' 
+
+python3 main.py -c configs/config_c_f.json -exp ts_tcc -n_clusters 4 -pos_enc delta_days -tstcc_tm train_linear -tstcc_dir '22-10-04_04-57-12' 
+python3 main.py -c configs/config_c_all.json -exp ts_tcc -n_clusters 4 -pos_enc delta_days -tstcc_tm train_linear -tstcc_dir '22-10-04_05-04-16' 
+python3 main.py -c configs/config_c_a.json -exp ts_tcc -n_clusters 4 -pos_enc delta_days -tstcc_tm train_linear -tstcc_dir '22-10-04_05-10-44' 
+python3 main.py -c configs/config_c_b.json -exp ts_tcc -n_clusters 4 -pos_enc delta_days -tstcc_tm train_linear -tstcc_dir '22-10-04_05-17-49' 
+python3 main.py -c configs/config_c_c.json -exp ts_tcc -n_clusters 4 -pos_enc delta_days -tstcc_tm train_linear -tstcc_dir '22-10-04_05-24-38' 
+
+python3 main.py -c configs/config_c_f.json -exp ts_tcc -n_clusters 4 -pos_enc age_pos_enc -tstcc_tm train_linear -tstcc_dir '22-10-04_05-32-28' 
+python3 main.py -c configs/config_c_all.json -exp ts_tcc -n_clusters 4 -pos_enc age_pos_enc -tstcc_tm train_linear -tstcc_dir '22-10-04_05-38-10' 
+python3 main.py -c configs/config_c_a.json -exp ts_tcc -n_clusters 4 -pos_enc age_pos_enc -tstcc_tm train_linear -tstcc_dir '22-10-04_05-45-23' 
+python3 main.py -c configs/config_c_b.json -exp ts_tcc -n_clusters 4 -pos_enc age_pos_enc -tstcc_tm train_linear -tstcc_dir '22-10-04_05-51-35' 
+python3 main.py -c configs/config_c_c.json -exp ts_tcc -n_clusters 4 -pos_enc age_pos_enc -tstcc_tm train_linear -tstcc_dir '22-10-04_05-58-17' 
+
+python3 main.py -c configs/config_c_f.json -exp ts_tcc -n_clusters 4 -pos_enc learnable_pos_enc -tstcc_tm train_linear -tstcc_dir '22-10-04_06-05-20' 
+python3 main.py -c configs/config_c_all.json -exp ts_tcc -n_clusters 4 -pos_enc learnable_pos_enc -tstcc_tm train_linear -tstcc_dir '22-10-04_06-12-21' 
+python3 main.py -c configs/config_c_a.json -exp ts_tcc -n_clusters 4 -pos_enc learnable_pos_enc -tstcc_tm train_linear -tstcc_dir '22-10-04_06-19-46' 
+python3 main.py -c configs/config_c_b.json -exp ts_tcc -n_clusters 4 -pos_enc learnable_pos_enc -tstcc_tm train_linear -tstcc_dir '22-10-04_06-26-36' 
+python3 main.py -c configs/config_c_c.json -exp ts_tcc -n_clusters 4 -pos_enc learnable_pos_enc -tstcc_tm train_linear -tstcc_dir '22-10-04_06-32-17' 

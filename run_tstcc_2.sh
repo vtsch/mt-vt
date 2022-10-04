@@ -43,8 +43,8 @@ python3 main.py -c configs/config_c_b.json -exp ts_tcc -n_clusters 2 -pos_enc ab
 python3 main.py -c configs/config_c_c.json -exp ts_tcc -n_clusters 2 -pos_enc absolute_days -tstcc_tm train_linear -tstcc_dir '22-10-03_23-12-06' 
 
 python3 main.py -c configs/config_c_f.json -exp ts_tcc -n_clusters 2 -pos_enc delta_days -tstcc_tm train_linear -tstcc_dir '22-10-03_23-18-35' 
-python3 main.py -c configs/config_c_all.json -exp ts_tcc -n_clusters 2 -pos_enc delta_days -tstcc_tm train_linear -tstcc_dir '22-10-03_23-31-57' 
-python3 main.py -c configs/config_c_a.json -exp ts_tcc -n_clusters 2 -pos_enc delta_days -tstcc_tm train_linear -tstcc_dir '22-10-03_23-25-13' 
+python3 main.py -c configs/config_c_all.json -exp ts_tcc -n_clusters 2 -pos_enc delta_days -tstcc_tm train_linear -tstcc_dir '22-10-03_23-25-13' 
+python3 main.py -c configs/config_c_a.json -exp ts_tcc -n_clusters 2 -pos_enc delta_days -tstcc_tm train_linear -tstcc_dir '22-10-03_23-31-57'
 python3 main.py -c configs/config_c_b.json -exp ts_tcc -n_clusters 2 -pos_enc delta_days -tstcc_tm train_linear -tstcc_dir '22-10-03_23-38-53' 
 python3 main.py -c configs/config_c_c.json -exp ts_tcc -n_clusters 2 -pos_enc delta_days -tstcc_tm train_linear -tstcc_dir '22-10-03_23-45-05' 
 
