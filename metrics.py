@@ -7,7 +7,6 @@ from sklearn.metrics import accuracy_score, f1_score, rand_score, confusion_matr
 from sklearn.metrics import r2_score, mean_squared_error, mean_absolute_error
 
 
-
 # --- metrics for training ---
 
 class Meter:
@@ -40,7 +39,7 @@ class Meter:
         self.metrics[phase + '_mae'] = 0
         
     def get_metrics(self):
-        return self.metrics
+        return self.metrics    
 
 # --- metrics for clustering evaluation ---
 
@@ -100,7 +99,7 @@ def log_cluster_combinations(config: Bunch, true_labels: np.ndarray, kmeans_labe
         max_f1 = max(f1_scores)
         print('best F1 score: {:.3f}'.format(max_f1))
         #log F1 scores and log best one
-        metrics_df = pd.DataFrame({'f1_01': [f1_01], 'f1_02': [f1_02], 'f1_12': [f1_12], 'max_f1': [max_f1]})
+        metrics_df = pd.DataFrame({'f1_01': [f1_01], 'f1_02': [f1_02], 'f1_12': [f1_12], 'f1_best': [max_f1]})
         experiment.log_metrics(metrics_df)
         # save metrics and confusion matrix to csv
         metrics_df.to_csv(os.path.join(config.model_save_path, 'metrics_3clusters.csv'))
@@ -141,7 +140,7 @@ def log_cluster_combinations(config: Bunch, true_labels: np.ndarray, kmeans_labe
         print('best F1 score: {:.3f}'.format(max_f1))
 
         #log F1 scores and log best one
-        metrics_df = pd.DataFrame({'f1_012': [f1_012], 'f1_013': [f1_013], 'f1_023': [f1_023], 'f1_123': [f1_123], 'max_f1': [max_f1]})
+        metrics_df = pd.DataFrame({'f1_012': [f1_012], 'f1_013': [f1_013], 'f1_023': [f1_023], 'f1_123': [f1_123], 'f1_best': [max_f1]})
         experiment.log_metrics(metrics_df)
         # save metrics and confusion matrix to csv
         metrics_df.to_csv(os.path.join(config.model_save_path, 'metrics_4clusters.csv'))
