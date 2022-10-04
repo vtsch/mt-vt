@@ -7,9 +7,9 @@ from typing import Tuple
 from bunch import Bunch
 import matplotlib.pyplot as plt
 
-def plot_datapoints_of_cluster(config: Bunch, data: np.ndarray, labels: np.ndarray, cluster_id: int, label_color_map: list, experiment) -> None:
+def plot_representations_of_cluster(config: Bunch, data: np.ndarray, labels: np.ndarray, cluster_id: int, label_color_map: list, experiment) -> None:
     '''
-    Plot datapoints of a specific cluster, plot the TS as lines and boxplots
+    Plot learned representations of a specific cluster, plot the TS as lines and boxplots
     Args:
         config: config of the experiment
         data: data to plot
@@ -43,9 +43,9 @@ def plot_datapoints_of_cluster(config: Bunch, data: np.ndarray, labels: np.ndarr
     plt.savefig(os.path.join(config.model_save_path, "%s.png" %title2))
 
 
-def plot_datapoints(config: Bunch, data: np.ndarray, labels: np.ndarray, experiment) -> None:
+def plot_all_representations(config: Bunch, data: np.ndarray, labels: np.ndarray, experiment) -> None:
     '''
-    Plot datapoints of each cluster together
+    Plot learned representations of each cluster together
     Args:
         config: config of the experiment
         data: data to plot
@@ -61,13 +61,12 @@ def plot_datapoints(config: Bunch, data: np.ndarray, labels: np.ndarray, experim
         plt.plot(data[i], c=label_color_map[labels[i]])
         plt.ylim(-2,10)
     plt.title(title)
-    #plt.ylim(0,4)
     plt.legend(['%d' %i for i in range(np.unique(labels).shape[0])], loc='upper left', title="Clusters")
     experiment.log_figure(figure=fig0, figure_name=title)
     plt.savefig(os.path.join(config.model_save_path, "%s.png" %title))
 
     for i in range(np.unique(labels).shape[0]):
-        plot_datapoints_of_cluster(config, data, labels, i, label_color_map, experiment)
+        plot_representations_of_cluster(config, data, labels, i, label_color_map, experiment)
 
 
 def plot_centroids(config: Bunch, centroids: np.ndarray, experiment) -> None:
