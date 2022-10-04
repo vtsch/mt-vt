@@ -93,7 +93,7 @@ if __name__ == '__main__':
         kmeans_labels = run_kmeans_and_plots(config, df_train_values, true_labels, experiment)
         df = df_psa.to_numpy()
         run_umap(df_psa, true_labels, kmeans_labels, config.experiment_name, experiment)
-        calculate_clustering_scores(true_labels.astype(int), kmeans_labels, experiment)
+        calculate_clustering_scores(config, true_labels.astype(int), kmeans_labels, experiment)
 
 
     # run embedding models and kmeans
@@ -105,7 +105,7 @@ if __name__ == '__main__':
         true_labels, output, _ = trainer.eval()
     
         kmeans_labels = run_kmeans_and_plots(config, output, true_labels, experiment)
-        calculate_clustering_scores(true_labels.astype(int), kmeans_labels, experiment)
+        calculate_clustering_scores(config, true_labels.astype(int), kmeans_labels, experiment)
 
     if config.experiment_name == "deep_ac":
         model = DeepAutoencoder(config)
@@ -115,7 +115,7 @@ if __name__ == '__main__':
         true_labels, output, _ = trainer.eval()
 
         kmeans_labels = run_kmeans_and_plots(config, output, true_labels, experiment)
-        calculate_clustering_scores(true_labels.astype(int), kmeans_labels, experiment)
+        calculate_clustering_scores(config, true_labels.astype(int), kmeans_labels, experiment)
 
     if config.experiment_name == "lstm": 
         model = LSTMencoder(config)
@@ -125,7 +125,7 @@ if __name__ == '__main__':
         true_labels, output, _ = trainer.eval()
 
         kmeans_labels = run_kmeans_and_plots(config, output, true_labels, experiment)
-        calculate_clustering_scores(true_labels.astype(int), kmeans_labels, experiment)
+        calculate_clustering_scores(config, true_labels.astype(int), kmeans_labels, experiment)
 
 
     if config.experiment_name == "cnn":
@@ -136,7 +136,7 @@ if __name__ == '__main__':
         true_labels, output, _ = trainer.eval()
 
         kmeans_labels = run_kmeans_and_plots(config, output, true_labels, experiment)
-        calculate_clustering_scores(true_labels.astype(int), kmeans_labels, experiment)
+        calculate_clustering_scores(config, true_labels.astype(int), kmeans_labels, experiment)
     
 
     if config.experiment_name == "simple_transformer": 
@@ -147,7 +147,7 @@ if __name__ == '__main__':
         true_labels, output, _ = trainer.eval()
     
         kmeans_labels = run_kmeans_and_plots(config, output, true_labels, experiment)
-        calculate_clustering_scores(true_labels.astype(int), kmeans_labels, experiment)
+        calculate_clustering_scores(config, true_labels.astype(int), kmeans_labels, experiment)
     
     if config.experiment_name == "ts_tcc":
         experiment.set_name(config.experiment_name+config.tstcc_training_mode)
@@ -212,7 +212,7 @@ if __name__ == '__main__':
             #calculate_clustering_scores(true_labels.astype(int), pred_labels.astype(int), experiment)
 
             kmeans_labels = run_kmeans_and_plots(config, embeddings, true_labels, experiment)
-            calculate_clustering_scores(true_labels.astype(int), kmeans_labels.astype(int), experiment)
+            calculate_clustering_scores(config, true_labels.astype(int), kmeans_labels.astype(int), experiment)
 
     # calculate F1 score for all combination of labels
     if config.n_clusters > 2 and config.tstcc_training_mode != "self_supervised":

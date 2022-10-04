@@ -1,127 +1,10 @@
 from bunch import Bunch
 import pandas as pd
 import torch
+import os
 import numpy as np
 from sklearn.metrics import accuracy_score, f1_score, rand_score, confusion_matrix
 from sklearn.metrics import r2_score, mean_squared_error, mean_absolute_error
-
-# --- metrics for clustering evaluation ---
-
-def calculate_clustering_scores(y_true: np.ndarray, y_pred: np.ndarray, experiment) -> None:
-    '''
-    Calculate clustering scores of k-means 
-    Args:
-        y_true: true labels
-        y_pred: predicted labels
-        experiment: comet_ml experiment object
-    '''
-    accuracy = accuracy_score(y_true, y_pred)
-    ri = rand_score(y_true, y_pred)
-    f1 = f1_score(y_true, y_pred, average="weighted")
-    cm = confusion_matrix(y_true, y_pred)
-    print('Clustering Accuracy: {:.3f}'.format(accuracy))
-    print('Clustering RI: {:.3f}'.format(ri))
-    print('Clustering F1: {:.3f}'.format(f1))
-    print('Confusion Matrix:')
-    print(cm)
-    experiment.log_metrics(pd.DataFrame({'accuracy': [accuracy], 'ri': [ri], 'f1': [f1]}))
-    experiment.log_confusion_matrix(y_true, y_pred, title = "Confusion Matrix")
-
-def log_cluster_combinations(config: Bunch, true_labels: np.ndarray, kmeans_labels_old: np.ndarray, experiment) -> None:
-    '''
-    Log the cluster combinations, i.e. combine predicted labels to result in labels 0 and 1, test each combination and log the best one
-    Args:
-        config: config object
-        true_labels: true labels
-        kmeans_labels_old: predicted labels
-        experiment: comet_ml experiment object
-    '''
-    # log cluster combinations
-    if config.n_clusters == 3:
-        kmeans_labels = kmeans_labels_old.copy()
-        kmeans_labels[kmeans_labels_old == 1] = 0  
-        kmeans_labels[kmeans_labels_old == 2] = 1
-        f1_01 = f1_score(true_labels, kmeans_labels, average="weighted")
-        cm_01 = confusion_matrix(true_labels, kmeans_labels)
-
-        kmeans_labels = kmeans_labels_old.copy()
-        kmeans_labels[kmeans_labels_old == 2] = 0
-        f1_02 = f1_score(true_labels, kmeans_labels, average="weighted")
-        cm_02 = confusion_matrix(true_labels, kmeans_labels)
-
-        kmeans_labels = kmeans_labels_old.copy()
-        kmeans_labels[kmeans_labels_old == 2] = 1
-        f1_12 = f1_score(true_labels, kmeans_labels, average="weighted")
-        cm_12 = confusion_matrix(true_labels, kmeans_labels)
-
-        #log F1 scores and log best one
-        experiment.log_metrics(pd.DataFrame({'f1_01': [f1_01], 'f1_02': [f1_02], 'f1_12': [f1_12]}))
-        # find highest F1 score
-        f1_scores = [f1_01, f1_02, f1_12]
-        max_f1 = max(f1_scores)
-        experiment.log_metric("f1_best", max_f1)
-        
-        #print all f1 scores and confusion matrices
-        print('F1 01: {:.3f}'.format(f1_01))
-        print('Confusion Matrix 01:')
-        print(cm_01)
-        print('F1 02: {:.3f}'.format(f1_02))
-        print('Confusion Matrix 02:')
-        print(cm_02)
-        print('F1 12: {:.3f}'.format(f1_12))
-        print('Confusion Matrix 12:')
-        print(cm_12)
-    
-    elif config.n_clusters == 4:
-        kmeans_labels = kmeans_labels_old.copy()
-        kmeans_labels[kmeans_labels_old == 1] = 0  
-        kmeans_labels[kmeans_labels_old == 2] = 0
-        kmeans_labels[kmeans_labels_old == 3] = 1
-        f1_012 = f1_score(true_labels, kmeans_labels, average="weighted")
-        cm_012 = confusion_matrix(true_labels, kmeans_labels)
-
-        kmeans_labels = kmeans_labels_old.copy()
-        kmeans_labels[kmeans_labels_old == 1] = 0
-        kmeans_labels[kmeans_labels_old == 2] = 1  
-        kmeans_labels[kmeans_labels_old == 3] = 0
-        f1_013 = f1_score(true_labels, kmeans_labels, average="weighted")
-        cm_013 = confusion_matrix(true_labels, kmeans_labels)
-
-        kmeans_labels = kmeans_labels_old.copy()
-        kmeans_labels[kmeans_labels_old == 2] = 0  
-        kmeans_labels[kmeans_labels_old == 3] = 0
-        f1_023 = f1_score(true_labels, kmeans_labels, average="weighted")
-        cm_023 = confusion_matrix(true_labels, kmeans_labels)
-
-        kmeans_labels = kmeans_labels_old.copy()
-        kmeans_labels[kmeans_labels_old == 2] = 1
-        kmeans_labels[kmeans_labels_old == 3] = 1
-        f1_123 = f1_score(true_labels, kmeans_labels, average="weighted")
-        cm_123 = confusion_matrix(true_labels, kmeans_labels)
-
-        #log F1 scores and log best one
-        experiment.log_metrics(pd.DataFrame({'f1_012': [f1_012], 'f1_013': [f1_013], 'f1_023': [f1_023], 'f1_123': [f1_123]}))
-        # find highest F1 score
-        f1_scores = [f1_012, f1_013, f1_023, f1_123]
-        max_f1 = max(f1_scores)
-        experiment.log_metric("f1_best", max_f1)
-
-        #print all f1 scores and confusion matrices
-        print('F1 012: {:.3f}'.format(f1_012))
-        print('Confusion Matrix 012:')
-        print(cm_012)
-        print('F1 013: {:.3f}'.format(f1_013))
-        print('Confusion Matrix 013:')
-        print(cm_013)
-        print('F1 023: {:.3f}'.format(f1_023))
-        print('Confusion Matrix 023:')
-        print(cm_023)
-        print('F1 123: {:.3f}'.format(f1_123))
-        print('Confusion Matrix 123:')
-        print(cm_123)
-    
-    else:
-        print('No cluster combinations logged')
 
 
 
@@ -158,4 +41,117 @@ class Meter:
         
     def get_metrics(self):
         return self.metrics
+
+# --- metrics for clustering evaluation ---
+
+def calculate_clustering_scores(config: Bunch, y_true: np.ndarray, y_pred: np.ndarray, experiment) -> None:
+    '''
+    Calculate clustering scores of k-means 
+    Args:
+        y_true: true labels
+        y_pred: predicted labels
+        experiment: comet_ml experiment object
+    '''
+    accuracy = accuracy_score(y_true, y_pred)
+    ri = rand_score(y_true, y_pred)
+    f1 = f1_score(y_true, y_pred, average="weighted")
+    cm = confusion_matrix(y_true, y_pred)
+    print('Clustering Accuracy: {:.3f}'.format(accuracy))
+    print('Clustering RI: {:.3f}'.format(ri))
+    print('Clustering F1: {:.3f}'.format(f1))
+    print('Confusion Matrix:')
+    print(cm)
+    metrics_df = pd.DataFrame({'accuracy': [accuracy], 'ri': [ri], 'f1': [f1]})
+    experiment.log_metrics(pd.DataFrame({'accuracy': [accuracy], 'ri': [ri], 'f1': [f1]}))
+    experiment.log_confusion_matrix(y_true, y_pred, title = "Confusion Matrix")
+    # save metrics and confusion matrix to csv
+    metrics_df.to_csv(os.path.join(config.model_save_path, 'metrics.csv'))
+    np.savetxt(os.path.join(config.model_save_path, 'confusion_matrix.csv'), cm, delimiter=",")
+
+def log_cluster_combinations(config: Bunch, true_labels: np.ndarray, kmeans_labels_old: np.ndarray, experiment) -> None:
+    '''
+    Log the cluster combinations, i.e. combine predicted labels to result in labels 0 and 1, test each combination and log the best one
+    Args:
+        config: config object
+        true_labels: true labels
+        kmeans_labels_old: predicted labels
+        experiment: comet_ml experiment object
+    '''
+    # log cluster combinations
+    if config.n_clusters == 3:
+        kmeans_labels = kmeans_labels_old.copy()
+        kmeans_labels[kmeans_labels_old == 1] = 0  
+        kmeans_labels[kmeans_labels_old == 2] = 1
+        f1_01 = f1_score(true_labels, kmeans_labels, average="weighted")
+        cm_01 = confusion_matrix(true_labels, kmeans_labels)
+
+        kmeans_labels = kmeans_labels_old.copy()
+        kmeans_labels[kmeans_labels_old == 2] = 0
+        f1_02 = f1_score(true_labels, kmeans_labels, average="weighted")
+        cm_02 = confusion_matrix(true_labels, kmeans_labels)
+
+        kmeans_labels = kmeans_labels_old.copy()
+        kmeans_labels[kmeans_labels_old == 2] = 1
+        f1_12 = f1_score(true_labels, kmeans_labels, average="weighted")
+        cm_12 = confusion_matrix(true_labels, kmeans_labels)
+
+        # find highest F1 score
+        f1_scores = [f1_01, f1_02, f1_12]
+        max_f1 = max(f1_scores)
+        print('best F1 score: {:.3f}'.format(max_f1))
+        #log F1 scores and log best one
+        metrics_df = pd.DataFrame({'f1_01': [f1_01], 'f1_02': [f1_02], 'f1_12': [f1_12], 'max_f1': [max_f1]})
+        experiment.log_metrics(metrics_df)
+        # save metrics and confusion matrix to csv
+        metrics_df.to_csv(os.path.join(config.model_save_path, 'metrics_3clusters.csv'))
+        np.savetxt(os.path.join(config.model_save_path, 'confusion_matrix_01.csv'), cm_01, delimiter=",")
+        np.savetxt(os.path.join(config.model_save_path, 'confusion_matrix_02.csv'), cm_02, delimiter=",")
+        np.savetxt(os.path.join(config.model_save_path, 'confusion_matrix_12.csv'), cm_12, delimiter=",")
+    
+    elif config.n_clusters == 4:
+        kmeans_labels = kmeans_labels_old.copy()
+        kmeans_labels[kmeans_labels_old == 1] = 0  
+        kmeans_labels[kmeans_labels_old == 2] = 0
+        kmeans_labels[kmeans_labels_old == 3] = 1
+        f1_012 = f1_score(true_labels, kmeans_labels, average="weighted")
+        cm_012 = confusion_matrix(true_labels, kmeans_labels)
+
+        kmeans_labels = kmeans_labels_old.copy()
+        kmeans_labels[kmeans_labels_old == 1] = 0
+        kmeans_labels[kmeans_labels_old == 2] = 1  
+        kmeans_labels[kmeans_labels_old == 3] = 0
+        f1_013 = f1_score(true_labels, kmeans_labels, average="weighted")
+        cm_013 = confusion_matrix(true_labels, kmeans_labels)
+
+        kmeans_labels = kmeans_labels_old.copy()
+        kmeans_labels[kmeans_labels_old == 2] = 0  
+        kmeans_labels[kmeans_labels_old == 3] = 0
+        f1_023 = f1_score(true_labels, kmeans_labels, average="weighted")
+        cm_023 = confusion_matrix(true_labels, kmeans_labels)
+
+        kmeans_labels = kmeans_labels_old.copy()
+        kmeans_labels[kmeans_labels_old == 2] = 1
+        kmeans_labels[kmeans_labels_old == 3] = 1
+        f1_123 = f1_score(true_labels, kmeans_labels, average="weighted")
+        cm_123 = confusion_matrix(true_labels, kmeans_labels)
+
+        # find highest F1 score
+        f1_scores = [f1_012, f1_013, f1_023, f1_123]
+        max_f1 = max(f1_scores)
+        print('best F1 score: {:.3f}'.format(max_f1))
+
+        #log F1 scores and log best one
+        metrics_df = pd.DataFrame({'f1_012': [f1_012], 'f1_013': [f1_013], 'f1_023': [f1_023], 'f1_123': [f1_123], 'max_f1': [max_f1]})
+        experiment.log_metrics(metrics_df)
+        # save metrics and confusion matrix to csv
+        metrics_df.to_csv(os.path.join(config.model_save_path, 'metrics_4clusters.csv'))
+        np.savetxt(os.path.join(config.model_save_path, 'confusion_matrix_012.csv'), cm_012, delimiter=",")
+        np.savetxt(os.path.join(config.model_save_path, 'confusion_matrix_013.csv'), cm_013, delimiter=",")
+        np.savetxt(os.path.join(config.model_save_path, 'confusion_matrix_023.csv'), cm_023, delimiter=",")
+        np.savetxt(os.path.join(config.model_save_path, 'confusion_matrix_123.csv'), cm_123, delimiter=",")
+    
+    else:
+        print('No cluster combinations logged')
+
+
     
