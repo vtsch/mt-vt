@@ -6,7 +6,7 @@ from bunch import Bunch
 from torch.optim import Adam
 import pandas as pd
 from typing import Tuple
-from metrics import Meter, get_knn_representation_score
+from metrics import Meter, KNN
 from dataloader import get_dataloader
 import numpy as np
 from models.transformer import generate_square_subsequent_mask
@@ -36,6 +36,22 @@ class Trainer:
         }
         self.attention_masks = generate_square_subsequent_mask(self.config)
     
+    def _add_posenc_and_context(self, data, tsindex, context):
+        if self.config.experiment_name != "simple_transformer":
+            data = positional_encoding(self.config, data, tsindex)
+            if self.config.context:
+                data = torch.cat((data, context), dim=1)
+
+        if self.config.experiment_name == "simple_transformer":
+            pred = self.net(tsindex, data, context, self.attention_masks)
+            if self.config.context:
+                data = torch.cat((data, context), dim=1)
+        else: 
+            pred = self.net(data)
+        
+        return pred
+
+    
     def _train_epoch(self, phase: str) -> Tuple[float, dict]:
         '''
         Train one epoch
@@ -50,20 +66,8 @@ class Trainer:
         meter.init_metrics(phase)
 
         for i, (data, _, tsindex, context) in enumerate(self.dataloaders[phase]):
-            #data = data.to(config.device)
-            #target = target.to(config.device)
 
-            if self.config.experiment_name != "simple_transformer":
-                data = positional_encoding(self.config, data, tsindex)
-                if self.config.context:
-                    data = torch.cat((data, context), dim=1)
-
-            if self.config.experiment_name == "simple_transformer":
-                pred = self.net(tsindex, data, context, self.attention_masks)
-                if self.config.context:
-                    data = torch.cat((data, context), dim=1)
-            else: 
-                pred = self.net(data)
+            pred = self._add_posenc_and_context(data, tsindex, context)
  
             #print("pred shape for loss: ", pred.shape) 
             #print("data shape for loss: ", data.shape)
@@ -116,33 +120,35 @@ class Trainer:
             df_logs: logs
         '''
         self.net.eval()
+        clf = KNN()
         labels = np.array([])
         embeddings = np.array([])
 
         with torch.no_grad():
-            for i, (data, label, tsindex, context) in enumerate(self.dataloaders['test']):
-                
-                if self.config.experiment_name != "simple_transformer":
-                    data = positional_encoding(self.config, data, tsindex)
-                    if self.config.context:
-                        data = torch.cat((data, context), dim=1)
+            for i, (data, label, tsindex, context) in enumerate(self.dataloaders['val']):
+                pred = self._add_posenc_and_context(data, tsindex, context)
+                embeddings = np.append(embeddings, pred.detach().numpy() )
+                labels = np.append(labels, label.detach().numpy()) 
 
-                if self.config.experiment_name == "simple_transformer":
-                    pred = self.net(tsindex, data, context, self.attention_masks)
-                    if self.config.context:
-                        data = torch.cat((data, context), dim=1)
-                else: 
-                    pred = self.net(data)
-                
+            embeddings = embeddings.reshape(labels.shape[0], -1)
+            clf.fit(embeddings, labels)
+        
+
+            for i, (data, label, tsindex, context) in enumerate(self.dataloaders['train']):
+                pred = self._add_posenc_and_context(data, tsindex, context)
                 embeddings = np.append(embeddings, pred.detach().numpy() )
                 labels = np.append(labels, label.detach().numpy())  #always +bs
             
             embeddings = embeddings.reshape(labels.shape[0], -1)
-
-            representation_score = get_knn_representation_score(embeddings, labels, self.experiment)
+            
+            representation_score = clf.score(embeddings, labels)
             print(f"Representation Accuracy: {representation_score}")
+            self.experiment.log_metric("rep_accuracy", representation_score)
 
         return labels, embeddings
+    
+
+        
 
             
             
