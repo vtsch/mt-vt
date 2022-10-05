@@ -96,20 +96,12 @@ class LSTMencoder(nn.Module):
         Encoder of the model
         Args:
             config: config file
-
-        LSTM Layer:
-        : input_size:     the number of features in the input X -> is 1 as 1d time series
-        : hidden_size:    the number of features in the hidden state h
-        : num_layers:     number of recurrent layers
         '''
         super(LSTMencoder, self).__init__()
-        # define LSTM layer
         self.config = config
         self.lstm = nn.LSTM(input_size = 1, hidden_size = config.bl_hidden_size,
-                            num_layers = 2, batch_first = True)
-                            # dropout=dropout_p if num_rnn_layers>1 else 0, bidirectional=bidirectional,
-        self.avgpool = nn.AdaptiveAvgPool1d((config.bl_hidden_size//2))
-        self.fc = nn.Linear(in_features=config.bl_hidden_size//2, out_features=1)
+                            num_layers = 2, batch_first = True, dropout = config.dropout)
+        self.fc = nn.Linear(in_features=config.bl_hidden_size, out_features=1)
         
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
@@ -118,14 +110,14 @@ class LSTMencoder(nn.Module):
         Args:
             x: the input to the model, (batch_size, ts_length+context_count_size) for LSTM must be (batch_size, seq_len, input_size) if batch_first = True
         Returns:
-            emb: the learned representation of the model, (batch_size, emb_size, ts_length+context_count_size), all the hidden states in the sequence; (batch_size, seq_len, hidden_size)
-        :                              hidden gives the hidden state and cell state for the last
-        :                              element in the sequence 
+            emb: the learned representation of the model, 
+            LSTM layer returns:
+                lstm_out: (batch_size, emb_size, ts_length+context_count_size), all the hidden states in the sequence
+                hidden: (2, batch_size, hidden_size), hidden state and cell state for the last element in the sequence 
         '''
         x = x.reshape(x.shape[0], x.shape[1], -1)
         lstm_out, self.hidden = self.lstm(x)
-        emb = self.avgpool(lstm_out)
-        emb = self.fc(emb)
+        emb = self.fc(lstm_out)
         emb = emb.reshape(emb.shape[0], -1)
         return emb
     

@@ -49,7 +49,7 @@ class Trainer:
         else: 
             pred = self.net(data)
         
-        return pred
+        return pred, data
 
     
     def _train_epoch(self, phase: str) -> Tuple[float, dict]:
@@ -67,7 +67,7 @@ class Trainer:
 
         for i, (data, _, tsindex, context) in enumerate(self.dataloaders[phase]):
 
-            pred = self._add_posenc_and_context(data, tsindex, context)
+            pred, data = self._add_posenc_and_context(data, tsindex, context)
  
             #print("pred shape for loss: ", pred.shape) 
             #print("data shape for loss: ", data.shape)
@@ -126,7 +126,7 @@ class Trainer:
 
         with torch.no_grad():
             for i, (data, label, tsindex, context) in enumerate(self.dataloaders['val']):
-                pred = self._add_posenc_and_context(data, tsindex, context)
+                pred, _ = self._add_posenc_and_context(data, tsindex, context)
                 embeddings = np.append(embeddings, pred.detach().numpy() )
                 labels = np.append(labels, label.detach().numpy()) 
 
@@ -135,7 +135,7 @@ class Trainer:
         
 
             for i, (data, label, tsindex, context) in enumerate(self.dataloaders['train']):
-                pred = self._add_posenc_and_context(data, tsindex, context)
+                pred, _ = self._add_posenc_and_context(data, tsindex, context)
                 embeddings = np.append(embeddings, pred.detach().numpy() )
                 labels = np.append(labels, label.detach().numpy())  #always +bs
             
