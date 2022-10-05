@@ -14,7 +14,7 @@ from models.transformer import generate_square_subsequent_mask
 from models.tstcc_TC import TC
 from models.tstcc_loss import NTXentLoss
 from pos_enc import positional_encoding
-
+from metrics import KNN
 
 class TSTCCTrainer:
     def __init__(self, config: Bunch, experiment, data: pd.DataFrame, net: nn.Module):
@@ -37,6 +37,7 @@ class TSTCCTrainer:
         self.temporal_contr_model = TC(config).to(config.device)
         self.temp_cont_optimizer = Adam(self.temporal_contr_model.parameters(), lr=config.lr, betas=(0.9, 0.99), weight_decay=3e-4)
         self.tstcc_train_dl, self.tstcc_valid_dl, self.tstcc_test_dl = data_generator_tstcc(data, config)
+        self.clf = KNN()
     
     def run(self) -> None:
         '''
@@ -47,7 +48,7 @@ class TSTCCTrainer:
             # Train and validate
             train_loss, train_acc = self.model_train()
             self.experiment.log_metrics(dic={'train_loss': train_loss, 'train_acc': train_acc}, step=epoch)
-            valid_loss, valid_acc, _, _, _ = self.model_evaluate()
+            valid_loss, valid_acc, _, _, _ = self.model_evaluate(phase='val')
             self.experiment.log_metrics(dic={'valid_loss': valid_loss, 'valid_acc': valid_acc}, step=epoch)
             if self.config.tstcc_training_mode != 'self_supervised':  # use scheduler in all other modes.
                 self.scheduler.step(valid_loss)
@@ -62,7 +63,7 @@ class TSTCCTrainer:
 
         if self.config.tstcc_training_mode != "self_supervised":  # no need to run the evaluation for self-supervised mode.
             # evaluate on the test set
-            test_loss, test_acc, _, _, _ = self.model_evaluate()
+            test_loss, test_acc, _, _, _ = self.model_evaluate(phase='test')
             self.experiment.log_metrics(dic={'test_loss': test_loss, 'test_acc': test_acc}, step=epoch)
             print(f'Test loss      :{test_loss:0.4f}\t | Test Accuracy      : {test_acc:0.4f}')
 
@@ -80,10 +81,7 @@ class TSTCCTrainer:
         self.net.train()
         self.temporal_contr_model.train()
 
-        for batch_idx, (psa_data, labels, aug1, aug2, tsindex, context) in enumerate(self.tstcc_train_dl):
-            # send to device
-            #psa_data, labels = psa_data.float().to(self.config.device), labels.long().to(self.config.device)
-            #aug1, aug2 = aug1.float().to(self.config.device), aug2.float().to(self.config.device)
+        for batch_idx, (psa_data, label, aug1, aug2, tsindex, context) in enumerate(self.tstcc_train_dl):
             # optimizer
             self.optimizer.zero_grad()
             self.temp_cont_optimizer.zero_grad()
@@ -119,8 +117,12 @@ class TSTCCTrainer:
                 nt_xent_criterion = NTXentLoss(self.config.device, self.config.batch_size, use_cosine_similarity=True)
                 loss = (temp_cont_loss1 + temp_cont_loss2) * lambda1 +  nt_xent_criterion(zis, zjs) * lambda2    
             else:
-                loss = self.criterion(logits, psa_data)
-                total_acc.append(labels.eq(logits.detach().argmax(dim=1)).float().mean())
+                if self.config.tstcc_training_mode == "supervised":
+                    loss = self.criterion(logits, label.long())
+                    total_acc.append(label.eq(logits.detach().argmax(dim=1)).float().mean())
+                else:
+                    loss = self.criterion(logits, psa_data)
+                    total_acc.append(label.eq(logits.detach().argmax(dim=1)).float().mean())
 
             total_loss.append(loss.item())
             loss.backward()
@@ -136,7 +138,7 @@ class TSTCCTrainer:
         return total_loss, total_acc
 
 
-    def model_evaluate(self) -> Tuple[torch.Tensor, torch.Tensor, np.ndarray, np.ndarray, np.ndarray]:
+    def model_evaluate(self, phase: str) -> Tuple[torch.Tensor, torch.Tensor, np.ndarray, np.ndarray, np.ndarray]:
         '''
         Evaluate the model (validation or test)
         Returns:
@@ -156,9 +158,11 @@ class TSTCCTrainer:
         true_labels = np.array([])
         embeddings = np.array([])
 
+        tstcc_dl = self.tstcc_valid_dl if phase == 'val' else self.tstcc_test_dl
+
         with torch.no_grad():
-            for batch_idx, (psa_data, labels, _, _, tsindex, context) in enumerate(self.tstcc_test_dl):
-                psa_data, labels, context = psa_data.float().to(self.config.device), labels.long().to(self.config.device), context.float().to(self.config.device)
+            for batch_idx, (psa_data, label, _, _, tsindex, context) in enumerate(tstcc_dl):
+                psa_data, label, context = psa_data.float().to(self.config.device), label.long().to(self.config.device), context.float().to(self.config.device)
 
                 #apply positional encoding
                 data_pos_enc = positional_encoding(self.config, psa_data, tsindex)
@@ -172,21 +176,34 @@ class TSTCCTrainer:
                     logits, features = self.net(data_pos_enc)
 
                     # compute loss
-                    loss = self.criterion(logits, psa_data)
-                    total_acc.append(labels.eq(logits.detach().argmax(dim=1)).float().mean())
+                    if self.config.tstcc_training_mode == "supervised":
+                        loss = self.criterion(logits, label.long())
+                        total_acc.append(label.eq(logits.detach().argmax(dim=1)).float().mean())
+                    else:
+                        loss = self.criterion(logits, psa_data)
+                        total_acc.append(label.eq(logits.detach().argmax(dim=1)).float().mean())
                     total_loss.append(loss.item())
 
                     # return embeddings, predictions and targets
-                    pred = logits.max(1, keepdim=True)[1]  # get max of logit
-                    feat = features.max(1, keepdim=True)[1] # get max of features
+                    if self.config.tstcc_training_mode == "supervised":
+                        pred = logits.max(1, keepdim=True)[1]  # get the index of the max log-probability
+                    else:
+                        pred = features
                     preds = np.append(preds, pred.cpu().numpy())
-                    true_labels = np.append(true_labels, labels.data.cpu().numpy())
-                    #embeddings = np.append(embeddings, feat.detach().numpy())
+                    true_labels = np.append(true_labels, label.data.cpu().numpy())
                     embeddings = np.append(embeddings, logits.detach().numpy())
 
         if self.config.tstcc_training_mode != "self_supervised":
             total_loss = torch.tensor(total_loss).mean()  # average loss
             embeddings = embeddings.reshape(true_labels.shape[0], -1) # reshape embeddings
+            if phase == 'val': # and self.config.tstcc_training_mode != "supervised":
+                self.clf.fit(embeddings, true_labels)
+            elif phase == 'test': # and self.config.tstcc_training_mode != "supervised":
+                representation_score = self.clf.score(embeddings, true_labels)
+                print(f"Representation Accuracy: {representation_score}")
+                self.experiment.log_metric("rep_accuracy", representation_score)
+            else:
+                print("training in supervised mode")
         else:
             total_loss = 0
 

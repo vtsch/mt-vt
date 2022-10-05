@@ -203,11 +203,11 @@ def main():
 
         if config.tstcc_training_mode != "self_supervised":
             if config.tstcc_training_mode == "supervised":
-                outs = trainer.model_evaluate()
+                outs = trainer.model_evaluate('test')
                 _, _, pred_labels, true_labels, _ = outs
                 calculate_clustering_scores(config, true_labels.astype(int), pred_labels.astype(int), experiment)
             else:
-                outs = trainer.model_evaluate()
+                outs = trainer.model_evaluate('test')
                 _, _, _, true_labels, embeddings = outs
                 kmeans_labels = run_kmeans_and_plots(config, embeddings, true_labels, experiment)
                 calculate_clustering_scores(config, true_labels.astype(int), kmeans_labels.astype(int), experiment)

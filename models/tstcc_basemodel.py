@@ -34,7 +34,7 @@ class TSTCCbase_Model(nn.Module):
         self.linear = nn.Linear(8, config.emb_size)
 
         model_output_dim = config.ts_length
-        self.logits_supervised = nn.Linear(model_output_dim * config.emb_size, config.n_clusters)
+        self.logits_supervised = nn.Linear(model_output_dim * config.emb_size, config.n_clusters_real)
         self.logits = nn.Linear(model_output_dim * config.emb_size, config.ts_length) # as we learn representations, output in ts_length not n_classes
 
     def forward(self, x_in):
@@ -59,6 +59,10 @@ class TSTCCbase_Model(nn.Module):
 
         # classifier of encoded signals
         x_flat = x.reshape(x.shape[0], -1) # (batch_size, emb_size * ts_length)
-        logits = self.logits(x_flat)
+
+        if self.config.tstcc_training_mode == "supervised":
+            logits = self.logits_supervised(x_flat)
+        else:
+            logits = self.logits(x_flat)
 
         return logits, x
