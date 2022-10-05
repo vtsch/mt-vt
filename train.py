@@ -35,6 +35,7 @@ class Trainer:
             phase: get_dataloader(config, data, phase) for phase in self.phases
         }
         self.attention_masks = generate_square_subsequent_mask(self.config)
+        self.clf = KNN()
     
     def _add_posenc_and_context(self, data, tsindex, context):
         if self.config.experiment_name != "simple_transformer":
@@ -48,7 +49,7 @@ class Trainer:
                 data = torch.cat((data, context), dim=1)
         else: 
             pred = self.net(data)
-        
+
         return pred, data
 
     
@@ -64,8 +65,10 @@ class Trainer:
         self.net.train()
         meter = Meter()
         meter.init_metrics(phase)
+        labels = np.array([])
+        embeddings = np.array([])
 
-        for i, (data, _, tsindex, context) in enumerate(self.dataloaders[phase]):
+        for i, (data, label, tsindex, context) in enumerate(self.dataloaders[phase]):
 
             pred, data = self._add_posenc_and_context(data, tsindex, context)
  
@@ -77,12 +80,20 @@ class Trainer:
                 self.optimizer.zero_grad()
                 loss.backward()
                 self.optimizer.step()
+            
+            if phase == 'val':
+                embeddings = np.append(embeddings, pred.detach().numpy() )
+                labels = np.append(labels, label.detach().numpy() )
 
             meter.update(pred, data, phase, loss.item())
 
         metrics = meter.get_metrics()
         metrics = {k:v / i for k, v in metrics.items()}  # i = nr of batches
         df_logs = pd.DataFrame([metrics])
+
+        if phase == 'val':
+            embeddings = embeddings.reshape(labels.shape[0], -1)
+            self.clf.fit(embeddings, labels)
 
         return loss, df_logs            
     
@@ -120,19 +131,10 @@ class Trainer:
             df_logs: logs
         '''
         self.net.eval()
-        clf = KNN()
         labels = np.array([])
         embeddings = np.array([])
 
         with torch.no_grad():
-            for i, (data, label, tsindex, context) in enumerate(self.dataloaders['val']):
-                pred, _ = self._add_posenc_and_context(data, tsindex, context)
-                embeddings = np.append(embeddings, pred.detach().numpy() )
-                labels = np.append(labels, label.detach().numpy()) 
-
-            embeddings = embeddings.reshape(labels.shape[0], -1)
-            clf.fit(embeddings, labels)
-        
 
             for i, (data, label, tsindex, context) in enumerate(self.dataloaders['train']):
                 pred, _ = self._add_posenc_and_context(data, tsindex, context)
@@ -141,7 +143,7 @@ class Trainer:
             
             embeddings = embeddings.reshape(labels.shape[0], -1)
             
-            representation_score = clf.score(embeddings, labels)
+            representation_score = self.clf.score(embeddings, labels)
             print(f"Representation Accuracy: {representation_score}")
             self.experiment.log_metric("rep_accuracy", representation_score)
 
