@@ -136,7 +136,7 @@ class Trainer:
 
         with torch.no_grad():
 
-            for i, (data, label, tsindex, context) in enumerate(self.dataloaders['train']):
+            for i, (data, label, tsindex, context) in enumerate(self.dataloaders['test']):
                 pred, _ = self._add_posenc_and_context(data, tsindex, context)
                 embeddings = np.append(embeddings, pred.detach().numpy() )
                 labels = np.append(labels, label.detach().numpy())  #always +bs
