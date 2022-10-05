@@ -40,26 +40,17 @@ class Meter:
         
     def get_metrics(self):
         return self.metrics    
-    
-def get_knn_representation_score(embeddings, labels, experiment):
-    '''
-    Get representation score of embeddings
-    Args:
-        embeddings: embeddings
-        data: data
-        experiment: comet_ml experiment
-    Returns:
-        representation score
-    '''
-    # get 1-NN representation score (accuracy)
-    clf = KNeighborsClassifier(n_neighbors=1).fit(embeddings, labels)
-    preds = clf.predict(embeddings)
-    # print sum of labels for each class
-    print('Labels per class true:', np.unique(labels, return_counts=True))
-    print('Labels per class predicted:', np.unique(preds, return_counts=True))
-    representation_score = accuracy_score(labels, preds)
-    experiment.log_metric('rep_accuracy', representation_score)
-    return representation_score
+
+
+class KNN:
+    def __init__(self):
+        self.clf = KNeighborsClassifier(n_neighbors=1)
+
+    def fit(self, X, y):
+        self.clf.fit(X, y)
+
+    def score(self, X, y):
+        return self.clf.score(X, y)
         
 # --- metrics for clustering evaluation ---
 

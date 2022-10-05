@@ -64,10 +64,10 @@ class CNN(nn.Module):
         self.config = config
         out_size = config.ts_length+config.context_count_size
         self.encoder = nn.Sequential(
-            nn.Conv1d(1, 12, kernel_size=5),
+            nn.Conv1d(1, 12, kernel_size=1),
             nn.BatchNorm1d(12),
             nn.ReLU(),
-            nn.Conv1d(12, 24, kernel_size=3),
+            nn.Conv1d(12, 24, kernel_size=1),
             nn.BatchNorm1d(24),
             nn.ReLU(),
             nn.Conv1d(24, out_size, kernel_size=1),
@@ -75,13 +75,6 @@ class CNN(nn.Module):
             nn.ReLU(),
             nn.AdaptiveAvgPool1d(1),
             nn.Flatten()
-        )
-
-        self.proj_head = nn.Sequential(
-            nn.Linear(out_size, out_size),
-            nn.BatchNorm1d(out_size),
-            nn.ReLU(),
-            nn.Linear(out_size, out_size)
         )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
@@ -93,8 +86,6 @@ class CNN(nn.Module):
             x: the learned representation of the model, (batch_size, emb_size, ts_length+context_count_size)'''
         x = x.unsqueeze(1)
         h = self.encoder(x)
-        out = self.proj_head(h)
-
         return h
 
 
