@@ -5,7 +5,7 @@ import os
 import numpy as np
 from sklearn.metrics import accuracy_score, f1_score, rand_score, confusion_matrix
 from sklearn.metrics import r2_score, mean_squared_error, mean_absolute_error
-
+from sklearn.neighbors import KNeighborsClassifier
 
 # --- metrics for training ---
 
@@ -40,7 +40,27 @@ class Meter:
         
     def get_metrics(self):
         return self.metrics    
-
+    
+def get_knn_representation_score(embeddings, labels, experiment):
+    '''
+    Get representation score of embeddings
+    Args:
+        embeddings: embeddings
+        data: data
+        experiment: comet_ml experiment
+    Returns:
+        representation score
+    '''
+    # get 1-NN representation score (accuracy)
+    clf = KNeighborsClassifier(n_neighbors=1).fit(embeddings, labels)
+    preds = clf.predict(embeddings)
+    # print sum of labels for each class
+    print('Labels per class true:', np.unique(labels, return_counts=True))
+    print('Labels per class predicted:', np.unique(preds, return_counts=True))
+    representation_score = accuracy_score(labels, preds)
+    experiment.log_metric('rep_accuracy', representation_score)
+    return representation_score
+        
 # --- metrics for clustering evaluation ---
 
 def calculate_clustering_scores(config: Bunch, y_true: np.ndarray, y_pred: np.ndarray, experiment) -> None:
@@ -61,10 +81,10 @@ def calculate_clustering_scores(config: Bunch, y_true: np.ndarray, y_pred: np.nd
     print('Confusion Matrix:')
     print(cm)
     metrics_df = pd.DataFrame({'accuracy': [accuracy], 'ri': [ri], 'f1': [f1]})
-    experiment.log_metrics(pd.DataFrame({'accuracy': [accuracy], 'ri': [ri], 'f1': [f1]}))
+    experiment.log_metrics(metrics_df)
     experiment.log_confusion_matrix(y_true, y_pred, title = "Confusion Matrix")
     # save metrics and confusion matrix to csv
-    metrics_df.to_csv(os.path.join(config.model_save_path, 'metrics.csv'))
+    metrics_df.to_csv(os.path.join(config.model_save_path, 'clustering_metrics.csv'))
     np.savetxt(os.path.join(config.model_save_path, 'confusion_matrix.csv'), cm, delimiter=",")
 
 def log_cluster_combinations(config: Bunch, true_labels: np.ndarray, kmeans_labels_old: np.ndarray, experiment) -> None:

@@ -6,7 +6,7 @@ from bunch import Bunch
 from torch.optim import Adam
 import pandas as pd
 from typing import Tuple
-from metrics import Meter
+from metrics import Meter, get_knn_representation_score
 from dataloader import get_dataloader
 import numpy as np
 from models.transformer import generate_square_subsequent_mask
@@ -103,7 +103,6 @@ class Trainer:
                 self.best_loss = val_loss
                 print('-- new checkpoint --')
                 self.best_loss = val_loss
-                self.experiment.log_metrics(self.best_loss, step=epoch)
                 #save best model 
                 torch.save(self.net.state_dict(), os.path.join(self.config.model_save_path, f"best_model_epoc{epoch}.pth"))
 
@@ -119,7 +118,6 @@ class Trainer:
         self.net.eval()
         labels = np.array([])
         embeddings = np.array([])
-        mse = 0
 
         with torch.no_grad():
             for i, (data, label, tsindex, context) in enumerate(self.dataloaders['test']):
@@ -136,15 +134,13 @@ class Trainer:
                 else: 
                     pred = self.net(data)
                 
-                mse += mean_squared_error(data.detach().cpu().numpy(), pred.detach().cpu().numpy())
                 embeddings = np.append(embeddings, pred.detach().numpy() )
                 labels = np.append(labels, label.detach().numpy())  #always +bs
-
-            mse /= i
-            print('MSE of learned representations: {:.3f}'.format(mse))
-            self.experiment.log_metric('test_mse', mse)
             
             embeddings = embeddings.reshape(labels.shape[0], -1)
+
+            representation_score = get_knn_representation_score(embeddings, labels, self.experiment)
+            print(f"Representation Accuracy: {representation_score}")
 
         return labels, embeddings
 
