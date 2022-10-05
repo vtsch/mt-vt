@@ -51,96 +51,52 @@ class DeepAutoencoder(nn.Module):
         x = self.fc4(x)
         return x
 
-
-class ConvNormPool(nn.Module):
-    def __init__(self, input_size: int, hidden_size: int, kernel_size: int) -> None:
-        '''
-        Conv Skip-connection module for CNN
-        Args:
-            input_size: input size of the layer
-            hidden_size: hidden size of the layer
-            kernel_size: kernel size of the layer
-        '''
-        super().__init__()
-        
-        self.kernel_size = kernel_size
-        self.conv_1 = nn.Conv1d(
-            in_channels=input_size,
-            out_channels=hidden_size,
-            kernel_size=kernel_size
-        )
-        self.conv_2 = nn.Conv1d(
-            in_channels=hidden_size,
-            out_channels=hidden_size,
-            kernel_size=kernel_size
-        )
-        self.conv_3 = nn.Conv1d(
-            in_channels=hidden_size,
-            out_channels=hidden_size,
-            kernel_size=kernel_size
-        )
-        self.normalization = nn.BatchNorm1d(num_features=hidden_size)
-            
-        self.pool = nn.MaxPool1d(kernel_size=1)
-        
-    def forward(self, input: torch.Tensor) -> torch.Tensor:
-        '''
-        Forward pass of Conv Norm Pool Layer
-        Args:
-            input: the input to the model, (batch_size, 1, ts_length+context_count_size)
-        Returns:   
-            x: output of conv norm pool layer, (batch_size, 1, ts_length+context_count_size)
-        '''
-        conv1 = self.conv_1(input)
-        x = self.normalization(conv1)
-        
-        x = self.conv_2(x)
-        x = self.normalization(x)
-        
-        conv3 = self.conv_3(x)
-        x = self.normalization(conv1+conv3)
-        
-        x = self.pool(x)
-        return x
-
-
 class CNN(nn.Module):
+    # https://github.com/Wickstrom/MixupContrastiveLearning/blob/main/MixupContrastiveLearningExample.ipynb
+
     def __init__(self, config: Bunch) -> None:
         '''
         Initialize the model
         Args:
             config: config file
         '''
-        super().__init__()
+        super(CNN, self).__init__()
         self.config = config
-        self.conv1 = ConvNormPool(
-            input_size=1,
-            hidden_size=config.bl_hidden_size,
-            kernel_size=config.kernel_size,
+        out_size = config.ts_length+config.context_count_size
+        self.encoder = nn.Sequential(
+            nn.Conv1d(1, 12, kernel_size=5),
+            nn.BatchNorm1d(12),
+            nn.ReLU(),
+            nn.Conv1d(12, 24, kernel_size=3),
+            nn.BatchNorm1d(24),
+            nn.ReLU(),
+            nn.Conv1d(24, out_size, kernel_size=1),
+            nn.BatchNorm1d(out_size),
+            nn.ReLU(),
+            nn.AdaptiveAvgPool1d(1),
+            nn.Flatten()
         )
-        self.conv2 = ConvNormPool(
-            input_size=config.bl_hidden_size,
-            hidden_size=config.bl_hidden_size//2,
-            kernel_size=config.kernel_size,
+
+        self.proj_head = nn.Sequential(
+            nn.Linear(out_size, out_size),
+            nn.BatchNorm1d(out_size),
+            nn.ReLU(),
+            nn.Linear(out_size, out_size)
         )
-        self.avgpool = nn.AdaptiveAvgPool1d((1))
-        self.fc = nn.Linear(in_features=config.bl_hidden_size//2, out_features=config.ts_length+config.context_count_size)
-        
-    def forward(self, input: torch.Tensor) -> torch.Tensor:
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         '''
-        Forward pass of the model - 2 stacked Conv Norm Pool layers
+        Forward pass of the model.
         Args:
-            input: the input to the model, (batch_size, ts_length+context_count_size)
+            x: the input to the model, (batch_size, ts_length+context_count_size)
         Returns:
-            x: the learned representation of the model, (batch_size, emb_size, ts_length+context_count_size)
-        '''
-        input = input.reshape(input.shape[0], 1, input.shape[1])
-        x = self.conv1(input)
-        x = self.conv2(x)
-        x = self.avgpool(x)        
-        x = x.view(-1, x.size(1) * x.size(2))
-        x = F.softmax(self.fc(x), dim=1)
-        return x
+            x: the learned representation of the model, (batch_size, emb_size, ts_length+context_count_size)'''
+        x = x.unsqueeze(1)
+        h = self.encoder(x)
+        out = self.proj_head(h)
+
+        return h
+
 
 class LSTMencoder(nn.Module):
     ''' Encodes time-series sequence '''
