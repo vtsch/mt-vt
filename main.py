@@ -14,8 +14,7 @@ from models.transformer import TSTransformerEncoder
 from models.tstcc_basemodel import TSTCCbase_Model
 
 
-if __name__ == '__main__':
-
+def main():
     args = get_args()
     config = get_bunch_config_from_json(args.config)
     config = complete_config(config, args)
@@ -220,3 +219,5 @@ if __name__ == '__main__':
 
 
 
+if __name__ == '__main__':
+    main()
