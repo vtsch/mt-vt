@@ -1,6 +1,7 @@
 import comet_ml
 import torch
 import os
+import numpy as np
 from torchsummary import summary
 from preprocess import load_psa_data_to_pd
 from kmeans import kmeans, run_kmeans_and_plots, plot_all_representations
@@ -12,7 +13,8 @@ from traintstcc import TSTCCTrainer
 from models.baseline_models import CNN, LSTMencoder, SimpleAutoencoder, DeepAutoencoder
 from models.transformer import TSTransformerEncoder
 from models.tstcc_basemodel import TSTCCbase_Model
-
+from dataloader import get_dataloader
+from pos_enc import positional_encoding
 
 def main():
     args = get_args()
@@ -44,54 +46,21 @@ def main():
     # run kmeans on raw data
     if config.experiment_name == "raw_data":
 
+        dataloader = get_dataloader(config, df_psa, 'test')
+        all_data = np.array([])
+        true_labels = np.array([])
 
-        true_labels = df_psa[config.classlabel]
-        if config.dataset == "plco":
-            if config.pos_enc == "absolute_days":
-                for i in range(0, 6):
-                    df_psa["psa_with_enc" + str(i)] = df_psa['psa_level' + str(i)] + df_psa['psa_days' + str(i)]
-                    df_psa.drop('psa_level' + str(i), axis=1, inplace=True)
-                    df_psa.drop('psa_days' + str(i), axis=1, inplace=True)
-            elif config.pos_enc == "delta_days":
-                for i in range(0, 6):
-                    df_psa["psa_with_enc" + str(i)] = df_psa['psa_level' + str(i)] + df_psa['psa_delta' + str(i)]
-                    df_psa.drop('psa_level' + str(i), axis=1, inplace=True)
-                    df_psa.drop('psa_delta' + str(i), axis=1, inplace=True)
-            elif config.pos_enc == "age_pos_enc":
-                for i in range(0, 6):
-                    df_psa["psa_with_enc" + str(i)] = df_psa['psa_level' + str(i)] + df_psa['psa_age' + str(i)]
-                    df_psa.drop('psa_level' + str(i), axis=1, inplace=True)
-                    df_psa.drop('psa_age' + str(i), axis=1, inplace=True)
-            else:
-                pass
-        elif config.dataset == "furst":
-            if config.pos_enc == "absolute_days":
-                for i in range(0, 20):
-                    df_psa["psa_with_enc" + str(i)] = df_psa['psa_' + str(i)] + df_psa['psa_absolute' + str(i)]
-                    df_psa.drop('psa_' + str(i), axis=1, inplace=True)
-                    df_psa.drop('psa_absolute' + str(i), axis=1, inplace=True)
-            elif config.pos_enc == "delta_days":
-                for i in range(0, 20):
-                    df_psa["psa_with_enc" + str(i)] = df_psa['psa_' + str(i)] + df_psa['psa_delta' + str(i)]
-                    df_psa.drop('psa_' + str(i), axis=1, inplace=True)
-                    df_psa.drop('psa_delta' + str(i), axis=1, inplace=True)
-            elif config.pos_enc == "age_pos_enc":
-                for i in range(0, 20):
-                    df_psa["psa_with_enc" + str(i)] = df_psa['psa_' + str(i)] + df_psa['psa_age' + str(i)]
-                    df_psa.drop('psa_' + str(i), axis=1, inplace=True)
-                    df_psa.drop('psa_age' + str(i), axis=1, inplace=True)
-            else:
-                pass
+        for i, (data, label, tsindex, context) in enumerate(dataloader):
+            data = positional_encoding(config, data, tsindex)
+            if config.context:
+                data = torch.cat((data, context), dim=1)
+            all_data = np.append(all_data, data.detach().numpy() )
+            true_labels = np.append(true_labels, label.detach().numpy())  #always +bs
+        all_data = all_data.reshape(true_labels.shape[0], -1)
 
-        else:
-            raise ValueError("Dataset not supported")
-
-        df_psa.drop([config.classlabel], axis=1, inplace=True)
-        df_train_values = df_psa.values
-
-        kmeans_labels = run_kmeans_and_plots(config, df_train_values, true_labels, experiment)
-        df = df_psa.to_numpy()
-        run_umap(df_psa, true_labels, kmeans_labels, config.experiment_name, experiment)
+        kmeans_labels = run_kmeans_and_plots(config, all_data, true_labels, experiment)
+        #df = df_psa.to_numpy()
+        run_umap(config, all_data, true_labels, kmeans_labels, experiment)
         calculate_clustering_scores(config, true_labels.astype(int), kmeans_labels, experiment)
 
 
