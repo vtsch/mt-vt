@@ -15,6 +15,7 @@ from models.tstcc_TC import TC
 from models.tstcc_loss import NTXentLoss
 from pos_enc import positional_encoding
 from metrics import KNN
+from sklearn.metrics import balanced_accuracy_score
 
 class TSTCCTrainer:
     def __init__(self, config: Bunch, experiment, data: pd.DataFrame, net: nn.Module):
@@ -199,9 +200,11 @@ class TSTCCTrainer:
             if phase == 'val': # and self.config.tstcc_training_mode != "supervised":
                 self.clf.fit(embeddings, true_labels)
             elif phase == 'test': # and self.config.tstcc_training_mode != "supervised":
-                representation_score = self.clf.score(embeddings, true_labels)
+                nn_predictions = self.clf.predict(embeddings)
+                representation_score = balanced_accuracy_score(true_labels, nn_predictions)
                 print(f"Representation Accuracy: {representation_score}")
                 self.experiment.log_metric("rep_accuracy", representation_score)
+                np.savetxt(os.path.join(self.config.model_save_path, "representationaccuracy.csv"), representation_score, delimiter=",")
             else:
                 print("training in supervised mode")
         else:

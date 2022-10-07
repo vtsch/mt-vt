@@ -11,7 +11,7 @@ from dataloader import get_dataloader
 import numpy as np
 from models.transformer import generate_square_subsequent_mask
 from pos_enc import positional_encoding
-from sklearn.metrics import mean_squared_error
+from sklearn.metrics import balanced_accuracy_score
 
 class Trainer:
     def __init__(self, config: Bunch, experiment, data: pd.DataFrame, net: nn.Module):
@@ -143,9 +143,11 @@ class Trainer:
             
             embeddings = embeddings.reshape(labels.shape[0], -1)
             
-            representation_score = self.clf.score(embeddings, labels)
+            nn_predictions = self.clf.predict(embeddings)
+            representation_score = balanced_accuracy_score(labels, nn_predictions)
             print(f"Representation Accuracy: {representation_score}")
             self.experiment.log_metric("rep_accuracy", representation_score)
+            np.savetxt(os.path.join(self.config.model_save_path, "representationaccuracy.csv"), representation_score, delimiter=",")
 
         return labels, embeddings
     
