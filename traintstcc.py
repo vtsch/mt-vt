@@ -14,8 +14,8 @@ from models.transformer import generate_square_subsequent_mask
 from models.tstcc_TC import TC
 from models.tstcc_loss import NTXentLoss
 from pos_enc import positional_encoding
-from metrics import KNN
 from sklearn.metrics import balanced_accuracy_score
+from sklearn.neighbors import KNeighborsClassifier
 
 class TSTCCTrainer:
     def __init__(self, config: Bunch, experiment, data: pd.DataFrame, net: nn.Module):
@@ -38,7 +38,7 @@ class TSTCCTrainer:
         self.temporal_contr_model = TC(config).to(config.device)
         self.temp_cont_optimizer = Adam(self.temporal_contr_model.parameters(), lr=config.lr, betas=(0.9, 0.99), weight_decay=3e-4)
         self.tstcc_train_dl, self.tstcc_valid_dl, self.tstcc_test_dl = data_generator_tstcc(data, config)
-        self.clf = KNN()
+        self.clf = KNeighborsClassifier(n_neighbors=1)
     
     def run(self) -> None:
         '''
@@ -197,14 +197,15 @@ class TSTCCTrainer:
         if self.config.tstcc_training_mode != "self_supervised":
             total_loss = torch.tensor(total_loss).mean()  # average loss
             embeddings = embeddings.reshape(true_labels.shape[0], -1) # reshape embeddings
-            if phase == 'val': # and self.config.tstcc_training_mode != "supervised":
+            if phase == 'val': 
                 self.clf.fit(embeddings, true_labels)
-            elif phase == 'test': # and self.config.tstcc_training_mode != "supervised":
+            elif phase == 'test': 
+                # calculate representation accuracy with a 1NN classifier and log score
                 nn_predictions = self.clf.predict(embeddings)
                 representation_score = balanced_accuracy_score(true_labels, nn_predictions)
                 print(f"Representation Accuracy: {representation_score}")
                 self.experiment.log_metric("rep_accuracy", representation_score)
-                np.savetxt(os.path.join(self.config.model_save_path, "representationaccuracy.csv"), representation_score, delimiter=",")
+                np.savetxt(os.path.join(self.config.model_save_path, "rep_accuracy.txt"), np.array([representation_score]))
             else:
                 print("training in supervised mode")
         else:

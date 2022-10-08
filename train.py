@@ -6,12 +6,13 @@ from bunch import Bunch
 from torch.optim import Adam
 import pandas as pd
 from typing import Tuple
-from metrics import Meter, KNN
+from metrics import Meter
 from dataloader import get_dataloader
 import numpy as np
 from models.transformer import generate_square_subsequent_mask
 from pos_enc import positional_encoding
 from sklearn.metrics import balanced_accuracy_score
+from sklearn.neighbors import KNeighborsClassifier
 
 class Trainer:
     def __init__(self, config: Bunch, experiment, data: pd.DataFrame, net: nn.Module):
@@ -35,7 +36,7 @@ class Trainer:
             phase: get_dataloader(config, data, phase) for phase in self.phases
         }
         self.attention_masks = generate_square_subsequent_mask(self.config)
-        self.clf = KNN()
+        self.clf = KNeighborsClassifier(n_neighbors=1)
     
     def _add_posenc_and_context(self, data, tsindex, context):
         if self.config.experiment_name != "simple_transformer":
@@ -143,20 +144,13 @@ class Trainer:
             
             embeddings = embeddings.reshape(labels.shape[0], -1)
             
+            
             nn_predictions = self.clf.predict(embeddings)
             representation_score = balanced_accuracy_score(labels, nn_predictions)
             print(f"Representation Accuracy: {representation_score}")
             self.experiment.log_metric("rep_accuracy", representation_score)
-            np.savetxt(os.path.join(self.config.model_save_path, "representationaccuracy.csv"), representation_score, delimiter=",")
+            #save representation score as txt file
+            np.savetxt(os.path.join(self.config.model_save_path, "rep_accuracy.txt"), np.array([representation_score]))
 
         return labels, embeddings
-    
-
-        
-
-            
-            
-
-            
-
 
