@@ -88,7 +88,12 @@ def build_save_path(config: Bunch) -> str:
     '''
     current_timestamp = datetime.now().strftime("%y-%m-%d_%H-%M-%S")
 
-    path = os.path.join(config.model_save_dir, config.experiment_name, config.tstcc_training_mode, config.pos_enc, config.con_str, current_timestamp)    
+    path1 = os.path.join(config.model_save_dir, config.experiment_name, config.tstcc_training_mode, config.pos_enc, config.con_str)
+    if config.upsample:
+        path2 = os.path.join(path1, "bal")
+    else:
+        path2 = path1
+    path = os.path.join(path2, current_timestamp)    
     return path
 
 def build_comet_logger(config: Bunch) -> Experiment:
@@ -101,7 +106,7 @@ def build_comet_logger(config: Bunch) -> Experiment:
     '''
     experiment = Experiment(
         api_key="HzUytPeFFfa9aiGmafVP6CMkP",
-        project_name="mt-vt-results",
+        project_name=config.comet_project_name,
         workspace="vtsch",
     )
     experiment.set_name(config.experiment_name)
