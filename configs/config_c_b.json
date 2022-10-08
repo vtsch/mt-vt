@@ -1,6 +1,7 @@
 {
     "dataset": "plco",
     "model_save_dir": "saved_models",
+    "comet_project_name": "mt-vt-results",
 
     "_____kmeans_metric_options": "euclidean, dtw, softdtw",
     "kmeans_metric" : "dtw", 
