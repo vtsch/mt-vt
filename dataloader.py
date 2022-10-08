@@ -16,13 +16,20 @@ class LoadPSADataset(Dataset):
     Returns:
         dataset
     '''
-    def __init__(self, config, data):
+    def __init__(self, config: Bunch, data: pd.DataFrame) -> None:
+        '''
+        Initialize dataset
+        Args:
+            config: config file
+            data: dataframe
+        '''
 
         self.df = data
         self.config = config
 
         y = data[config.classlabel]
 
+        # data columns of PLCO dataset
         if config.dataset == "plco":
             X = data[['psa_level0', 'psa_level1', 'psa_level2', 'psa_level3', 'psa_level4', 'psa_level5']]
 
@@ -34,7 +41,7 @@ class LoadPSADataset(Dataset):
                 ts = data[['psa_age0', 'psa_age1', 'psa_age2', 'psa_age3', 'psa_age4', 'psa_age5']]
             else:
                 ts = pd.DataFrame(np.zeros((len(data), 6)))
-
+        # data columns of Furst dataset
         elif config.dataset == "furst":
             X = data[['psa_0', 'psa_1', 'psa_2','psa_3', 'psa_4', 'psa_5', 'psa_6', 'psa_7', 'psa_8', 'psa_9', 'psa_10', 'psa_11', 'psa_12','psa_13', 'psa_14', 'psa_15', 'psa_16', 'psa_17', 'psa_18', 'psa_19']]
 
@@ -50,6 +57,7 @@ class LoadPSADataset(Dataset):
         else:
             raise ValueError("Dataset not supported")
         
+        # context data
         if self.config.context:
             #context = data[['bmi_curr', 'center', 'age', 'race7']]
             context_b = 'bmi_curr' if self.config.context_bmi else None
@@ -80,7 +88,21 @@ class LoadPSADataset(Dataset):
             X_np = torch.from_numpy(X_np)
             self.aug1, self.aug2 = DataTransform(X_np, config)
 
-    def __getitem__(self, index):
+    def __getitem__(self, index: pd.DataFrame) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
+        '''
+        Get item from dataset
+        Args:
+            index: index of item
+        Returns:
+            signal: PSA data
+            target: class label
+            tsindex: time series index
+            context: context data
+
+            if ts_tcc additionally:
+                aug1: augmented data
+                aug2: augmented data
+        '''
         target = np.array(self.y_data.loc[index])
         signal = self.x_data.loc[index].astype('float32')
         signal = signal.values
@@ -97,10 +119,24 @@ class LoadPSADataset(Dataset):
         else:
             return signal, target, tsindex, context
 
-    def __len__(self):
+    def __len__(self) -> int:
+        '''
+        Get length of dataset
+        Returns:
+            length of dataset
+        '''
         return self.len
 
 def generate_split(data: pd.DataFrame, config: Bunch) -> Tuple[pd.DataFrame, pd.DataFrame]:
+    '''
+    Generate train and test split
+    Args:
+        data: dataset
+        config: configuration
+    Returns:
+        train_df: train split
+        test_df: test split
+    '''
     train_df, test_df = train_test_split(
         data, test_size=0.2, random_state=42, stratify=data[config.classlabel]
     )

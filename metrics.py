@@ -38,20 +38,15 @@ class Meter:
         self.metrics[phase + '_mse'] = 0
         self.metrics[phase + '_mae'] = 0
         
-    def get_metrics(self):
+    def get_metrics(self) -> dict:
+        '''
+        Get metrics
+        Returns:
+            metrics: dict of metrics
+        '''
         return self.metrics    
 
 
-class KNN:
-    def __init__(self):
-        self.clf = KNeighborsClassifier(n_neighbors=1)
-
-    def fit(self, X, y):
-        self.clf.fit(X, y)
-
-    def score(self, X, y):
-        return self.clf.score(X, y)
-        
 # --- metrics for clustering evaluation ---
 
 def calculate_clustering_scores(config: Bunch, y_true: np.ndarray, y_pred: np.ndarray, experiment) -> None:
@@ -87,7 +82,6 @@ def log_cluster_combinations(config: Bunch, true_labels: np.ndarray, kmeans_labe
         kmeans_labels_old: predicted labels
         experiment: comet_ml experiment object
     '''
-    # log cluster combinations
     if config.n_clusters == 3:
         kmeans_labels = kmeans_labels_old.copy()
         kmeans_labels[kmeans_labels_old == 1] = 0  

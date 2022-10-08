@@ -18,7 +18,7 @@ from sklearn.metrics import balanced_accuracy_score
 from sklearn.neighbors import KNeighborsClassifier
 
 class TSTCCTrainer:
-    def __init__(self, config: Bunch, experiment, data: pd.DataFrame, net: nn.Module):
+    def __init__(self, config: Bunch, experiment, data: pd.DataFrame, net: nn.Module) -> None:
         '''
         Initialize the trainer
         Args:
@@ -145,7 +145,7 @@ class TSTCCTrainer:
         Returns:
             total_loss: validation loss
             total_acc: validation accuracy
-            outs: predicted labels
+            preds: predicted labels
             trgs: true labels
             embeddings: learned embeddings of the data
         '''

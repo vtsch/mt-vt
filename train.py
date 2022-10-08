@@ -144,12 +144,11 @@ class Trainer:
             
             embeddings = embeddings.reshape(labels.shape[0], -1)
             
-            
+            # calculate representation accuracy with a 1NN classifier and log score
             nn_predictions = self.clf.predict(embeddings)
             representation_score = balanced_accuracy_score(labels, nn_predictions)
             print(f"Representation Accuracy: {representation_score}")
             self.experiment.log_metric("rep_accuracy", representation_score)
-            #save representation score as txt file
             np.savetxt(os.path.join(self.config.model_save_path, "rep_accuracy.txt"), np.array([representation_score]))
 
         return labels, embeddings

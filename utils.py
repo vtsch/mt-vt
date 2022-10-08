@@ -48,11 +48,9 @@ def complete_config(config: Bunch, args: argparse.Namespace) -> Bunch:
     config.n_clusters = args.n_clusters
     config.pos_enc = args.positional_encoding
     config.tstcc_training_mode = args.tstcc_training_mode
-
     config.device = 'cuda:0' if torch.cuda.is_available() else 'cpu'
-    config.context_count = 3 if config.context_bmi and config.context_age and config.context_center else 1
-    config.context_count_size = config.context_count if config.context else 0 
 
+    # dataset-specific configs
     if config.dataset == 'furst':
         config.classlabel = 'cancer'
         config.ts_length = 20
@@ -60,6 +58,9 @@ def complete_config(config: Bunch, args: argparse.Namespace) -> Bunch:
         config.classlabel = 'pros_cancer'
         config.ts_length = 6
 
+    # context configs
+    config.context_count = 3 if config.context_bmi and config.context_age and config.context_center else 1
+    config.context_count_size = config.context_count if config.context else 0 
     if config.context:
         if config.context_age and config.context_bmi and config.context_center:
             config.con_str = "all"
@@ -74,6 +75,8 @@ def complete_config(config: Bunch, args: argparse.Namespace) -> Bunch:
             pass
     else:
         config.con_str = "f"
+    
+    # model save dir
     config.tstcc_model_saved_dir = os.path.join(config.tstcc_model_dir, config.pos_enc, config.con_str, args.tstcc_last_dir)
 
     return config
