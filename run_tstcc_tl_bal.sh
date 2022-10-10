@@ -57,7 +57,7 @@ python3 main.py -c configs/config_c_c_bal.json -exp ts_tcc -n_clusters 3 -pos_en
 python3 main.py -c configs/config_c_f_bal.json -exp ts_tcc -n_clusters 3 -pos_enc learnable_pos_enc -tstcc_tm train_linear -tstcc_dir '22-10-07_16-17-23' 
 python3 main.py -c configs/config_c_all_bal.json -exp ts_tcc -n_clusters 3 -pos_enc learnable_pos_enc -tstcc_tm train_linear -tstcc_dir '22-10-07_16-18-22' 
 python3 main.py -c configs/config_c_a_bal.json -exp ts_tcc -n_clusters 3 -pos_enc learnable_pos_enc -tstcc_tm train_linear -tstcc_dir '22-10-07_16-19-23' 
-python3 main.py -c configs/config_c_b_bal.json -exp ts_tcc -n_clusters 3 -pos_enc learnable_pos_enc -tstcc_tm train_linear -tstcc_dir '22-10-07_16-20-26' 
+python3 main.py -c configs/config_c_b_bal.json -exp ts_tcc -n_clusters 3 -pos_enc learnable_pos_enc -tstcc_tm train_linear -tstcc_dir '22-10-07_16-20-26'
 python3 main.py -c configs/config_c_c_bal.json -exp ts_tcc -n_clusters 3 -pos_enc learnable_pos_enc -tstcc_tm train_linear -tstcc_dir '22-10-07_16-21-27' 
 	
 
