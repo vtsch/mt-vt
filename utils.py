@@ -77,7 +77,10 @@ def complete_config(config: Bunch, args: argparse.Namespace) -> Bunch:
         config.con_str = "f"
     
     # model save dir
-    config.tstcc_model_saved_dir = os.path.join(config.tstcc_model_dir, config.pos_enc, config.con_str, args.tstcc_last_dir)
+    if config.upsample:
+        config.tstcc_model_saved_dir = os.path.join(config.tstcc_model_dir, config.pos_enc, config.con_str, "bal", args.tstcc_last_dir)
+    else:
+        config.tstcc_model_saved_dir = os.path.join(config.tstcc_model_dir, config.pos_enc, config.con_str, args.tstcc_last_dir)
 
     return config
 
