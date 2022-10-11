@@ -1,11 +1,13 @@
 import torch
 from torch import nn
+from bunch import Bunch
+from typing import Tuple
 
 class TSTCCbase_Model(nn.Module):
-    def __init__(self, config):
+    def __init__(self, config: Bunch) -> None:
         '''
         Initialize the model
-        Parameters:
+        Args:
             config: the configuration of the model
         '''
         super(TSTCCbase_Model, self).__init__()
@@ -37,10 +39,10 @@ class TSTCCbase_Model(nn.Module):
         self.logits_supervised = nn.Linear(model_output_dim * config.emb_size, config.n_clusters_real)
         self.logits = nn.Linear(model_output_dim * config.emb_size, config.ts_length) # as we learn representations, output in ts_length not n_classes
 
-    def forward(self, x_in):
+    def forward(self, x_in: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
         '''
         Forward pass of the model.
-        Parameters:
+        Args:
             x_in: the input to the model, (batch_size, ts_length) should be (batch_size, n_features, ts_length) for conv, if augment before is already correct
         Returns:
             logits: the classifier output of the model, (batch_size, n_clusters)
