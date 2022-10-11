@@ -41,7 +41,8 @@ def main():
         file_name = "data/psadata_furst.csv"
     else:
         raise ValueError("Dataset not found")
-    df_psa = load_psa_data_to_pd(file_name, config)
+    df_psa_orig, df_psa_u = load_psa_data_to_pd(file_name, config)
+    df_psa = df_psa_u, df_psa_orig
 
     # run kmeans on raw data
     if config.experiment_name == "raw_data":
@@ -175,11 +176,13 @@ def main():
                 outs = trainer.model_evaluate('test')
                 _, _, pred_labels, true_labels, _ = outs
                 calculate_clustering_scores(config, true_labels.astype(int), pred_labels.astype(int), experiment)
+                plot_all_representations(config, embeddings, true_labels.astype(int), experiment)
             else:
                 outs = trainer.model_evaluate('test')
                 _, _, _, true_labels, embeddings = outs
                 kmeans_labels = run_kmeans_and_plots(config, embeddings, true_labels, experiment)
                 calculate_clustering_scores(config, true_labels.astype(int), kmeans_labels.astype(int), experiment)
+                plot_all_representations(config, embeddings, true_labels.astype(int), experiment)
 
     # calculate F1 score for all combination of labels
     if config.n_clusters > 2 and config.tstcc_training_mode != "self_supervised":

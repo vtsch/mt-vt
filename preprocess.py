@@ -15,7 +15,7 @@ def upsample_data(df: pd.DataFrame, config: Bunch) -> pd.DataFrame:
     upsampled_data = pd.DataFrame()
     #select sample_size samples from each class
     for i in range(config.n_clusters_real):
-        upsampled_data = pd.concat([upsampled_data, df.loc[df['pros_cancer'] == i].sample(n=config.sample_size, replace=True)])
+        upsampled_data = pd.concat([upsampled_data, df.loc[df[config.classlabel] == i].sample(n=config.sample_size, replace=True)])
     #shuffle rows of df and remove index column
     upsampled_data = upsampled_data.sample(frac=1)
     upsampled_data = upsampled_data.reset_index(drop=True)  
@@ -192,8 +192,7 @@ def load_psa_data_to_pd(file_name: str, config: dict) -> pd.DataFrame:
     else:
         print("No context data available")
 
-    if config.upsample:
-        df = upsample_data(df, config)
+
 
     # final cleanup for models
     if config.dataset == "plco":
@@ -202,7 +201,7 @@ def load_psa_data_to_pd(file_name: str, config: dict) -> pd.DataFrame:
             df.dropna(axis=0, inplace=True)
         df.drop(['plco_id'], axis=1, inplace=True)
         #fill nan values with -1
-        df.fillna(-1, inplace=True)
+        df.fillna(0, inplace=True)
 
     elif config.dataset == "furst":
         df.drop(['ss_number_id'], axis=1, inplace=True)
@@ -215,8 +214,12 @@ def load_psa_data_to_pd(file_name: str, config: dict) -> pd.DataFrame:
     else:
         raise ValueError("Dataset not supported")
     
-    # print class distribution
-    print("class distribution:\n", df[config.classlabel].value_counts())
+    if config.upsample:
+        df_u = upsample_data(df, config)
+        print("class distribution upsampeled:\n", df_u[config.classlabel].value_counts())
+    else:
+        df_u = df
+        print("class distribution:\n", df[config.classlabel].value_counts())
 
-    return df
+    return df, df_u
 
