@@ -27,18 +27,34 @@ class Trainer:
         self.net = net.to(config.device)
         self.config = config
         self.experiment = experiment
+        self.df_psa_u, self.df_psa_orig = data
+        self.data = self.df_psa_u if self.config.upsample else self.df_psa_orig
         self.criterion = torch.nn.MSELoss(reduction='sum')
         self.optimizer = Adam(self.net.parameters(), lr=config.lr, betas=(0.9, 0.99), weight_decay=3e-4)
         self.scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(self.optimizer, 'min')
         self.best_loss = float('inf')
         self.phases = ['train', 'val', 'test']
         self.dataloaders = {
-            phase: get_dataloader(config, data, phase) for phase in self.phases
+            phase: get_dataloader(config, self.data, phase) for phase in self.phases
+        }
+        self.dataloaders_orig = {
+             phase: get_dataloader(config, self.df_psa_orig, phase) for phase in self.phases
         }
         self.attention_masks = generate_square_subsequent_mask(self.config)
         self.clf = KNeighborsClassifier(n_neighbors=1)
     
-    def _add_posenc_and_context(self, data, tsindex, context):
+    def _add_posenc_and_context_and_predict(self, data: pd.DataFrame, tsindex: pd.DataFrame, context: pd.DataFrame) -> Tuple[torch.Tensor, torch.Tensor]:
+        '''
+        Add positional encoding and context to PSA data
+        Run net and predcit
+        Args:
+            data: PSA data
+            tsindex: time index / positional encoding
+            context: context vector
+        Returns:
+            pred: predictions
+            data: data with positional encoding and context
+        '''
         if self.config.experiment_name != "simple_transformer":
             data = positional_encoding(self.config, data, tsindex)
             if self.config.context:
@@ -71,7 +87,7 @@ class Trainer:
 
         for i, (data, label, tsindex, context) in enumerate(self.dataloaders[phase]):
 
-            pred, data = self._add_posenc_and_context(data, tsindex, context)
+            pred, data = self._add_posenc_and_context_and_predict(data, tsindex, context)
  
             #print("pred shape for loss: ", pred.shape) 
             #print("data shape for loss: ", data.shape)
@@ -137,8 +153,8 @@ class Trainer:
 
         with torch.no_grad():
 
-            for i, (data, label, tsindex, context) in enumerate(self.dataloaders['test']):
-                pred, _ = self._add_posenc_and_context(data, tsindex, context)
+            for i, (data, label, tsindex, context) in enumerate(self.dataloaders_orig['test']):
+                pred, _ = self._add_posenc_and_context_and_predict(data, tsindex, context)
                 embeddings = np.append(embeddings, pred.detach().numpy() )
                 labels = np.append(labels, label.detach().numpy())  #always +bs
             

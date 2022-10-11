@@ -30,6 +30,8 @@ class TSTCCTrainer:
         self.net = net.to(config.device)
         self.config = config
         self.experiment = experiment
+        self.df_psa_u, self.df_psa_orig = data
+        self.data = self.df_psa_u if self.config.upsample else self.df_psa_orig
         self.criterion = torch.nn.CrossEntropyLoss() if self.config.tstcc_training_mode == 'supervised' else torch.nn.MSELoss()
         self.optimizer = Adam(self.net.parameters(), lr=config.lr, betas=(0.9, 0.99), weight_decay=3e-4)
         self.scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(self.optimizer, 'min')
@@ -37,7 +39,8 @@ class TSTCCTrainer:
         self.attention_masks = generate_square_subsequent_mask(self.config)
         self.temporal_contr_model = TC(config).to(config.device)
         self.temp_cont_optimizer = Adam(self.temporal_contr_model.parameters(), lr=config.lr, betas=(0.9, 0.99), weight_decay=3e-4)
-        self.tstcc_train_dl, self.tstcc_valid_dl, self.tstcc_test_dl = data_generator_tstcc(data, config)
+        self.tstcc_train_dl, self.tstcc_valid_dl, self.tstcc_test_dl = data_generator_tstcc(self.data, config)
+        _, _, self.tstcc_test_dl_orig = data_generator_tstcc(self.df_psa_orig, config)
         self.clf = KNeighborsClassifier(n_neighbors=1)
     
     def run(self) -> None:
@@ -159,7 +162,7 @@ class TSTCCTrainer:
         true_labels = np.array([])
         embeddings = np.array([])
 
-        tstcc_dl = self.tstcc_valid_dl if phase == 'val' else self.tstcc_test_dl
+        tstcc_dl = self.tstcc_valid_dl if phase == 'val' else self.tstcc_test_dl_orig
 
         with torch.no_grad():
             for batch_idx, (psa_data, label, _, _, tsindex, context) in enumerate(tstcc_dl):
