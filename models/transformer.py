@@ -2,16 +2,24 @@ import torch
 import torch.nn.functional as F
 import torch.nn as nn
 import numpy as np
+from bunch import Bunch
 from typing import Optional, Any
 import math
 from torch import long, nn, Tensor
 from torch.nn.modules import MultiheadAttention, Linear, Dropout, BatchNorm1d, TransformerEncoderLayer
 from pos_enc import positional_encoding
+import pandas as pd
 
 # from https://github.com/gzerveas/mvts_transformer 
 
-def generate_square_subsequent_mask(config):
-    # Used to mask padded positions: creates a (batch_size, max_len) boolean mask from a tensor of sequence lengths, where 1 means keep element at this position (time step)
+def generate_square_subsequent_mask(config: Bunch) -> torch.Tensor:
+    '''
+    Generate mask for transformer. Used to mask padded positions: creates a (batch_size, max_len) boolean mask from a tensor of sequence lengths, where 1 means keep element at this position (time step) and 0 means mask it.
+    Args:
+        config: config file
+    Returns:
+        mask: mask
+    '''
     mask = torch.arange(0, config.ts_length).repeat(config.batch_size, 1)
     if config.context:
         mask = torch.cat((mask, torch.ones(config.batch_size, config.context_count)), 1)
@@ -25,19 +33,18 @@ def _get_activation_fn(activation):
         return F.gelu
     raise ValueError("activation should be relu/gelu, not {}".format(activation))
 
-class TransformerBatchNormEncoderLayer(nn.modules.Module):
-    r"""This transformer encoder layer block is made up of self-attn and feedforward network.
-    It differs from TransformerEncoderLayer in torch/nn/modules/transformer.py in that it replaces LayerNorm
-    with BatchNorm.
-    Args:
-        d_model: the number of expected features in the input (required).
-        nhead: the number of heads in the multiheadattention models (required).
-        dim_feedforward: the dimension of the feedforward network model (default=2048).
-        dropout: the dropout value (default=0.1).
-        activation: the activation function of intermediate layer, relu or gelu (default=relu).
-    """
 
-    def __init__(self, d_model, nhead, dim_feedforward=128, dropout=0.1, activation="relu"):
+class TransformerBatchNormEncoderLayer(nn.modules.Module):
+    def __init__(self, d_model, nhead, dim_feedforward=128, dropout=0.1, activation="relu") -> None:
+        '''
+        This transformer encoder layer block is made up of self-attn and feedforward network.
+        Args:
+            d_model: the number of expected features in the input (required).
+            nhead: the number of heads in the multiheadattention models (required).
+            dim_feedforward: the dimension of the feedforward network model (default=2048).
+            dropout: the dropout value (default=0.1).
+            activation: the activation function of intermediate layer, relu or gelu (default=relu).
+        '''
         super(TransformerBatchNormEncoderLayer, self).__init__()
         self.self_attn = MultiheadAttention(d_model, nhead, dropout=dropout)
         # Implementation of Feedforward model
@@ -59,14 +66,15 @@ class TransformerBatchNormEncoderLayer(nn.modules.Module):
 
     def forward(self, src: Tensor, src_mask: Optional[Tensor] = None,
                 src_key_padding_mask: Optional[Tensor] = None) -> Tensor:
-        r"""Pass the input through the encoder layer.
+        '''
+        Pass the input through the encoder layer.
         Args:
             src: the sequence to the encoder layer (required).
             src_mask: the mask for the src sequence (optional).
             src_key_padding_mask: the mask for the src keys per batch (optional).
-        Shape:
-            see the docs in Transformer class.
-        """
+        Returns:
+            src: the output of the encoder layer
+        '''
         src2 = self.self_attn(src, src, src, attn_mask=src_mask,
                               key_padding_mask=src_key_padding_mask)[0]
         src = src + self.dropout1(src2)  # (seq_len, batch_size, d_model)
@@ -84,7 +92,13 @@ class TransformerBatchNormEncoderLayer(nn.modules.Module):
 
 class TSTransformerEncoder(nn.Module):
 
-    def __init__(self, config, activation='gelu'):
+    def __init__(self, config, activation='relu') -> None:
+        '''
+        Initialize the TST transformer encoder.
+        Args:
+            config: the config file
+            activation: the activation function of intermediate layer, relu or gelu (default=relu).
+        '''
         super(TSTransformerEncoder, self).__init__()
 
         self.config = config
@@ -102,14 +116,14 @@ class TSTransformerEncoder(nn.Module):
         self.dropout = nn.Dropout(self.config.dropout)
         self.max_pool = nn.MaxPool1d(kernel_size=self.config.ts_length)
 
-    def forward(self, indices, data, context, attention_masks):
-        """
+    def forward(self, indices: pd.DataFrame, data: pd.DataFrame, context: pd.DataFrame, attention_masks: torch.Tensor) -> torch.Tensor:
+        '''
         Args:
             X: (batch_size, seq_length, 1) torch tensor of masked features (input)
             padding_masks: (batch_size, seq_length) boolean tensor, 1 means keep vector at this position, 0 means padding
         Returns:
             output: (batch_size, ts_length + context_dim)
-        """
+        '''
         # add positional encoding
         inp = positional_encoding(self.config, data, indices)  # # (ts_length, batch_size, d_model)
 
@@ -124,7 +138,6 @@ class TSTransformerEncoder(nn.Module):
         
         # permute because pytorch convention for transformers is [ts_length, batch_size, feat_dim=1]
         inp = inp.permute(2, 0, 1)
-
         inp = self.project_inp(inp) * math.sqrt(self.config.emb_size)  # [ts_length, batch_size, d_model] project input vectors to d_model dimensional space
         
         # NOTE: logic for padding masks is reversed to comply with definition in MultiHeadAttention, TransformerEncoderLayer
