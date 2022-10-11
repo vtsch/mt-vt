@@ -26,7 +26,7 @@ def plot_representations_of_cluster(config: Bunch, data: np.ndarray, labels: np.
     #plot data points with label = cluster_id
     for i in range(datapoints.shape[0]):
         plt.plot(datapoints[i], c=label_color_map[cluster_id])
-        plt.ylim(-2,10)
+        plt.ylim(0,2)
     plt.title(title1)
     plt.legend(labels=[cluster_id], loc='upper left', title="Clusters")
     experiment.log_figure(figure=fig1, figure_name=title1)
@@ -36,7 +36,7 @@ def plot_representations_of_cluster(config: Bunch, data: np.ndarray, labels: np.
     fig2 = plt.figure(title2)
     # create boxplot of datapoints of cluster_id for each timestep
     plt.boxplot(datapoints, widths=0.6, patch_artist=True, boxprops=dict(facecolor=label_color_map[cluster_id]))
-    plt.ylim(-2,10)
+    plt.ylim(0,2)
     plt.title(title2)
     plt.legend(labels=[cluster_id], loc='upper left', title="Clusters")
     experiment.log_figure(figure=fig2, figure_name=title2)
@@ -59,7 +59,7 @@ def plot_all_representations(config: Bunch, data: np.ndarray, labels: np.ndarray
     for i in range(len(data)):
         #plot data points with different colors for each cluster
         plt.plot(data[i], c=label_color_map[labels[i]])
-        plt.ylim(-2,10)
+        plt.ylim(0,2)
     plt.title(title)
     plt.legend(['%d' %i for i in range(np.unique(labels).shape[0])], loc='upper left', title="Clusters")
     experiment.log_figure(figure=fig0, figure_name=title)
@@ -81,6 +81,7 @@ def plot_centroids(config: Bunch, centroids: np.ndarray, experiment) -> None:
     for i in range(config.n_clusters):
         plt.plot(centroids[i])
     plt.title(title)
+    plt.ylim(0,2)
     plt.legend(['%d' %i for i in range(config.n_clusters)], loc='upper left', title="Clusters")
     experiment.log_figure(figure=plt, figure_name=title)
     plt.savefig(os.path.join(config.model_save_path, "%s.png" %title))
