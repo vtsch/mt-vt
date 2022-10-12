@@ -86,7 +86,7 @@ class LoadPSADataset(Dataset):
             X_np = np.array(X)
             X_np = X_np.reshape(X_np.shape[0], 1, X_np.shape[1]) # make sure the Channels in second dim
             X_np = torch.from_numpy(X_np)
-            self.aug1, self.aug2 = DataTransform(X_np, config)
+            self.aug1, self.aug2 = DataTransform(X_np)
 
     def __getitem__(self, index: pd.DataFrame) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
         '''
