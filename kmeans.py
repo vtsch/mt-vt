@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from plots import plot_centroids, plot_all_representations, run_umap
 
+
 def kmeans(data: np.ndarray, config: Bunch) -> Tuple[np.ndarray, np.ndarray]:
     '''
     Perform TS KMeans clustering on the data with the specified metric
@@ -18,10 +19,12 @@ def kmeans(data: np.ndarray, config: Bunch) -> Tuple[np.ndarray, np.ndarray]:
     '''
     # tskmeans takes data of shape (n_ts, sz, d)
     data = data.reshape(data.shape[0], data.shape[1], 1)
-    kmeans = TimeSeriesKMeans(n_clusters=config.n_clusters, metric=config.kmeans_metric, max_iter=10, random_state=0, n_init=5).fit(data)
+    kmeans = TimeSeriesKMeans(n_clusters=config.n_clusters, metric=config.kmeans_metric,
+                              max_iter=10, random_state=0, n_init=5).fit(data)
     labels = kmeans.predict(data)
     centroids = kmeans.cluster_centers_
     return centroids, labels
+
 
 def run_kmeans_and_plots(config: Bunch, embeddings: np.ndarray, true_labels: np.ndarray, experiment) -> np.ndarray:
     '''

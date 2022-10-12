@@ -9,6 +9,7 @@ from sklearn.neighbors import KNeighborsClassifier
 
 # --- metrics for training ---
 
+
 class Meter:
     def __init__(self):
         self.metrics = {}
@@ -25,9 +26,9 @@ class Meter:
         x = x.detach().cpu().numpy()
         y = y.detach().cpu().numpy()
         self.metrics[phase + '_loss'] += loss
-        self.metrics[phase + '_mse'] += mean_squared_error(x,y)
-        self.metrics[phase + '_mae'] += mean_absolute_error(x,y)
-    
+        self.metrics[phase + '_mse'] += mean_squared_error(x, y)
+        self.metrics[phase + '_mae'] += mean_absolute_error(x, y)
+
     def init_metrics(self, phase: str) -> None:
         '''
         Initialize metrics for a phase
@@ -37,14 +38,14 @@ class Meter:
         self.metrics[phase + '_loss'] = 0
         self.metrics[phase + '_mse'] = 0
         self.metrics[phase + '_mae'] = 0
-        
+
     def get_metrics(self) -> dict:
         '''
         Get metrics
         Returns:
             metrics: dict of metrics
         '''
-        return self.metrics    
+        return self.metrics
 
 
 # --- metrics for clustering evaluation ---
@@ -68,10 +69,13 @@ def calculate_clustering_scores(config: Bunch, y_true: np.ndarray, y_pred: np.nd
     print(cm)
     metrics_df = pd.DataFrame({'accuracy': [accuracy], 'ri': [ri], 'f1': [f1]})
     experiment.log_metrics(metrics_df)
-    experiment.log_confusion_matrix(y_true, y_pred, title = "Confusion Matrix")
+    experiment.log_confusion_matrix(y_true, y_pred, title="Confusion Matrix")
     # save metrics and confusion matrix to csv
-    metrics_df.to_csv(os.path.join(config.model_save_path, 'clustering_metrics.csv'))
-    np.savetxt(os.path.join(config.model_save_path, 'confusion_matrix.csv'), cm, delimiter=",")
+    metrics_df.to_csv(os.path.join(
+        config.model_save_path, 'clustering_metrics.csv'))
+    np.savetxt(os.path.join(config.model_save_path,
+               'confusion_matrix.csv'), cm, delimiter=",")
+
 
 def log_cluster_combinations(config: Bunch, true_labels: np.ndarray, kmeans_labels_old: np.ndarray, experiment) -> None:
     '''
@@ -84,7 +88,7 @@ def log_cluster_combinations(config: Bunch, true_labels: np.ndarray, kmeans_labe
     '''
     if config.n_clusters == 3:
         kmeans_labels = kmeans_labels_old.copy()
-        kmeans_labels[kmeans_labels_old == 1] = 0  
+        kmeans_labels[kmeans_labels_old == 1] = 0
         kmeans_labels[kmeans_labels_old == 2] = 1
         f1_01 = f1_score(true_labels, kmeans_labels, average="weighted")
         cm_01 = confusion_matrix(true_labels, kmeans_labels)
@@ -103,18 +107,23 @@ def log_cluster_combinations(config: Bunch, true_labels: np.ndarray, kmeans_labe
         f1_scores = [f1_01, f1_02, f1_12]
         max_f1 = max(f1_scores)
         print('best F1 score: {:.3f}'.format(max_f1))
-        #log F1 scores and log best one
-        metrics_df = pd.DataFrame({'f1_01': [f1_01], 'f1_02': [f1_02], 'f1_12': [f1_12], 'f1_best': [max_f1]})
+        # log F1 scores and log best one
+        metrics_df = pd.DataFrame(
+            {'f1_01': [f1_01], 'f1_02': [f1_02], 'f1_12': [f1_12], 'f1_best': [max_f1]})
         experiment.log_metrics(metrics_df)
         # save metrics and confusion matrix to csv
-        metrics_df.to_csv(os.path.join(config.model_save_path, 'metrics_3clusters.csv'))
-        np.savetxt(os.path.join(config.model_save_path, 'confusion_matrix_01.csv'), cm_01, delimiter=",")
-        np.savetxt(os.path.join(config.model_save_path, 'confusion_matrix_02.csv'), cm_02, delimiter=",")
-        np.savetxt(os.path.join(config.model_save_path, 'confusion_matrix_12.csv'), cm_12, delimiter=",")
-    
+        metrics_df.to_csv(os.path.join(
+            config.model_save_path, 'metrics_3clusters.csv'))
+        np.savetxt(os.path.join(config.model_save_path,
+                   'confusion_matrix_01.csv'), cm_01, delimiter=",")
+        np.savetxt(os.path.join(config.model_save_path,
+                   'confusion_matrix_02.csv'), cm_02, delimiter=",")
+        np.savetxt(os.path.join(config.model_save_path,
+                   'confusion_matrix_12.csv'), cm_12, delimiter=",")
+
     elif config.n_clusters == 4:
         kmeans_labels = kmeans_labels_old.copy()
-        kmeans_labels[kmeans_labels_old == 1] = 0  
+        kmeans_labels[kmeans_labels_old == 1] = 0
         kmeans_labels[kmeans_labels_old == 2] = 0
         kmeans_labels[kmeans_labels_old == 3] = 1
         f1_012 = f1_score(true_labels, kmeans_labels, average="weighted")
@@ -122,13 +131,13 @@ def log_cluster_combinations(config: Bunch, true_labels: np.ndarray, kmeans_labe
 
         kmeans_labels = kmeans_labels_old.copy()
         kmeans_labels[kmeans_labels_old == 1] = 0
-        kmeans_labels[kmeans_labels_old == 2] = 1  
+        kmeans_labels[kmeans_labels_old == 2] = 1
         kmeans_labels[kmeans_labels_old == 3] = 0
         f1_013 = f1_score(true_labels, kmeans_labels, average="weighted")
         cm_013 = confusion_matrix(true_labels, kmeans_labels)
 
         kmeans_labels = kmeans_labels_old.copy()
-        kmeans_labels[kmeans_labels_old == 2] = 0  
+        kmeans_labels[kmeans_labels_old == 2] = 0
         kmeans_labels[kmeans_labels_old == 3] = 0
         f1_023 = f1_score(true_labels, kmeans_labels, average="weighted")
         cm_023 = confusion_matrix(true_labels, kmeans_labels)
@@ -144,18 +153,21 @@ def log_cluster_combinations(config: Bunch, true_labels: np.ndarray, kmeans_labe
         max_f1 = max(f1_scores)
         print('best F1 score: {:.3f}'.format(max_f1))
 
-        #log F1 scores and log best one
-        metrics_df = pd.DataFrame({'f1_012': [f1_012], 'f1_013': [f1_013], 'f1_023': [f1_023], 'f1_123': [f1_123], 'f1_best': [max_f1]})
+        # log F1 scores and log best one
+        metrics_df = pd.DataFrame({'f1_012': [f1_012], 'f1_013': [f1_013], 'f1_023': [
+                                  f1_023], 'f1_123': [f1_123], 'f1_best': [max_f1]})
         experiment.log_metrics(metrics_df)
         # save metrics and confusion matrix to csv
-        metrics_df.to_csv(os.path.join(config.model_save_path, 'metrics_4clusters.csv'))
-        np.savetxt(os.path.join(config.model_save_path, 'confusion_matrix_012.csv'), cm_012, delimiter=",")
-        np.savetxt(os.path.join(config.model_save_path, 'confusion_matrix_013.csv'), cm_013, delimiter=",")
-        np.savetxt(os.path.join(config.model_save_path, 'confusion_matrix_023.csv'), cm_023, delimiter=",")
-        np.savetxt(os.path.join(config.model_save_path, 'confusion_matrix_123.csv'), cm_123, delimiter=",")
-    
+        metrics_df.to_csv(os.path.join(
+            config.model_save_path, 'metrics_4clusters.csv'))
+        np.savetxt(os.path.join(config.model_save_path,
+                   'confusion_matrix_012.csv'), cm_012, delimiter=",")
+        np.savetxt(os.path.join(config.model_save_path,
+                   'confusion_matrix_013.csv'), cm_013, delimiter=",")
+        np.savetxt(os.path.join(config.model_save_path,
+                   'confusion_matrix_023.csv'), cm_023, delimiter=",")
+        np.savetxt(os.path.join(config.model_save_path,
+                   'confusion_matrix_123.csv'), cm_123, delimiter=",")
+
     else:
         print('No cluster combinations logged')
-
-
-    

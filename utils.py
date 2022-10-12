@@ -8,6 +8,7 @@ import torch
 from datetime import datetime
 from bunch import Bunch
 
+
 def get_args() -> argparse.Namespace:
     '''
     Get the configs from the command line
@@ -15,13 +16,20 @@ def get_args() -> argparse.Namespace:
         args: arguments 
     '''
     argparser = argparse.ArgumentParser()
-    argparser.add_argument("-c", "--config", help="Path to the config file", default="config.json")    
-    argparser.add_argument("-exp", "--experiment_name", help="model to run, options: raw_data, simple_ae, deep_ac, lstm, cnn, simple_transformer, ts_tc", default="cnn", type=str)
-    argparser.add_argument("-n_clusters", "--n_clusters", help="number of clusters to predict", default=2, type=int)
-    argparser.add_argument("-pos_enc", "--positional_encoding", help="positional encoding to use, options: none, absolute_days, delta_days, age_pos_enc, learnable_pos_enc", default="none", type=str)
-    argparser.add_argument("-tstcc_tm", "--tstcc_training_mode", help="training mode for TS-TCC, options: supervised, self_supervised, fine_tune, train_linear", default="supervised", type=str)
-    argparser.add_argument("-tstcc_dir", "--tstcc_last_dir", help="path to the saved TS-TCC model", default="", type=str)
+    argparser.add_argument(
+        "-c", "--config", help="Path to the config file", default="config.json")
+    argparser.add_argument("-exp", "--experiment_name",
+                           help="model to run, options: raw_data, simple_ae, deep_ac, lstm, cnn, simple_transformer, ts_tc", default="cnn", type=str)
+    argparser.add_argument("-n_clusters", "--n_clusters",
+                           help="number of clusters to predict", default=2, type=int)
+    argparser.add_argument("-pos_enc", "--positional_encoding",
+                           help="positional encoding to use, options: none, absolute_days, delta_days, age_pos_enc, learnable_pos_enc", default="none", type=str)
+    argparser.add_argument("-tstcc_tm", "--tstcc_training_mode",
+                           help="training mode for TS-TCC, options: supervised, self_supervised, fine_tune, train_linear", default="supervised", type=str)
+    argparser.add_argument("-tstcc_dir", "--tstcc_last_dir",
+                           help="path to the saved TS-TCC model", default="", type=str)
     return argparser.parse_args()
+
 
 def get_bunch_config_from_json(json_file_path: str) -> Bunch:
     '''
@@ -34,6 +42,7 @@ def get_bunch_config_from_json(json_file_path: str) -> Bunch:
     with open(json_file_path, "r") as config_file:
         config_dict = json.load(config_file)
     return Bunch(config_dict)
+
 
 def complete_config(config: Bunch, args: argparse.Namespace) -> Bunch:
     '''
@@ -60,7 +69,7 @@ def complete_config(config: Bunch, args: argparse.Namespace) -> Bunch:
 
     # context configs
     config.context_count = 3 if config.context_bmi and config.context_age and config.context_center else 1
-    config.context_count_size = config.context_count if config.context else 0 
+    config.context_count_size = config.context_count if config.context else 0
     if config.context:
         if config.context_age and config.context_bmi and config.context_center:
             config.con_str = "all"
@@ -75,14 +84,17 @@ def complete_config(config: Bunch, args: argparse.Namespace) -> Bunch:
             pass
     else:
         config.con_str = "f"
-    
+
     # model save dir
     if config.upsample:
-        config.tstcc_model_saved_dir = os.path.join(config.tstcc_model_dir, config.pos_enc, config.con_str, "bal", args.tstcc_last_dir)
+        config.tstcc_model_saved_dir = os.path.join(
+            config.tstcc_model_dir, config.pos_enc, config.con_str, "bal", args.tstcc_last_dir)
     else:
-        config.tstcc_model_saved_dir = os.path.join(config.tstcc_model_dir, config.pos_enc, config.con_str, args.tstcc_last_dir)
+        config.tstcc_model_saved_dir = os.path.join(
+            config.tstcc_model_dir, config.pos_enc, config.con_str, args.tstcc_last_dir)
 
     return config
+
 
 def build_save_path(config: Bunch) -> str:
     '''
@@ -94,13 +106,15 @@ def build_save_path(config: Bunch) -> str:
     '''
     current_timestamp = datetime.now().strftime("%y-%m-%d_%H-%M-%S")
 
-    path1 = os.path.join(config.model_save_dir, config.experiment_name, config.tstcc_training_mode, config.pos_enc, config.con_str)
+    path1 = os.path.join(config.model_save_dir, config.experiment_name,
+                         config.tstcc_training_mode, config.pos_enc, config.con_str)
     if config.upsample:
         path2 = os.path.join(path1, "bal")
     else:
         path2 = path1
-    path = os.path.join(path2, current_timestamp)    
+    path = os.path.join(path2, current_timestamp)
     return path
+
 
 def build_comet_logger(config: Bunch) -> Experiment:
     '''
@@ -120,6 +134,8 @@ def build_comet_logger(config: Bunch) -> Experiment:
     return experiment
 
 # for TS-TCC
+
+
 def set_required_grad(model, dict_, requires_grad=True) -> None:
     '''
     Set the requires_grad attribute of the parameters in the model

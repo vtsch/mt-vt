@@ -8,6 +8,7 @@ from torch.utils.data import Dataset, DataLoader
 from preprocess import normalize
 from sklearn.model_selection import train_test_split
 
+
 class LoadPSADataset(Dataset):
     '''
     Parameters:
@@ -16,6 +17,7 @@ class LoadPSADataset(Dataset):
     Returns:
         dataset
     '''
+
     def __init__(self, config: Bunch, data: pd.DataFrame) -> None:
         '''
         Initialize dataset
@@ -31,32 +33,40 @@ class LoadPSADataset(Dataset):
 
         # data columns of PLCO dataset
         if config.dataset == "plco":
-            X = data[['psa_level0', 'psa_level1', 'psa_level2', 'psa_level3', 'psa_level4', 'psa_level5']]
+            X = data[['psa_level0', 'psa_level1', 'psa_level2',
+                      'psa_level3', 'psa_level4', 'psa_level5']]
 
             if self.config.pos_enc == "absolute_days":
-                ts = data[['psa_days0', 'psa_days1', 'psa_days2', 'psa_days3', 'psa_days4', 'psa_days5']]
+                ts = data[['psa_days0', 'psa_days1', 'psa_days2',
+                           'psa_days3', 'psa_days4', 'psa_days5']]
             elif self.config.pos_enc == "delta_days":
-                ts = data[['psa_delta0', 'psa_delta1', 'psa_delta2','psa_delta3', 'psa_delta4', 'psa_delta5']]
+                ts = data[['psa_delta0', 'psa_delta1', 'psa_delta2',
+                           'psa_delta3', 'psa_delta4', 'psa_delta5']]
             elif self.config.pos_enc == "age_pos_enc":
-                ts = data[['psa_age0', 'psa_age1', 'psa_age2', 'psa_age3', 'psa_age4', 'psa_age5']]
+                ts = data[['psa_age0', 'psa_age1', 'psa_age2',
+                           'psa_age3', 'psa_age4', 'psa_age5']]
             else:
                 ts = pd.DataFrame(np.zeros((len(data), 6)))
         # data columns of Furst dataset
         elif config.dataset == "furst":
-            X = data[['psa_0', 'psa_1', 'psa_2','psa_3', 'psa_4', 'psa_5', 'psa_6', 'psa_7', 'psa_8', 'psa_9', 'psa_10', 'psa_11', 'psa_12','psa_13', 'psa_14', 'psa_15', 'psa_16', 'psa_17', 'psa_18', 'psa_19']]
+            X = data[['psa_0', 'psa_1', 'psa_2', 'psa_3', 'psa_4', 'psa_5', 'psa_6', 'psa_7', 'psa_8', 'psa_9',
+                      'psa_10', 'psa_11', 'psa_12', 'psa_13', 'psa_14', 'psa_15', 'psa_16', 'psa_17', 'psa_18', 'psa_19']]
 
             if self.config.pos_enc == "absolute_days":
-                ts = data[['psa_absolute0', 'psa_absolute1', 'psa_absolute2','psa_absolute3', 'psa_absolute4', 'psa_absolute5', 'psa_absolute6', 'psa_absolute7', 'psa_absolute8', 'psa_absolute9', 'psa_absolute10', 'psa_absolute11', 'psa_absolute12','psa_absolute13', 'psa_absolute14', 'psa_absolute15', 'psa_absolute16', 'psa_absolute17', 'psa_absolute18', 'psa_absolute19']]
+                ts = data[['psa_absolute0', 'psa_absolute1', 'psa_absolute2', 'psa_absolute3', 'psa_absolute4', 'psa_absolute5', 'psa_absolute6', 'psa_absolute7', 'psa_absolute8', 'psa_absolute9',
+                           'psa_absolute10', 'psa_absolute11', 'psa_absolute12', 'psa_absolute13', 'psa_absolute14', 'psa_absolute15', 'psa_absolute16', 'psa_absolute17', 'psa_absolute18', 'psa_absolute19']]
             elif self.config.pos_enc == "delta_days":
-                ts = data[['psa_delta0', 'psa_delta1', 'psa_delta2','psa_delta3', 'psa_delta4', 'psa_delta5', 'psa_delta6', 'psa_delta7', 'psa_delta8', 'psa_delta9', 'psa_delta10', 'psa_delta11', 'psa_delta12','psa_delta13', 'psa_delta14', 'psa_delta15', 'psa_delta16', 'psa_delta17', 'psa_delta18', 'psa_delta19']]
+                ts = data[['psa_delta0', 'psa_delta1', 'psa_delta2', 'psa_delta3', 'psa_delta4', 'psa_delta5', 'psa_delta6', 'psa_delta7', 'psa_delta8', 'psa_delta9',
+                           'psa_delta10', 'psa_delta11', 'psa_delta12', 'psa_delta13', 'psa_delta14', 'psa_delta15', 'psa_delta16', 'psa_delta17', 'psa_delta18', 'psa_delta19']]
 
             elif self.config.pos_enc == "age_pos_enc":
-                ts = data[['psa_age0', 'psa_age1', 'psa_age2','psa_age3', 'psa_age4', 'psa_age5', 'psa_age6', 'psa_age7', 'psa_age8', 'psa_age9', 'psa_age10', 'psa_age11', 'psa_age12','psa_age13', 'psa_age14', 'psa_age15', 'psa_age16', 'psa_age17', 'psa_age18', 'psa_age19']]
+                ts = data[['psa_age0', 'psa_age1', 'psa_age2', 'psa_age3', 'psa_age4', 'psa_age5', 'psa_age6', 'psa_age7', 'psa_age8', 'psa_age9',
+                           'psa_age10', 'psa_age11', 'psa_age12', 'psa_age13', 'psa_age14', 'psa_age15', 'psa_age16', 'psa_age17', 'psa_age18', 'psa_age19']]
             else:
                 ts = pd.DataFrame(np.zeros((len(data), 20)))
         else:
             raise ValueError("Dataset not supported")
-        
+
         # context data
         if self.config.context:
             #context = data[['bmi_curr', 'center', 'age', 'race7']]
@@ -66,7 +76,7 @@ class LoadPSADataset(Dataset):
             context_indices = [context_b, context_c, context_a]
             context_indices = [i for i in context_indices if i is not None]
             context = data[context_indices]
-        else: 
+        else:
             context = data[[]]
 
         if isinstance(X, np.ndarray):
@@ -82,9 +92,10 @@ class LoadPSADataset(Dataset):
 
         self.len = X.shape[0]
 
-        if self.config.experiment_name == "ts_tcc": 
+        if self.config.experiment_name == "ts_tcc":
             X_np = np.array(X)
-            X_np = X_np.reshape(X_np.shape[0], 1, X_np.shape[1]) # make sure the Channels in second dim
+            # make sure the Channels in second dim
+            X_np = X_np.reshape(X_np.shape[0], 1, X_np.shape[1])
             X_np = torch.from_numpy(X_np)
             self.aug1, self.aug2 = DataTransform(X_np)
 
@@ -100,8 +111,8 @@ class LoadPSADataset(Dataset):
             context: context data
 
             if ts_tcc additionally:
-                aug1: augmented data
-                aug2: augmented data
+                aug1: augmented data weak
+                aug2: augmented data strong
         '''
         target = np.array(self.y_data.loc[index])
         signal = self.x_data.loc[index].astype('float32')
@@ -127,6 +138,7 @@ class LoadPSADataset(Dataset):
         '''
         return self.len
 
+
 def generate_split(data: pd.DataFrame, config: Bunch) -> Tuple[pd.DataFrame, pd.DataFrame]:
     '''
     Generate train and test split
@@ -140,7 +152,8 @@ def generate_split(data: pd.DataFrame, config: Bunch) -> Tuple[pd.DataFrame, pd.
     train_df, test_df = train_test_split(
         data, test_size=0.2, random_state=42, stratify=data[config.classlabel]
     )
-    train_df, test_df = train_df.reset_index(drop=True), test_df.reset_index(drop=True)
+    train_df, test_df = train_df.reset_index(
+        drop=True), test_df.reset_index(drop=True)
     return train_df, test_df
 
 

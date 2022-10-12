@@ -14,6 +14,7 @@ from pos_enc import positional_encoding
 from sklearn.metrics import balanced_accuracy_score
 from sklearn.neighbors import KNeighborsClassifier
 
+
 class Trainer:
     def __init__(self, config: Bunch, experiment, data: pd.DataFrame, net: nn.Module):
         '''
@@ -30,19 +31,21 @@ class Trainer:
         self.df_psa_u, self.df_psa_orig = data
         self.data = self.df_psa_u if self.config.upsample else self.df_psa_orig
         self.criterion = torch.nn.MSELoss(reduction='sum')
-        self.optimizer = Adam(self.net.parameters(), lr=config.lr, betas=(0.9, 0.99), weight_decay=3e-4)
-        self.scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(self.optimizer, 'min')
+        self.optimizer = Adam(self.net.parameters(
+        ), lr=config.lr, betas=(0.9, 0.99), weight_decay=3e-4)
+        self.scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+            self.optimizer, 'min')
         self.best_loss = float('inf')
         self.phases = ['train', 'val', 'test']
         self.dataloaders = {
             phase: get_dataloader(config, self.data, phase) for phase in self.phases
         }
         self.dataloaders_orig = {
-             phase: get_dataloader(config, self.df_psa_orig, phase) for phase in self.phases
+            phase: get_dataloader(config, self.df_psa_orig, phase) for phase in self.phases
         }
         self.attention_masks = generate_square_subsequent_mask(self.config)
         self.clf = KNeighborsClassifier(n_neighbors=1)
-    
+
     def _add_posenc_and_context_and_predict(self, data: pd.DataFrame, tsindex: pd.DataFrame, context: pd.DataFrame) -> Tuple[torch.Tensor, torch.Tensor]:
         '''
         Add positional encoding and context to PSA data
@@ -64,12 +67,11 @@ class Trainer:
             pred = self.net(tsindex, data, context, self.attention_masks)
             if self.config.context:
                 data = torch.cat((data, context), dim=1)
-        else: 
+        else:
             pred = self.net(data)
 
         return pred, data
 
-    
     def _train_epoch(self, phase: str) -> Tuple[float, dict]:
         '''
         Train one epoch
@@ -87,9 +89,10 @@ class Trainer:
 
         for i, (data, label, tsindex, context) in enumerate(self.dataloaders[phase]):
 
-            pred, data = self._add_posenc_and_context_and_predict(data, tsindex, context)
- 
-            #print("pred shape for loss: ", pred.shape) 
+            pred, data = self._add_posenc_and_context_and_predict(
+                data, tsindex, context)
+
+            #print("pred shape for loss: ", pred.shape)
             #print("data shape for loss: ", data.shape)
             loss = self.criterion(pred, data)
 
@@ -97,30 +100,30 @@ class Trainer:
                 self.optimizer.zero_grad()
                 loss.backward()
                 self.optimizer.step()
-            
+
             if phase == 'val':
-                embeddings = np.append(embeddings, pred.detach().numpy() )
-                labels = np.append(labels, label.detach().numpy() )
+                embeddings = np.append(embeddings, pred.detach().numpy())
+                labels = np.append(labels, label.detach().numpy())
 
             meter.update(pred, data, phase, loss.item())
 
         metrics = meter.get_metrics()
-        metrics = {k:v / i for k, v in metrics.items()}  # i = nr of batches
+        metrics = {k: v / i for k, v in metrics.items()}  # i = nr of batches
         df_logs = pd.DataFrame([metrics])
 
         if phase == 'val':
             embeddings = embeddings.reshape(labels.shape[0], -1)
             self.clf.fit(embeddings, labels)
 
-        return loss, df_logs            
-    
+        return loss, df_logs
+
     def run(self) -> None:
         '''
         Run training
         '''
         for epoch in range(self.config.n_epochs):
-            print('Epoch: %d | time: %s' %(epoch, time.strftime('%H:%M:%S')))
-            
+            print('Epoch: %d | time: %s' % (epoch, time.strftime('%H:%M:%S')))
+
             train_loss, train_logs = self._train_epoch(phase='train')
             print(train_logs)
             self.experiment.log_metrics(dic=train_logs, step=epoch)
@@ -130,14 +133,14 @@ class Trainer:
                 print(val_logs)
                 self.experiment.log_metrics(dic=val_logs, step=epoch)
                 self.scheduler.step(val_loss)
-            
+
             if (val_loss + 0.001) < self.best_loss:
                 self.best_loss = val_loss
                 print('-- new checkpoint --')
                 self.best_loss = val_loss
-                #save best model 
-                torch.save(self.net.state_dict(), os.path.join(self.config.model_save_path, f"best_model_epoc{epoch}.pth"))
-
+                # save best model
+                torch.save(self.net.state_dict(), os.path.join(
+                    self.config.model_save_path, f"best_model_epoc{epoch}.pth"))
 
     def eval(self) -> Tuple[np.ndarray, np.ndarray, dict]:
         '''
@@ -154,18 +157,21 @@ class Trainer:
         with torch.no_grad():
 
             for i, (data, label, tsindex, context) in enumerate(self.dataloaders_orig['test']):
-                pred, _ = self._add_posenc_and_context_and_predict(data, tsindex, context)
-                embeddings = np.append(embeddings, pred.detach().numpy() )
-                labels = np.append(labels, label.detach().numpy())  #always +bs
-            
+                pred, _ = self._add_posenc_and_context_and_predict(
+                    data, tsindex, context)
+                embeddings = np.append(embeddings, pred.detach().numpy())
+                labels = np.append(
+                    labels, label.detach().numpy())  # always +bs
+
             embeddings = embeddings.reshape(labels.shape[0], -1)
-            
+
             # calculate representation accuracy with a 1NN classifier and log score
             nn_predictions = self.clf.predict(embeddings)
-            representation_score = balanced_accuracy_score(labels, nn_predictions)
+            representation_score = balanced_accuracy_score(
+                labels, nn_predictions)
             print(f"Representation Accuracy: {representation_score}")
             self.experiment.log_metric("rep_accuracy", representation_score)
-            np.savetxt(os.path.join(self.config.model_save_path, "rep_accuracy.txt"), np.array([representation_score]))
+            np.savetxt(os.path.join(self.config.model_save_path,
+                       "rep_accuracy.txt"), np.array([representation_score]))
 
         return labels, embeddings
-
