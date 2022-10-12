@@ -3,6 +3,7 @@ from torch import nn
 from bunch import Bunch
 from typing import Tuple
 
+
 class TSTCCbase_Model(nn.Module):
     def __init__(self, config: Bunch) -> None:
         '''
@@ -27,7 +28,8 @@ class TSTCCbase_Model(nn.Module):
         )
 
         self.conv_block3 = nn.Sequential(
-            nn.Conv1d(24, config.emb_size, kernel_size=2, stride=1, bias=False, padding=4),
+            nn.Conv1d(24, config.emb_size, kernel_size=2,
+                      stride=1, bias=False, padding=4),
             nn.BatchNorm1d(config.emb_size),
             nn.ReLU(),
             nn.MaxPool1d(kernel_size=2, stride=2, padding=1)
@@ -36,8 +38,11 @@ class TSTCCbase_Model(nn.Module):
         self.linear = nn.Linear(8, config.emb_size)
 
         model_output_dim = config.ts_length
-        self.logits_supervised = nn.Linear(model_output_dim * config.emb_size, config.n_clusters_real)
-        self.logits = nn.Linear(model_output_dim * config.emb_size, config.ts_length) # as we learn representations, output in ts_length not n_classes
+        self.logits_supervised = nn.Linear(
+            model_output_dim * config.emb_size, config.n_clusters_real)
+        # as we learn representations, output in ts_length not n_classes
+        self.logits = nn.Linear(
+            model_output_dim * config.emb_size, config.ts_length)
 
     def forward(self, x_in: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
         '''
@@ -48,9 +53,10 @@ class TSTCCbase_Model(nn.Module):
             logits: the classifier output of the model, (batch_size, n_clusters)
             x: the embedding output of the model, (batch_size, emb_size, ts_length)
         '''
-        x_in = x_in.float()   
+        x_in = x_in.float()
         if self.config.tstcc_training_mode != "self_supervised":
-            x_in = x_in.reshape(self.config.batch_size, 1, self.config.ts_length+self.config.context_count_size)
+            x_in = x_in.reshape(
+                self.config.batch_size, 1, self.config.ts_length+self.config.context_count_size)
 
         x = self.conv_block1(x_in)
         x = self.conv_block2(x)
@@ -60,7 +66,8 @@ class TSTCCbase_Model(nn.Module):
             x = self.linear(x)
 
         # classifier of encoded signals
-        x_flat = x.reshape(x.shape[0], -1) # (batch_size, emb_size * ts_length)
+        # (batch_size, emb_size * ts_length)
+        x_flat = x.reshape(x.shape[0], -1)
 
         if self.config.tstcc_training_mode == "supervised":
             logits = self.logits_supervised(x_flat)

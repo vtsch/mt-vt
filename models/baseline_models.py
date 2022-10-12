@@ -12,7 +12,8 @@ class SimpleAutoencoder(nn.Module):
             config: config file
         '''
         super(SimpleAutoencoder, self).__init__()
-        self.fc = nn.Linear(in_features=config.ts_length+config.context_count_size, out_features=config.ts_length+config.context_count_size)
+        self.fc = nn.Linear(in_features=config.ts_length+config.context_count_size,
+                            out_features=config.ts_length+config.context_count_size)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         '''
@@ -20,9 +21,11 @@ class SimpleAutoencoder(nn.Module):
         Args:
             x: the input to the model, (batch_size, ts_length+context_count_size)
         Returns:
-            x: the learned representation of the model, (batch_size, emb_size, ts_length+context_count_size)'''
+            x: the learned representation of the model, (batch_size, emb_size, ts_length+context_count_size)
+        '''
         x = self.fc(x)
         return x
+
 
 class DeepAutoencoder(nn.Module):
     def __init__(self, config: Bunch) -> None:
@@ -32,10 +35,12 @@ class DeepAutoencoder(nn.Module):
             config: config file
         '''
         super(DeepAutoencoder, self).__init__()
-        self.fc1 = nn.Linear(in_features=config.ts_length+config.context_count_size, out_features=96)
+        self.fc1 = nn.Linear(in_features=config.ts_length +
+                             config.context_count_size, out_features=96)
         self.fc2 = nn.Linear(in_features=96, out_features=48)
         self.fc3 = nn.Linear(in_features=48, out_features=24)
-        self.fc4 = nn.Linear(in_features=24, out_features=config.ts_length+config.context_count_size)
+        self.fc4 = nn.Linear(
+            in_features=24, out_features=config.ts_length+config.context_count_size)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         '''
@@ -50,6 +55,7 @@ class DeepAutoencoder(nn.Module):
         x = self.fc3(x)
         x = self.fc4(x)
         return x
+
 
 class CNN(nn.Module):
     # https://github.com/Wickstrom/MixupContrastiveLearning/blob/main/MixupContrastiveLearningExample.ipynb
@@ -91,6 +97,7 @@ class CNN(nn.Module):
 
 class LSTMencoder(nn.Module):
     ''' Encodes time-series sequence '''
+
     def __init__(self, config: Bunch) -> None:
         '''
         Encoder of the model
@@ -99,10 +106,9 @@ class LSTMencoder(nn.Module):
         '''
         super(LSTMencoder, self).__init__()
         self.config = config
-        self.lstm = nn.LSTM(input_size = 1, hidden_size = config.bl_hidden_size,
-                            num_layers = 2, batch_first = True, dropout = config.dropout)
+        self.lstm = nn.LSTM(input_size=1, hidden_size=config.bl_hidden_size,
+                            num_layers=2, batch_first=True, dropout=config.dropout)
         self.fc = nn.Linear(in_features=config.bl_hidden_size, out_features=1)
-        
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         '''
@@ -120,4 +126,3 @@ class LSTMencoder(nn.Module):
         emb = self.fc(lstm_out)
         emb = emb.reshape(emb.shape[0], -1)
         return emb
-    

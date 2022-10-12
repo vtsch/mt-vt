@@ -10,7 +10,8 @@ from torch.nn.modules import MultiheadAttention, Linear, Dropout, BatchNorm1d, T
 from pos_enc import positional_encoding
 import pandas as pd
 
-# from https://github.com/gzerveas/mvts_transformer 
+# from https://github.com/gzerveas/mvts_transformer
+
 
 def generate_square_subsequent_mask(config: Bunch) -> torch.Tensor:
     '''
@@ -22,16 +23,19 @@ def generate_square_subsequent_mask(config: Bunch) -> torch.Tensor:
     '''
     mask = torch.arange(0, config.ts_length).repeat(config.batch_size, 1)
     if config.context:
-        mask = torch.cat((mask, torch.ones(config.batch_size, config.context_count)), 1)
+        mask = torch.cat(
+            (mask, torch.ones(config.batch_size, config.context_count)), 1)
         mask = mask.int()
     return mask
+
 
 def _get_activation_fn(activation):
     if activation == "relu":
         return F.relu
     elif activation == "gelu":
         return F.gelu
-    raise ValueError("activation should be relu/gelu, not {}".format(activation))
+    raise ValueError(
+        "activation should be relu/gelu, not {}".format(activation))
 
 
 class TransformerBatchNormEncoderLayer(nn.modules.Module):
@@ -52,7 +56,8 @@ class TransformerBatchNormEncoderLayer(nn.modules.Module):
         self.dropout = Dropout(dropout)
         self.linear2 = Linear(dim_feedforward, d_model)
 
-        self.norm1 = BatchNorm1d(d_model, eps=1e-5)  # normalizes each feature across batch samples and time steps
+        # normalizes each feature across batch samples and time steps
+        self.norm1 = BatchNorm1d(d_model, eps=1e-5)
         self.norm2 = BatchNorm1d(d_model, eps=1e-5)
         self.dropout1 = Dropout(dropout)
         self.dropout2 = Dropout(dropout)
@@ -105,9 +110,11 @@ class TSTransformerEncoder(nn.Module):
 
         self.project_inp = nn.Linear(1, self.config.emb_size)
 
-        encoder_layer = TransformerBatchNormEncoderLayer(self.config.emb_size, self.config.n_heads, self.config.dim_feedforward, dropout=self.config.dropout, activation=activation) #use batch normalization
+        encoder_layer = TransformerBatchNormEncoderLayer(
+            self.config.emb_size, self.config.n_heads, self.config.dim_feedforward, dropout=self.config.dropout, activation=activation)  # use batch normalization
 
-        self.transformer_encoder = nn.TransformerEncoder(encoder_layer, self.config.num_layers)
+        self.transformer_encoder = nn.TransformerEncoder(
+            encoder_layer, self.config.num_layers)
 
         self.output_layer = nn.Linear(self.config.emb_size, 1)
 
@@ -125,29 +132,34 @@ class TSTransformerEncoder(nn.Module):
             output: (batch_size, ts_length + context_dim)
         '''
         # add positional encoding
-        inp = positional_encoding(self.config, data, indices)  # # (ts_length, batch_size, d_model)
+        # # (ts_length, batch_size, d_model)
+        inp = positional_encoding(self.config, data, indices)
 
         # adjust shapes for transformer
         inp = inp.unsqueeze(1)
         indices = indices.unsqueeze(1)
 
         if self.config.context:
-            #repeat context to match the shape of pos_enc_inp in dim 2
+            # repeat context to match the shape of pos_enc_inp in dim 2
             context = context.unsqueeze(1)
-            inp = torch.cat((inp, context), dim=2) # (bs, 1, ts_length + context_dim)
-        
+            # (bs, 1, ts_length + context_dim)
+            inp = torch.cat((inp, context), dim=2)
+
         # permute because pytorch convention for transformers is [ts_length, batch_size, feat_dim=1]
         inp = inp.permute(2, 0, 1)
-        inp = self.project_inp(inp) * math.sqrt(self.config.emb_size)  # [ts_length, batch_size, d_model] project input vectors to d_model dimensional space
-        
+        # [ts_length, batch_size, d_model] project input vectors to d_model dimensional space
+        inp = self.project_inp(inp) * math.sqrt(self.config.emb_size)
+
         # NOTE: logic for padding masks is reversed to comply with definition in MultiHeadAttention, TransformerEncoderLayer
-        output = self.transformer_encoder(inp, src_key_padding_mask=~attention_masks)  # (seq_length, batch_size, d_model)
-        output = self.act(output)  # the output transformer encoder/decoder embeddings don't include non-linearity  # (seq_length, batch_size, emb_size)
+        # (seq_length, batch_size, d_model)
+        output = self.transformer_encoder(
+            inp, src_key_padding_mask=~attention_masks)
+        # the output transformer encoder/decoder embeddings don't include non-linearity  # (seq_length, batch_size, emb_size)
+        output = self.act(output)
         output = output.permute(1, 0, 2)  # (batch_size, ts_length, d_model)
         output = self.dropout(output)
         # linear(d_model,feat_dim) vectorizes the operation over (ts_length, batch_size).
         output = self.output_layer(output)  # (batch_size, ts_length, 1)
-        output = output.reshape([output.shape[0], -1])  # (batch_size, ts_length + context_dim)
+        # (batch_size, ts_length + context_dim)
+        output = output.reshape([output.shape[0], -1])
         return output
-
-
