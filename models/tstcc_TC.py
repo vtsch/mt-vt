@@ -2,7 +2,10 @@ import torch
 import torch.nn as nn
 import numpy as np
 import torch.nn.functional as F
+from typing import Tuple
+from bunch import Bunch
 from einops import rearrange, repeat
+import pandas as pd
 
 
 ######################
@@ -10,23 +13,43 @@ from einops import rearrange, repeat
 ######################
 
 
-def DataTransform(sample, config):
-
+def DataTransform(sample: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+    '''
+    Data augmentations, from https://arxiv.org/pdf/1706.00527.pdf
+    Args:
+        sample: sample from the dataset (1 patient)
+    Returns:
+        sample: weak and strong augmentations of the sample
+    '''
     jitter_scale_ratio = 0.001
     jitter_ratio = 0.001
     weak_aug = scaling(sample, jitter_scale_ratio)
-    strong_aug = jitter(permutation(sample, max_segments=5), jitter_ratio)
+    strong_aug = jitter(permutation(sample, max_segments=3), jitter_ratio)
 
     return weak_aug, strong_aug
 
 
-def jitter(x, sigma=0.8):
-    # https://arxiv.org/pdf/1706.00527.pdf
+def jitter(x: np.ndarray, sigma=0.8) -> np.ndarray:
+    '''
+    for strong augmentation
+    Args:
+        x: sample from the dataset (1 patient)
+        sigma: scaling factor
+    Returns:
+        x: jittered sample
+    '''
     return x + np.random.normal(loc=0., scale=sigma, size=x.shape)
 
 
-def scaling(x, sigma=1.1):
-    # https://arxiv.org/pdf/1706.00527.pdf
+def scaling(x: np.ndarray, sigma=1.1) -> np.ndarray:
+    '''
+    for weak augmentation
+    Args:
+        x: sample from the dataset (1 patient)
+        sigma: scaling factor
+    Returns:
+        x: scaled sample
+    '''
     factor = np.random.normal(loc=2., scale=sigma, size=(x.shape[0], x.shape[2]))
     ai = []
     for i in range(x.shape[1]):
@@ -35,7 +58,16 @@ def scaling(x, sigma=1.1):
     return np.concatenate((ai), axis=1)
 
 
-def permutation(x, max_segments=3, seg_mode="random"):
+def permutation(x: np.ndarray, max_segments=3, seg_mode="random") -> np.ndarray:
+    '''
+    for strong augmentation
+    Args:
+        x: sample from the dataset (1 patient)
+        max_segments: maximum number of segments to permute
+        seg_mode: mode of segment selection, options: random, fixed
+    Returns:
+        x: permuted sample
+    '''
     orig_steps = np.arange(x.shape[2])
 
     num_segs = np.random.randint(1, max_segments, size=(x.shape[0]))
@@ -180,11 +212,16 @@ class Seq_Transformer(nn.Module):
 
 
 class TC(nn.Module):
-    def __init__(self, config):
+    def __init__(self, config: Bunch) -> None:
+        '''
+        Temporal Contrastive Learning Module
+        Args:
+            config: configs
+        '''
         super(TC, self).__init__()
         self.config = config
         self.num_channels = config.emb_size
-        self.timestep = 3 #config.ts_length --> want to split max. 3 times here
+        self.timestep = 3 # want to split max. 3 times here
         self.Wk = nn.ModuleList([nn.Linear(config.hidden_dim, self.num_channels) for i in range(self.timestep)])
         self.lsoftmax = nn.LogSoftmax(dim=1)
         self.device = config.device
@@ -196,17 +233,21 @@ class TC(nn.Module):
             nn.Linear(config.emb_size // 2, config.emb_size // 4),
         )
 
-        #self.seq_transformer = Seq_Transformer(patch_size=self.num_channels+config.context_count_size, dim=config.hidden_dim, depth=4, heads=4, mlp_dim=64)
         self.seq_transformer = Seq_Transformer(patch_size=self.num_channels, dim=config.hidden_dim, depth=4, heads=4, mlp_dim=64)
 
-    def forward(self, features_aug1, features_aug2, context):
-
-        #print("features_aug1", features_aug1.shape)
-
+    def forward(self, features_aug1: torch.Tensor, features_aug2: torch.Tensor, context: pd.DataFrame) -> torch.Tensor:
+        '''
+        Args:
+            features_aug1: (bs, seq_len, emb_size)
+            features_aug2: (bs, seq_len, emb_size)
+            context: (bs, context_count_size)
+        Returns:
+            loss: (bs, 1)
+            projection_head: (bs, emb_size // 4)
+        '''
         if self.config.context:
             context = context.unsqueeze(1)
             context = context.repeat(1, features_aug1.shape[1], 1)
-            #print("context", context.shape)
             features_aug1 = torch.cat((features_aug1, context), dim=2) # (batch_size, emb_size, seq_length + context_size)
             features_aug2 = torch.cat((features_aug2, context), dim=2) # (batch_size, emb_size, seq_length + context_size)
             #print("features_aug1 w c", features_aug1.shape)
