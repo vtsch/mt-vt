@@ -66,7 +66,7 @@ def main():
 
 
     # run embedding models and kmeans
-    if config.experiment_name == "simple_ac":
+    if config.experiment_name == "simple_ae":
         model = SimpleAutoencoder(config)
         summary(model, input_size=(1, config.ts_length))
         trainer = Trainer(config=config, experiment=experiment, data=df_psa, net=model)
@@ -76,15 +76,6 @@ def main():
         kmeans_labels = run_kmeans_and_plots(config, output, true_labels, experiment)
         calculate_clustering_scores(config, true_labels.astype(int), kmeans_labels, experiment)
 
-    if config.experiment_name == "deep_ac":
-        model = DeepAutoencoder(config)
-        summary(model, input_size=(1, config.ts_length))
-        trainer = Trainer(config=config, experiment=experiment, data=df_psa, net=model)
-        trainer.run()
-        true_labels, output = trainer.eval()
-
-        kmeans_labels = run_kmeans_and_plots(config, output, true_labels, experiment)
-        calculate_clustering_scores(config, true_labels.astype(int), kmeans_labels, experiment)
 
     if config.experiment_name == "lstm": 
         model = LSTMencoder(config)
