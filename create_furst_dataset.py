@@ -21,10 +21,10 @@ def reshape_psa_data_and_save():
     #print(df1.head(5))
 
     # delete all columns after column 20
-    df1 = df1.iloc[:, :21]
+    df1 = df1.iloc[:, :20]
 
     # split datapsa_i into date and measurement at empty space for all columns
-    for i in range(0, 20):
+    for i in range(0, 19):
             df1['date_' + str(i)] = [x[:10] for x in df1['datapsa_' + str(i)]]
             df1['psa_' + str(i)] = [x[10:] for x in df1['datapsa_' + str(i)]]
             #delete the old column
@@ -80,8 +80,6 @@ if __name__ == "__main__":
     # print("nr of rows after merge labels: ", len(df)) # 411'205
     # fill 0 for all patients without label
     df['npcc_risk_class_group_1'] = df['npcc_risk_class_group_1'].fillna(0)
-    df['npcc_risk_class_group_2'] = df['npcc_risk_class_group_2'].fillna(0)
-    df['npcc_risk_class_group_3'] = df['npcc_risk_class_group_3'].fillna(0)
     # create row cancer, add 0 if npcc_risk_class_group_1 == 0, else 1
     df['cancer'] = np.where(df['npcc_risk_class_group_1'] == 0, 0, 1)
     #print nr of patients with cancer
