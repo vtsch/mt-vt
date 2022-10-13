@@ -49,19 +49,27 @@ class LoadPSADataset(Dataset):
                 ts = pd.DataFrame(np.zeros((len(data), 6)))
         # data columns of Furst dataset
         elif config.dataset == "furst":
-            X = data[['psa_0', 'psa_1', 'psa_2', 'psa_3', 'psa_4', 'psa_5', 'psa_6', 'psa_7', 'psa_8', 'psa_9',
-                      'psa_10', 'psa_11', 'psa_12', 'psa_13', 'psa_14', 'psa_15', 'psa_16', 'psa_17', 'psa_18', 'psa_19']]
+            X = data[['psa_0', 'psa_1', 'psa_2', 'psa_3', 'psa_4', 'psa_5', 'psa_6', 
+                        'psa_7', 'psa_8', 'psa_9', 'psa_10', 'psa_11', 'psa_12', 'psa_13', 
+                        'psa_14', 'psa_15', 'psa_16', 'psa_17', 'psa_18', 'psa_19']]
 
             if self.config.pos_enc == "absolute_days":
-                ts = data[['psa_absolute0', 'psa_absolute1', 'psa_absolute2', 'psa_absolute3', 'psa_absolute4', 'psa_absolute5', 'psa_absolute6', 'psa_absolute7', 'psa_absolute8', 'psa_absolute9',
-                           'psa_absolute10', 'psa_absolute11', 'psa_absolute12', 'psa_absolute13', 'psa_absolute14', 'psa_absolute15', 'psa_absolute16', 'psa_absolute17', 'psa_absolute18', 'psa_absolute19']]
+                ts = data[['psa_absolute0', 'psa_absolute1', 'psa_absolute2', 'psa_absolute3', 
+                            'psa_absolute4', 'psa_absolute5', 'psa_absolute6', 'psa_absolute7',
+                            'psa_absolute8', 'psa_absolute9', 'psa_absolute10', 'psa_absolute11', 
+                            'psa_absolute12', 'psa_absolute13', 'psa_absolute14', 'psa_absolute15', 
+                            'psa_absolute16', 'psa_absolute17', 'psa_absolute18', 'psa_absolute19']]
             elif self.config.pos_enc == "delta_days":
-                ts = data[['psa_delta0', 'psa_delta1', 'psa_delta2', 'psa_delta3', 'psa_delta4', 'psa_delta5', 'psa_delta6', 'psa_delta7', 'psa_delta8', 'psa_delta9',
-                           'psa_delta10', 'psa_delta11', 'psa_delta12', 'psa_delta13', 'psa_delta14', 'psa_delta15', 'psa_delta16', 'psa_delta17', 'psa_delta18', 'psa_delta19']]
+                ts = data[['psa_delta0', 'psa_delta1', 'psa_delta2', 'psa_delta3', 'psa_delta4', 
+                            'psa_delta5', 'psa_delta6', 'psa_delta7', 'psa_delta8', 'psa_delta9',
+                            'psa_delta10', 'psa_delta11', 'psa_delta12', 'psa_delta13', 'psa_delta14', 
+                            'psa_delta15', 'psa_delta16', 'psa_delta17', 'psa_delta18', 'psa_delta19']]
 
             elif self.config.pos_enc == "age_pos_enc":
-                ts = data[['psa_age0', 'psa_age1', 'psa_age2', 'psa_age3', 'psa_age4', 'psa_age5', 'psa_age6', 'psa_age7', 'psa_age8', 'psa_age9',
-                           'psa_age10', 'psa_age11', 'psa_age12', 'psa_age13', 'psa_age14', 'psa_age15', 'psa_age16', 'psa_age17', 'psa_age18', 'psa_age19']]
+                ts = data[['psa_age0', 'psa_age1', 'psa_age2', 'psa_age3', 'psa_age4', 
+                            'psa_age5', 'psa_age6', 'psa_age7', 'psa_age8', 'psa_age9', 
+                            'psa_age10', 'psa_age11', 'psa_age12', 'psa_age13', 'psa_age14', 
+                            'psa_age15', 'psa_age16', 'psa_age17', 'psa_age18', 'psa_age19']]
             else:
                 ts = pd.DataFrame(np.zeros((len(data), 20)))
         else:
@@ -213,8 +221,8 @@ def data_generator_tstcc(data: Dataset, config: Bunch) -> DataLoader:
     train_loader = DataLoader(dataset=train_dataset, batch_size=config.batch_size,
                               shuffle=True, drop_last=True, num_workers=0)
     valid_loader = DataLoader(dataset=valid_dataset, batch_size=config.batch_size,
-                              shuffle=False, drop_last=True, num_workers=0)
+                              shuffle=True, drop_last=True, num_workers=0)
     test_loader = DataLoader(dataset=test_dataset, batch_size=config.batch_size,
-                             shuffle=False, drop_last=True, num_workers=0)
+                             shuffle=True, drop_last=True, num_workers=0)
 
     return train_loader, valid_loader, test_loader
