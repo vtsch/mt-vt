@@ -31,10 +31,8 @@ class Trainer:
         self.df_psa_u, self.df_psa_orig = data
         self.data = self.df_psa_u if self.config.upsample else self.df_psa_orig
         self.criterion = torch.nn.MSELoss(reduction='sum')
-        self.optimizer = Adam(self.net.parameters(
-        ), lr=config.lr, betas=(0.9, 0.99), weight_decay=3e-4)
-        self.scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
-            self.optimizer, 'min')
+        self.optimizer = Adam(self.net.parameters(), lr=config.lr, betas=(0.9, 0.99), weight_decay=3e-4)
+        self.scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(self.optimizer, 'min')
         self.best_loss = float('inf')
         self.phases = ['train', 'val', 'test']
         self.dataloaders = {
