@@ -1,7 +1,8 @@
-import torch
-from torch import nn
-from bunch import Bunch
 from typing import Tuple
+
+import torch
+from bunch import Bunch
+from torch import nn
 
 
 class TSTCCbase_Model(nn.Module):

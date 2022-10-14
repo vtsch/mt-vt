@@ -1,18 +1,20 @@
-from torch import nn
-import time
 import os
+import time
+from typing import Tuple
+
+import numpy as np
+import pandas as pd
 import torch
 from bunch import Bunch
-from torch.optim import Adam
-import pandas as pd
-from typing import Tuple
-from metrics import Meter
-from dataloader import get_dataloader
-import numpy as np
-from models.transformer import generate_square_subsequent_mask
-from pos_enc import positional_encoding
 from sklearn.metrics import balanced_accuracy_score
 from sklearn.neighbors import KNeighborsClassifier
+from torch import nn
+from torch.optim import Adam
+
+from dataloader import get_dataloader
+from metrics import Meter
+from models.transformer import generate_square_subsequent_mask
+from pos_enc import positional_encoding
 
 
 class Trainer:

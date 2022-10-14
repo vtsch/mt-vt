@@ -1,12 +1,12 @@
+from typing import Tuple
+
+import numpy as np
+import pandas as pd
 import torch
 import torch.nn as nn
-import numpy as np
 import torch.nn.functional as F
-from typing import Tuple
 from bunch import Bunch
 from einops import rearrange, repeat
-import pandas as pd
-
 
 ######################
 # Data Augmentations

@@ -1,11 +1,10 @@
-import matplotlib.pyplot as plt
-import matplotlib.colors as pltcolors
-import umap.umap_ as umap
-import numpy as np
 import os
-from typing import Tuple
-from bunch import Bunch
+
+import matplotlib.colors as pltcolors
 import matplotlib.pyplot as plt
+import numpy as np
+import umap.umap_ as umap
+from bunch import Bunch
 
 
 def plot_representations_of_cluster(config: Bunch, data: np.ndarray, labels: np.ndarray, cluster_id: int, label_color_map: list, experiment) -> None:

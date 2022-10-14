@@ -1,11 +1,12 @@
-from bunch import Bunch
+import os
+
+import numpy as np
 import pandas as pd
 import torch
-import os
-import numpy as np
-from sklearn.metrics import accuracy_score, f1_score, rand_score, confusion_matrix
-from sklearn.metrics import r2_score, mean_squared_error, mean_absolute_error
-from sklearn.neighbors import KNeighborsClassifier
+from bunch import Bunch
+from sklearn.metrics import (accuracy_score, confusion_matrix, f1_score,
+                             mean_absolute_error, mean_squared_error,
+                             rand_score)
 
 # --- metrics for training ---
 

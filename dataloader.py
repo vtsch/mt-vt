@@ -1,12 +1,14 @@
+from typing import Tuple
+
 import numpy as np
 import pandas as pd
-from bunch import Bunch
-from typing import Tuple
-from models.tstcc_TC import DataTransform
 import torch
-from torch.utils.data import Dataset, DataLoader
-from preprocess import normalize
+from bunch import Bunch
 from sklearn.model_selection import train_test_split
+from torch.utils.data import DataLoader, Dataset
+
+from models.tstcc_TC import DataTransform
+from preprocess import normalize
 
 
 class LoadPSADataset(Dataset):

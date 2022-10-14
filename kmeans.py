@@ -1,10 +1,10 @@
-import os
 from typing import Tuple
+
+import numpy as np
 from bunch import Bunch
 from tslearn.clustering import TimeSeriesKMeans
-import matplotlib.pyplot as plt
-import numpy as np
-from plots import plot_centroids, plot_all_representations, run_umap
+
+from plots import plot_all_representations, plot_centroids, run_umap
 
 
 def kmeans(data: np.ndarray, config: Bunch) -> Tuple[np.ndarray, np.ndarray]:

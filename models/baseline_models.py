@@ -1,7 +1,7 @@
 import torch
-from bunch import Bunch
 import torch.nn as nn
 import torch.nn.functional as F
+from bunch import Bunch
 
 
 class SimpleAutoencoder(nn.Module):

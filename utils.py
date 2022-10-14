@@ -1,12 +1,11 @@
-
-from re import A
-from comet_ml import Experiment
 import argparse
 import json
 import os
-import torch
 from datetime import datetime
+
+import torch
 from bunch import Bunch
+from comet_ml import Experiment
 
 
 def get_args() -> argparse.Namespace:

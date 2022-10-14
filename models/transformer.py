@@ -1,14 +1,16 @@
-import torch
-import torch.nn.functional as F
-import torch.nn as nn
-import numpy as np
-from bunch import Bunch
-from typing import Optional, Any
 import math
-from torch import long, nn, Tensor
-from torch.nn.modules import MultiheadAttention, Linear, Dropout, BatchNorm1d, TransformerEncoderLayer
-from pos_enc import positional_encoding
+from typing import Any, Optional
+
+import numpy as np
 import pandas as pd
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+from bunch import Bunch
+from pos_enc import positional_encoding
+from torch import Tensor, long, nn
+from torch.nn.modules import (BatchNorm1d, Dropout, Linear, MultiheadAttention,
+                              TransformerEncoderLayer)
 
 # from https://github.com/gzerveas/mvts_transformer
 

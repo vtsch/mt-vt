@@ -1,20 +1,23 @@
-import comet_ml
-import torch
 import os
+
+import comet_ml
 import numpy as np
+import torch
 from torchsummary import summary
-from preprocess import load_psa_data_to_pd
-from kmeans import kmeans, run_kmeans_and_plots, plot_all_representations
+
+from dataloader import get_dataloader
+from kmeans import plot_all_representations, run_kmeans_and_plots
 from metrics import calculate_clustering_scores, log_cluster_combinations
-from utils import get_args, build_save_path, build_comet_logger, set_required_grad, get_bunch_config_from_json, complete_config
-from plots import run_umap
-from train import Trainer
-from traintstcc import TSTCCTrainer
-from models.baseline_models import CNN, LSTMencoder, SimpleAutoencoder, DeepAutoencoder
+from models.baseline_models import CNN, LSTMencoder, SimpleAutoencoder
 from models.transformer import TSTransformerEncoder
 from models.tstcc_basemodel import TSTCCbase_Model
-from dataloader import get_dataloader
+from plots import run_umap
 from pos_enc import positional_encoding
+from preprocess import load_psa_data_to_pd
+from train import Trainer
+from traintstcc import TSTCCTrainer
+from utils import (build_comet_logger, build_save_path, complete_config,
+                   get_args, get_bunch_config_from_json, set_required_grad)
 
 
 def main():
