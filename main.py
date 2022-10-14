@@ -49,7 +49,7 @@ def main():
     # run kmeans on raw data
     if config.experiment_name == "raw_data":
 
-        dataloader = get_dataloader(config, df_psa, 'test')
+        dataloader = get_dataloader(config, df_psa_orig, 'test')
         all_data = np.array([])
         true_labels = np.array([])
 
@@ -128,18 +128,6 @@ def main():
         experiment.set_name(config.experiment_name+config.tstcc_training_mode)
         model = TSTCCbase_Model(config).to(config.device)
 
-        if config.tstcc_training_mode == "random_init":
-            model_dict = model.state_dict()
-            # delete all the parameters except for logits
-            del_list = ['logits']
-            pretrained_dict_copy = model_dict.copy()
-            for i in pretrained_dict_copy.keys():
-                for j in del_list:
-                    if j in i:
-                        del model_dict[i]
-            # Freeze everything except last layer.
-            set_required_grad(model, model_dict, requires_grad=False)
-
         if config.tstcc_training_mode == "fine_tune":
             # load saved model of this experiment
             chkpoint = torch.load(os.path.join(
@@ -186,7 +174,7 @@ def main():
         if config.tstcc_training_mode != "self_supervised":
             if config.tstcc_training_mode == "supervised":
                 outs = trainer.model_evaluate('test')
-                _, _, pred_labels, true_labels, _ = outs
+                _, _, pred_labels, true_labels, embeddings = outs
                 calculate_clustering_scores(config, true_labels.astype(
                     int), pred_labels.astype(int), experiment)
                 plot_all_representations(
