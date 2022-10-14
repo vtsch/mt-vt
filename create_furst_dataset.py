@@ -21,10 +21,10 @@ def reshape_psa_data_and_save():
     #print(df1.head(5))
 
     # delete all columns after column 20
-    df1 = df1.iloc[:, :20]
+    df1 = df1.iloc[:, :21]
 
     # split datapsa_i into date and measurement at empty space for all columns
-    for i in range(0, 19):
+    for i in range(0, 20):
             df1['date_' + str(i)] = [x[:10] for x in df1['datapsa_' + str(i)]]
             df1['psa_' + str(i)] = [x[10:] for x in df1['datapsa_' + str(i)]]
             #delete the old column
@@ -36,17 +36,19 @@ def reshape_psa_data_and_save():
 def get_measurements():
     file_name = "data/psadata_furst_measurements_restructured.csv"
     df = pd.read_csv(file_name, header=0)
-    # print("nr of rows measurements: ", len(df)) # 1'087'385
+    print("nr of rows measurements: ", len(df)) # 1'087'385
     # drop rows with less than 9 entries --> need to have more than 4 measurements
     df = df.dropna(axis=0, thresh=9)
-    # print("nr of rows psa data: ", len(df)) # 411'205
+    print("nr of rows psa data: ", len(df)) # 411'205
+    # print columns
+    print("restructured columns", df.columns)
     return df
 
 def get_ages():
     file_name = "data/psadata_furst_age.csv"
     df = pd.read_csv(file_name, header=0)
     df['date_of_birth_15'] = df['date_of_birth_15'].map(lambda x: x.split()[0])
-    # print("nr of rows ages: ", len(df)) # 3'771'007
+    print("nr of rows ages: ", len(df)) # 3'771'007
     # drop rows where birthday is before 1979 --> no, otherwise only 3019 datapoints
     # df = df[df.date_of_birth_15 > '1979-01-01']
     return df
@@ -61,7 +63,7 @@ def get_labels():
     df['npcc_risk_class_group_1'] = df['npcc_risk_class_group_1'].map(lambda x: 1 if x == 'Localized' else x)
     df['npcc_risk_class_group_1'] = df['npcc_risk_class_group_1'].map(lambda x: 2 if x == 'Advanced' else x)
     df['npcc_risk_class_group_1'] = df['npcc_risk_class_group_1'].map(lambda x: 3 if x == 'Metastatic' else x)
-    # print("nr of rows labels without missing: ", len(df)) # 118'698
+    print("nr of rows labels without missing / have cancer: ", len(df)) # 118'698
     return df
 
 
@@ -73,11 +75,11 @@ if __name__ == "__main__":
 
     # merge dataframe psa levels and ages on id
     df = pd.merge(df_m, df_a, on='ss_number_id', how='inner')
-    # print("nr of rows after merge psa and age: ", len(df)) # 411'205
+    print("nr of rows after merge psa and age: ", len(df)) # 411'205
     # check: print nr of rows without entry in date_of_birth_15
     # print("nr of rows without entry in date_of_birth_15: ", len(df[df.date_of_birth_15.isnull()])) # 0
     df = pd.merge(df, df_l, on='ss_number_id', how='left')
-    # print("nr of rows after merge labels: ", len(df)) # 411'205
+    print("nr of rows after merge labels: ", len(df)) # 411'205
     # fill 0 for all patients without label
     df['npcc_risk_class_group_1'] = df['npcc_risk_class_group_1'].fillna(0)
     # create row cancer, add 0 if npcc_risk_class_group_1 == 0, else 1
