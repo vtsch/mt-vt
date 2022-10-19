@@ -1,8 +1,8 @@
-# mt-vt
-
-## Master Thesis - Deep Predictive Clustering of Irregular Time Series Data for Prostate Cancer Risk and Its Explainability
+# Master Thesis - Clustering of PSA Data for Prostate Cancer Risk Classification and Its Explainability
 
 ## Datasets
+
+How to access and prepare the two datasets used:
 
 ### PLCO
 
@@ -31,9 +31,26 @@ Then run the script: run create_furst_dataset.py to finish the preprocessing.
 
 ## Running the code
 
-To run the code, install all requirements
+- Create a python3 virtual environment
+- Install all requirements in requirements.txt: `pip3 install -r requirements.txt`
+- Load the data into /data/ folder
+- To run all experiments of a model, run the respective script in the /scripts folder
+- To run a single experiment, run python3 main.py with the following arguments
+  - `-c` "configfile": change to configs/config_c_{insert letter} : f, all, a, b, c for false, all, age, BMI or center or make your own config file 
+  - `-exp` "experiment name":  raw_data, simple_ae, lstm, cnn, simple_transformer, ts_tcc
+  - `-n_clusters` "n": specify how many clusters dtw k-means should take (2, 3, 4) 
+  - `-pos_enc` "position encoding" --> none, absolute_days, delta_days, age_pos_enc, learnable_pos_enc
+- To run for TS-TCC also specify
+  - `-tstcc_tm` "trainingmode": supervised, self_supervised, fine_tune, train_linear
+  - for fine-tune and train linear, first pretrain with mode self_supervised and also add:
+  - `-tstcc_dir` 'yy-mm-dd_hh-mm-ss': being the last created directory in the self-supervised saved models folder). i.e. for example: `python3 main.py -c configs/config_c_f.json -exp ts_tcc -n_clusters 4 -pos_enc learnable_pos_enc -tstcc_tm fine_tune -tstcc_dir '22-10-14_23-14-43'`
 
-##  Random
+
+
+
+
+
+### Overview of the branches
 
 For tracing back:
 
