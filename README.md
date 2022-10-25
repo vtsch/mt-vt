@@ -1,4 +1,8 @@
-# Master Thesis - Clustering of PSA Data for Prostate Cancer Risk Classification and Its Explainability
+# Clustering of PSA Data for Prostate Cancer Risk Classification and Its Explainability
+
+Master Thesis - Vanessa A. Tschichold - ETH Zürich & NTNU
+
+Here you find first the instructions on how to download and prepare the datasets, how to run the code and how the folder structure for the results is organized.
 
 ## Datasets
 
@@ -50,6 +54,13 @@ Only applicable if you are allowed to access the data and have a Norwegian MinID
 
 - all models and graphs will be saved in the saved_models folder
 
+## Folder Structure of the Results
+The plots and the calculcated scores can be found in the respective model directory in _/saved_models_. The structure is the following: _experiment name/tstcc experiment name/position encoding/context_.
+The ts-tcc experiment name is supervised per default (i.e. for the baselines) and the context vectors folder names are none, all, a, b or c.
+
+The folders with the results (scores, plots for explainability and saved models) have the name of the daytime of the experiment.
+For the experiments on the original dataset, the earliest folder is always _n\_clusters = 2_ and the latest _n\_clusters = 4_. 
+The results on the balanced datasets are one level further down in the folder _/bal_.
 
 
 
