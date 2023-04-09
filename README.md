@@ -10,7 +10,7 @@ How to access and prepare the two datasets used:
 
 ### PLCO
 
-Apply for access and then download the database from the Cancer Data Access System of the National Cancer Institute here: <https://cdas.cancer.gov/datasets/plco/20/>
+Apply for access and then download the database from the Cancer Data Access System of the National Cancer Institute here: <https://cdas.cancer.gov/datasets/plco/20/>. Move the pros_data_mar22_d032222.csv file in the /data folder.
 
 ### Fürst
 
